@@ -220,8 +220,8 @@ export default function FluidTrail() {
         vec4 laplacian = (L + R + B + T) * 0.25 - C;
         vec4 result = C + laplacian * uTension;
         
-        // Non-linear decay: cores hold mass smoothly while wisps dissolve
-        float decayFactor = mix(uDecay * 0.965, uDecay, smoothstep(0.015, 0.30, C.r));
+        // Non-linear decay: cores hold mass smoothly while wisps dissolve quickly
+        float decayFactor = mix(uDecay * 0.95, uDecay, smoothstep(0.02, 0.28, C.r));
         result *= decayFactor;
         
         fragColor = max(vec4(0.0), result);
@@ -332,25 +332,26 @@ export default function FluidTrail() {
         // Composite Optical Color
         vec3 fluidColor = vec3(0.0);
 
-        // 1. Crystalline translucent core with faint cyan luminosity
-        fluidColor += cCyan * caustic * 0.45;
+        // 1. Crystalline ultra-clear core with subtle caustics
+        fluidColor += cCyan * caustic * 0.30;
 
         // 2. Pearlescent iridescent fringes on bevel contour
-        fluidColor += iridColor * (fresnel * 1.45 + bevel * 0.95);
-        fluidColor += dispersion * 0.45;
+        fluidColor += iridColor * (fresnel * 1.35 + bevel * 0.85);
+        fluidColor += dispersion * 0.40;
 
         // 3. Crisp specular reflections (pure white high-key gleams)
         fluidColor += vec3(1.0) * totalSpec;
 
-        // Alpha calculation: clear interior, luminous high-contrast edges & gleams
+        // Alpha calculation: more transparent interior, luminous high-contrast edges & gleams
         float alpha = edgeAlpha * (
-            fresnel * 0.92 +
-            bevel * 0.82 +
+            fresnel * 0.70 +
+            bevel * 0.55 +
             specular * 0.95 +
-            caustic * 0.38 +
-            hC * 0.08
+            caustic * 0.18 +
+            hC * 0.04
         );
-        alpha = clamp(alpha * uVisibility, 0.0, 0.98);
+        // Calibrated transparency (~25% more transparent), letting background text breathe cleanly
+        alpha = clamp(alpha * 0.75 * uVisibility, 0.0, 0.88);
 
         // Pre-multiplied alpha output
         fragColor = vec4(fluidColor * alpha, alpha);
@@ -619,8 +620,8 @@ export default function FluidTrail() {
           const vScale = 2.6;
           splat(velocity, px, py, [mouse.vx * vScale, mouse.vy * vScale, 0], radius * 1.15);
 
-          // Inject fluid heightfield density
-          const hScale = Math.min(0.90, 0.38 + speed * 0.018);
+          // Inject fluid heightfield density (refined initial droplet mass)
+          const hScale = Math.min(0.72, 0.28 + speed * 0.014);
           splat(density, px, py, [hScale, hScale * 0.8, speed * 0.1], radius);
         }
 
@@ -724,7 +725,7 @@ export default function FluidTrail() {
       gl.uniform1i(gl.getUniformLocation(prgAdvection, 'uSource'), 0);
       gl.uniform2f(gl.getUniformLocation(prgAdvection, 'uTexelSize'), texelSize[0], texelSize[1]);
       gl.uniform1f(gl.getUniformLocation(prgAdvection, 'uDt'), dt);
-      gl.uniform1f(gl.getUniformLocation(prgAdvection, 'uDissipation'), 0.985); // Velocity momentum decay
+      gl.uniform1f(gl.getUniformLocation(prgAdvection, 'uDissipation'), 0.958); // Velocity momentum decay (~2s faster)
       renderQuad(velocity.write.fbo, simW, simH);
       velocity.swap();
 
@@ -738,7 +739,7 @@ export default function FluidTrail() {
       gl.bindTexture(gl.TEXTURE_2D, density.read.tex);
       gl.uniform2f(gl.getUniformLocation(prgAdvection, 'uTexelSize'), texelSize[0], texelSize[1]);
       gl.uniform1f(gl.getUniformLocation(prgAdvection, 'uDt'), dt);
-      gl.uniform1f(gl.getUniformLocation(prgAdvection, 'uDissipation'), 0.988); // Height dissipation
+      gl.uniform1f(gl.getUniformLocation(prgAdvection, 'uDissipation'), 0.962); // Fast fluid dissipation (~2s faster)
       renderQuad(density.write.fbo, simW, simH);
       density.swap();
 
@@ -748,8 +749,8 @@ export default function FluidTrail() {
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, density.read.tex);
       gl.uniform2f(gl.getUniformLocation(prgSurfaceTension, 'uTexelSize'), texelSize[0], texelSize[1]);
-      gl.uniform1f(gl.getUniformLocation(prgSurfaceTension, 'uTension'), 0.28); // Droplet cohesion
-      gl.uniform1f(gl.getUniformLocation(prgSurfaceTension, 'uDecay'), 0.984);   // Dissipation
+      gl.uniform1f(gl.getUniformLocation(prgSurfaceTension, 'uTension'), 0.30); // Cohesive droplet rounding
+      gl.uniform1f(gl.getUniformLocation(prgSurfaceTension, 'uDecay'), 0.960);   // Dissolves in ~1.1s (2s faster)
       renderQuad(density.write.fbo, simW, simH);
       density.swap();
 
