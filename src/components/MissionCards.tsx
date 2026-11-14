@@ -1,4 +1,4 @@
-import React, { useRef, useCallback } from 'react';
+import React, { useRef, useCallback, useState, useMemo } from 'react';
 import { TARGETS } from '../data';
 
 interface MissionCardsProps {
@@ -8,6 +8,12 @@ interface MissionCardsProps {
 
 export default function MissionCards({ selectedTargetId, onSelectTarget }: MissionCardsProps) {
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [filterBody, setFilterBody] = useState<'Todos' | 'Luna' | 'Marte'>('Todos');
+
+  const filteredTargets = useMemo(() => {
+    if (filterBody === 'Todos') return TARGETS;
+    return TARGETS.filter((t) => t.body === filterBody);
+  }, [filterBody]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>, index: number) => {
     const card = cardRefs.current[index];
@@ -32,41 +38,64 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
   }, []);
 
   // Fan angles for initial rest state
-  const fanAngles = [-4, -1.5, 1.5, 4];
+  const fanAngles = [-3, -1, 1, 3];
 
   return (
     <section className="section-light cross-grid py-28 px-6 relative select-none">
       <div className="max-w-[1400px] mx-auto">
         {/* Section Header */}
-        <div className="mb-14">
-          <span
-            className="font-mono uppercase tracking-widest block mb-3 text-[#686B75]"
-            style={{ fontSize: '11px', letterSpacing: '0.12em' }}
-          >
-            01 — SELECCIÓN DE MISIÓN DESTINO
-          </span>
-          <h2
-            style={{
-              fontFamily: "'Inter', sans-serif",
-              fontWeight: 700,
-              fontSize: 'clamp(32px, 4vw, 48px)',
-              color: '#0A0A0E',
-              lineHeight: 1.15,
-              margin: 0,
-            }}
-          >
-            Elige tu destino extraterrestre
-          </h2>
-          <p className="text-[#686B75] text-base mt-2 max-w-xl font-light">
-            Selecciona la referencia lunar o marciana para recalcular instantáneamente los índices PFI de compatibilidad.
-          </p>
+        <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <span
+              className="font-mono uppercase tracking-widest block mb-3 text-[#686B75]"
+              style={{ fontSize: '11px', letterSpacing: '0.12em' }}
+            >
+              01 — SELECCIÓN DE MISIÓN DESTINO // NASA TREK SITES
+            </span>
+            <h2
+              style={{
+                fontFamily: "'Inter', sans-serif",
+                fontWeight: 700,
+                fontSize: 'clamp(32px, 4vw, 48px)',
+                color: '#0A0A0E',
+                lineHeight: 1.15,
+                margin: 0,
+              }}
+            >
+              Elige tu destino extraterrestre
+            </h2>
+            <p className="text-[#686B75] text-base mt-2 max-w-xl font-light">
+              12 ubicaciones estratégicas caracterizadas con LRO LOLA (Luna) y MGS MOLA (Marte). Selecciona un destino para recalcular en tiempo real el Índice de Fidelidad Planetaria (PFI).
+            </p>
+          </div>
+
+          {/* Filter Pills: TODOS | LUNA | MARTE */}
+          <div className="flex items-center gap-2 bg-[#EAEAED] p-1.5 rounded-full border border-black/5 self-start md:self-end">
+            {(['Todos', 'Luna', 'Marte'] as const).map((b) => {
+              const active = filterBody === b;
+              const count = b === 'Todos' ? TARGETS.length : TARGETS.filter((t) => t.body === b).length;
+              return (
+                <button
+                  key={b}
+                  onClick={() => setFilterBody(b)}
+                  className={`font-mono text-xs px-4 py-1.5 rounded-full transition-all duration-200 ${
+                    active
+                      ? 'bg-[#2544FF] text-white font-bold shadow-sm'
+                      : 'text-[#686B75] hover:text-[#0A0A0E]'
+                  }`}
+                >
+                  {b.toUpperCase()} ({count})
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* 4 Cards STRICTLY in 1 SINGLE ROW of 4 columns on desktop */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch">
-          {TARGETS.map((target, index) => {
+        {/* Dynamic Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
+          {filteredTargets.map((target, index) => {
             const isSelected = target.id === selectedTargetId;
-            const fanRot = fanAngles[index];
+            const fanRot = fanAngles[index % fanAngles.length];
 
             return (
               <div
@@ -74,7 +103,7 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
                 ref={(el) => {
                   cardRefs.current[index] = el;
                 }}
-                className={`mission-card group cursor-pointer transition-all duration-300 w-full min-h-[460px] flex flex-col justify-between p-6 rounded-2xl relative overflow-hidden border ${
+                className={`mission-card group cursor-pointer transition-all duration-300 w-full min-h-[480px] flex flex-col justify-between p-6 rounded-2xl relative overflow-hidden border ${
                   isSelected
                     ? 'bg-white text-[#0A0A0E] border-[#2544FF] shadow-2xl shadow-[#2544FF]/25'
                     : 'bg-[#2544FF] text-white border-transparent hover:shadow-xl hover:shadow-[#2544FF]/30'
@@ -110,7 +139,7 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
                     className="font-extralight text-5xl leading-none select-none opacity-40 font-sans"
                     style={{ color: isSelected ? '#2544FF' : 'white' }}
                   >
-                    0{index + 1}
+                    {(index + 1).toString().padStart(2, '0')}
                   </span>
                   <div
                     className={`font-mono text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider border ${
@@ -124,8 +153,8 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
                 </div>
 
                 {/* Center: Icon & Title */}
-                <div className="relative z-10 my-6">
-                  <div className="text-3xl mb-3">{target.cardIcon}</div>
+                <div className="relative z-10 my-4">
+                  <div className="text-3xl mb-2">{target.cardIcon}</div>
                   <h3
                     className="text-xl font-bold tracking-tight leading-snug"
                     style={{ color: isSelected ? '#0A0A0E' : 'white' }}
@@ -133,22 +162,33 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
                     {target.name}
                   </h3>
                   <p
-                    className="text-xs mt-2 leading-relaxed font-light"
-                    style={{ color: isSelected ? '#686B75' : 'rgba(255,255,255,0.8)' }}
+                    className="text-xs mt-2 leading-relaxed font-light line-clamp-3"
+                    style={{ color: isSelected ? '#686B75' : 'rgba(255,255,255,0.85)' }}
                   >
                     {target.subtitle}
                   </p>
+                  {target.missionRef && (
+                    <span
+                      className="inline-block mt-3 font-mono text-[10px] px-2 py-0.5 rounded opacity-80"
+                      style={{
+                        backgroundColor: isSelected ? 'rgba(37,68,255,0.08)' : 'rgba(255,255,255,0.15)',
+                        color: isSelected ? '#2544FF' : 'white',
+                      }}
+                    >
+                      {target.missionRef}
+                    </span>
+                  )}
                 </div>
 
                 {/* Bottom: Metrics Specs & Select CTA */}
-                <div className="relative z-10 pt-4 border-t border-current/15">
-                  <div className="flex justify-between items-center font-mono text-[11px] mb-3">
+                <div className="relative z-10 pt-3 border-t border-current/15">
+                  <div className="flex justify-between items-center font-mono text-[11px] mb-2">
                     <span className="opacity-70">GRAVEDAD:</span>
                     <strong>{target.gravity} m/s²</strong>
                   </div>
-                  <div className="flex justify-between items-center font-mono text-[11px] mb-4">
-                    <span className="opacity-70">PRESIÓN:</span>
-                    <strong>{target.pressure}</strong>
+                  <div className="flex justify-between items-center font-mono text-[11px] mb-3">
+                    <span className="opacity-70">COORDENADAS:</span>
+                    <strong className="text-[10px]">{target.coords}</strong>
                   </div>
 
                   {/* Active / Select Pill Button */}
