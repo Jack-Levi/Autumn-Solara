@@ -8,11 +8,10 @@ interface SiteGalleryProps {
   scrollVelocity?: number;
 }
 
-function SiteCard({
+const SiteCard = React.memo(function SiteCard({
   site,
   pfiScore,
   onSelect,
-  scrollVelocity = 0,
 }: {
   site: EarthSite;
   pfiScore: number | undefined;
@@ -22,24 +21,19 @@ function SiteCard({
   const [imgFailed, setImgFailed] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Compute velocity deformation
-  const clampedSkew = Math.max(-4, Math.min(4, scrollVelocity * 0.06));
-  const scaleReduction = 1 - Math.min(Math.abs(scrollVelocity) * 0.0006, 0.035);
-  const blurPx = Math.min(Math.abs(scrollVelocity) * 0.1, 5);
-
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
     const rect = cardRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
-    const rotateY = (x - 0.5) * 8;
-    const rotateX = (0.5 - y) * 8;
+    const rotateY = (x - 0.5) * 6;
+    const rotateX = (0.5 - y) * 6;
     cardRef.current.style.transform = `perspective(1200px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-6px)`;
   }, []);
 
   const handleMouseLeave = useCallback(() => {
     if (!cardRef.current) return;
-    cardRef.current.style.transform = '';
+    cardRef.current.style.transform = 'translate3d(0,0,0)';
   }, []);
 
   const pfiDisplay = pfiScore !== undefined ? Math.round(pfiScore) : 75;
@@ -48,12 +42,10 @@ function SiteCard({
   return (
     <div
       ref={cardRef}
-      className="gallery-card group border border-[rgba(0,0,0,0.06)] shadow-sm hover:shadow-2xl transition-[box-shadow,filter] duration-300"
+      className="gallery-card group border border-[rgba(0,0,0,0.06)] shadow-sm hover:shadow-2xl transition-all duration-300"
       style={{
-        transform: `translate3d(0,0,0) skewY(${clampedSkew}deg) scale(${scaleReduction})`,
-        filter: `blur(${blurPx}px)`,
-        willChange: 'transform, filter',
-        transition: 'filter 0.2s cubic-bezier(0.22, 1, 0.36, 1), transform 0.2s cubic-bezier(0.22, 1, 0.36, 1)',
+        transform: 'translate3d(0,0,0)',
+        willChange: 'transform, box-shadow',
       }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
@@ -140,7 +132,7 @@ function SiteCard({
       </div>
     </div>
   );
-}
+});
 
 export default function SiteGallery({
   rankedSites,

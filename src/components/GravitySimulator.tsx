@@ -32,10 +32,10 @@ export default function GravitySimulator() {
     }
   }, [selectedGravity]);
 
-  // Initialize 280 white and ice-blue spheres filling bottom area wall-to-wall
+  // Initialize 120 white and ice-blue spheres filling bottom area wall-to-wall
   const initSpheres = useCallback((width: number, height: number) => {
     const spheres: SphereParticle[] = [];
-    const count = 280;
+    const count = 120;
 
     for (let i = 0; i < count; i++) {
       const radius = 6 + Math.random() * 12;
@@ -95,8 +95,13 @@ export default function GravitySimulator() {
     window.addEventListener('resize', resize);
 
     let lastTime = performance.now();
+    let isVisible = false;
 
     const animate = (time: number) => {
+      if (!isVisible) {
+        animFrameRef.current = 0;
+        return;
+      }
       const dt = Math.min((time - lastTime) / 1000, 0.04);
       lastTime = time;
 
@@ -203,11 +208,27 @@ export default function GravitySimulator() {
       animFrameRef.current = requestAnimationFrame(animate);
     };
 
-    animFrameRef.current = requestAnimationFrame(animate);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isVisible = entry.isIntersecting;
+        if (isVisible && !animFrameRef.current) {
+          lastTime = performance.now();
+          animFrameRef.current = requestAnimationFrame(animate);
+        } else if (!isVisible && animFrameRef.current) {
+          cancelAnimationFrame(animFrameRef.current);
+          animFrameRef.current = 0;
+        }
+      },
+      { rootMargin: '100px' }
+    );
+    observer.observe(container);
 
     return () => {
       window.removeEventListener('resize', resize);
-      cancelAnimationFrame(animFrameRef.current);
+      observer.disconnect();
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current);
+      }
     };
   }, [initSpheres]);
 
@@ -249,7 +270,7 @@ export default function GravitySimulator() {
         </h2>
 
         <p className="text-white/80 text-base md:text-lg max-w-xl mx-auto font-light leading-relaxed mb-8">
-          Mueve el cursor a través de las 280 esferas de regolito blanco para sentir la dispersión inercial y compara en vivo los tres regímenes gravitatorios de exploración.
+          Mueve el cursor a través de las esferas de regolito para sentir la dispersión inercial y compara en vivo los tres regímenes gravitatorios de exploración.
         </p>
 
         {/* Gravity Preset Buttons (White on Cobalt) */}

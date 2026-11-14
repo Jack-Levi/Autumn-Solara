@@ -2,8 +2,8 @@ import React, { useRef, useEffect, useCallback } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 interface HeroSectionProps {
-  scrollProgress: number;
-  mousePos: { x: number; y: number };
+  scrollProgress?: number;
+  mousePos?: { x: number; y: number };
 }
 
 interface Particle3D {
@@ -21,19 +21,15 @@ interface Particle3D {
   color: string;
 }
 
-const PARTICLE_COUNT = 450;
+const PARTICLE_COUNT = 240;
 const REPULSION_RADIUS = 160;
 
-export default function HeroSection({ scrollProgress, mousePos }: HeroSectionProps) {
+export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle3D[]>([]);
   const animFrameRef = useRef<number>(0);
-  const mousePosRef = useRef(mousePos);
+  const mousePosRef = useRef<{ x: number; y: number }>({ x: -1000, y: -1000 });
   const sectionRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    mousePosRef.current = mousePos;
-  }, [mousePos]);
 
   // Initialize 3 depth layers of planetary regolith particles
   const initParticles = useCallback((width: number, height: number) => {
@@ -98,7 +94,24 @@ export default function HeroSection({ scrollProgress, mousePos }: HeroSectionPro
     resize();
     window.addEventListener('resize', resize);
 
+    const handleMove = (e: MouseEvent) => {
+      const section = sectionRef.current;
+      if (!section) return;
+      const rect = section.getBoundingClientRect();
+      mousePosRef.current = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      };
+    };
+    window.addEventListener('mousemove', handleMove, { passive: true });
+
+    let isVisible = true;
+
     const animate = () => {
+      if (!isVisible) {
+        animFrameRef.current = 0;
+        return;
+      }
       const section = sectionRef.current;
       if (!canvas || !ctx || !section) return;
 
@@ -182,11 +195,25 @@ export default function HeroSection({ scrollProgress, mousePos }: HeroSectionPro
       animFrameRef.current = requestAnimationFrame(animate);
     };
 
-    animFrameRef.current = requestAnimationFrame(animate);
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isVisible = entry.isIntersecting;
+        if (isVisible && !animFrameRef.current) {
+          animFrameRef.current = requestAnimationFrame(animate);
+        } else if (!isVisible && animFrameRef.current) {
+          cancelAnimationFrame(animFrameRef.current);
+          animFrameRef.current = 0;
+        }
+      },
+      { rootMargin: '100px' }
+    );
+    if (sectionRef.current) observer.observe(sectionRef.current);
 
     return () => {
       window.removeEventListener('resize', resize);
-      cancelAnimationFrame(animFrameRef.current);
+      window.removeEventListener('mousemove', handleMove);
+      observer.disconnect();
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
   }, [initParticles]);
 

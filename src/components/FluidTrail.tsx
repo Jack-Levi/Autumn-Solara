@@ -60,28 +60,34 @@ export default function FluidTrail() {
     };
     window.addEventListener('mousemove', onMouseMove);
 
-    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-
-    // Visibility gate: strictly 0 on Hero, fades in as user scrolls into Slide 2
-    const getTargetVisibility = (): number => {
+    // Passive cached scroll tracking to avoid layout thrashing in draw loop
+    let targetVis = 0;
+    const updateVisibility = () => {
       const hero = document.querySelector('.hero-interactive') as HTMLElement | null;
-      if (!hero) return 1;
+      if (!hero) {
+        targetVis = 1;
+        return;
+      }
       const rect = hero.getBoundingClientRect();
       const fadeStart = window.innerHeight * 0.45;
       const fadeEnd = 0;
 
       if (rect.bottom >= fadeStart) {
-        return 0; // 100% hidden in Hero
+        targetVis = 0; // strictly 0 on Hero
       } else if (rect.bottom <= fadeEnd) {
-        return 1; // 100% active in Slide 2 and beyond
+        targetVis = 1; // 100% active from Slide 2 onward
       } else {
-        return (fadeStart - rect.bottom) / (fadeStart - fadeEnd);
+        targetVis = (fadeStart - rect.bottom) / (fadeStart - fadeEnd);
       }
     };
 
+    window.addEventListener('scroll', updateVisibility, { passive: true });
+    updateVisibility();
+
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
     const draw = (now: number) => {
-      const targetVis = getTargetVisibility();
-      opacityRef.current = lerp(opacityRef.current, targetVis, 0.08);
+      opacityRef.current = lerp(opacityRef.current, targetVis, 0.1);
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -184,21 +190,6 @@ export default function FluidTrail() {
         ctx.stroke();
       }
 
-      // ── Head Droplet Specular ────────────────────────────────────────────
-      if (pts.length > 0) {
-        const head = pts[pts.length - 1];
-        const grd = ctx.createRadialGradient(head.x, head.y, 0, head.x, head.y, 14);
-        grd.addColorStop(0, `rgba(255, 255, 255, ${0.95 * totalAlpha})`);
-        grd.addColorStop(0.35, `rgba(74, 144, 255, ${0.7 * totalAlpha})`);
-        grd.addColorStop(0.7, `rgba(37, 68, 255, ${0.3 * totalAlpha})`);
-        grd.addColorStop(1, 'transparent');
-
-        ctx.fillStyle = grd;
-        ctx.beginPath();
-        ctx.arc(head.x, head.y, 14, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
       ctx.restore();
       rafRef.current = requestAnimationFrame(draw);
     };
@@ -208,6 +199,7 @@ export default function FluidTrail() {
     return () => {
       window.removeEventListener('resize', resize);
       window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('scroll', updateVisibility);
       cancelAnimationFrame(rafRef.current);
     };
   }, []);

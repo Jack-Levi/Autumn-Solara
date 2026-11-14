@@ -50,56 +50,26 @@ export function App() {
   // Sound FX state (Web Audio API)
   const [isSoundEnabled, setIsSoundEnabled] = useState<boolean>(true);
 
-  // Mouse position tracking
-  const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-
-  // Scroll progress (0 to 1) & Instantaneous Scroll Velocity for Motion Blur
+  // Scroll progress (0 to 1) throttled with RAF
   const [scrollProgress, setScrollProgress] = useState<number>(0);
-  const [scrollVelocity, setScrollVelocity] = useState<number>(0);
-  const lastScrollY = useRef(0);
-  const currentVelocityRef = useRef(0);
 
-  // Track mouse coordinates globally
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePos({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
-
-  // Track scroll progress and velocity in requestAnimationFrame
-  useEffect(() => {
-    let animId: number;
-
+    let ticking = false;
     const onScroll = () => {
-      const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
-      const currentScroll = window.scrollY;
-      setScrollProgress(totalScroll > 0 ? Math.min(1, currentScroll / totalScroll) : 0);
-
-      const delta = currentScroll - lastScrollY.current;
-      lastScrollY.current = currentScroll;
-      currentVelocityRef.current = delta;
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
+          const currentScroll = window.scrollY;
+          setScrollProgress(totalScroll > 0 ? Math.min(1, currentScroll / totalScroll) : 0);
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });
-
-    // Inertial decay loop for scroll velocity (smooth return to 0 with lerp 0.18)
-    const velocityLoop = () => {
-      currentVelocityRef.current *= 0.82; // lerp smooth damping
-      if (Math.abs(currentVelocityRef.current) < 0.05) {
-        currentVelocityRef.current = 0;
-      }
-      setScrollVelocity(currentVelocityRef.current);
-      animId = requestAnimationFrame(velocityLoop);
-    };
-
-    animId = requestAnimationFrame(velocityLoop);
-
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-      cancelAnimationFrame(animId);
-    };
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   // Web Audio subtle click sound
@@ -221,7 +191,7 @@ export function App() {
       />
 
       {/* 3. Hero Section (Deep Space Mode, 48px Signature Blue Spline, 3-Depth Particle Canvas) */}
-      <HeroSection scrollProgress={scrollProgress} mousePos={mousePos} />
+      <HeroSection scrollProgress={scrollProgress} />
 
       {/* 4. Editorial Slide 2 (Scrollytelling: 2-col header, shooting star, morphing video) */}
       <EditorialSlide2 />
@@ -237,12 +207,11 @@ export function App() {
         />
       </div>
 
-      {/* 7. Earth Analog Site Gallery (2-Column Spacious Cards with Velocity Skew & Motion Blur) */}
+      {/* 7. Earth Analog Site Gallery (2-Column Spacious Cards) */}
       <div id="gallery-section">
         <SiteGallery
           rankedSites={rankedSites}
           onSelectSite={handleSelectSite}
-          scrollVelocity={scrollVelocity}
         />
       </div>
 

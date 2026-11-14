@@ -293,15 +293,23 @@ export default function EditorialSlide2() {
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [videoError, setVideoError] = useState(false);
 
-  // Track scroll progress within this 250vh section
+  // Track scroll progress within this 250vh section with RAF throttling
   useEffect(() => {
+    let ticking = false;
     const onScroll = () => {
-      const el = sectionRef.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const totalScrollable = el.offsetHeight - window.innerHeight;
-      const raw = -rect.top / (totalScrollable || 1);
-      setScrollProgress(Math.max(0, Math.min(1, raw)));
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const el = sectionRef.current;
+          if (el) {
+            const rect = el.getBoundingClientRect();
+            const totalScrollable = el.offsetHeight - window.innerHeight;
+            const raw = -rect.top / (totalScrollable || 1);
+            setScrollProgress(Math.max(0, Math.min(1, raw)));
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -529,16 +537,18 @@ export default function EditorialSlide2() {
             </video>
           )}
 
-          {/* Procedural Canvas Fallback (always ready, zero-delay rendering) */}
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              zIndex: videoLoaded && !videoError ? -1 : 1,
-            }}
-          >
-            <PlanetaryCanvas />
-          </div>
+          {/* Procedural Canvas Fallback (only mounted when video is not playing) */}
+          {(!videoLoaded || videoError) && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                zIndex: 1,
+              }}
+            >
+              <PlanetaryCanvas />
+            </div>
+          )}
 
           {/* Cinematic Vignette */}
           <div
