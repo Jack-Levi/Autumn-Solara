@@ -1,0 +1,503 @@
+@import "tailwindcss";
+
+/* ═══════════════════════════════════════════════════════════════
+   TERRA—ANALOG™  Design System
+   "Swiss Editorial Cartography meets Lusion Creative Experience"
+   ═══════════════════════════════════════════════════════════════ */
+
+@layer base {
+  :root {
+    /* Light Studio Mode */
+    --light-bg: #F4F4F6;
+    --light-card: #FFFFFF;
+    --light-text: #0A0A0E;
+    --light-text-secondary: #686B75;
+    --light-border: rgba(0,0,0,0.07);
+
+    /* Deep Space Mode */
+    --dark-bg: #050508;
+    --dark-panel: #0F1015;
+    --dark-border: rgba(255,255,255,0.08);
+    --dark-text: #E8E8EC;
+    --dark-text-dim: #6B6F7B;
+
+    /* Signature Accents */
+    --cobalt: #2544FF;
+    --cobalt-soft: rgba(37,68,255,0.12);
+    --cobalt-glow: rgba(37,68,255,0.25);
+    --orange: #FF4D24;
+    --orange-soft: rgba(255,77,36,0.12);
+
+    /* Grid Marks */
+    --cross-color: rgba(142,146,159,0.35);
+
+    /* Fidelity Badges */
+    --fidelity-high: #2544FF;
+    --fidelity-mid: #F59E0B;
+    --fidelity-low: #EF4444;
+  }
+
+  * {
+    box-sizing: border-box;
+    cursor: auto;
+  }
+
+  button, a, [role="button"], input[type="range"], select, label[for] {
+    cursor: pointer;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(37,68,255,0.3) transparent;
+  }
+
+  body {
+    margin: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background: var(--light-bg);
+    color: var(--light-text);
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: var(--cobalt);
+    color: white;
+  }
+
+  .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(37,68,255,0.25); border-radius: 3px; }
+
+/* ── Cross Grid Background Pattern ── */
+.cross-grid {
+  background-image:
+    radial-gradient(circle, var(--cross-color) 1px, transparent 1px);
+  background-size: 120px 120px;
+  background-position: 60px 60px;
+}
+
+.cross-grid-dark {
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+  background-size: 120px 120px;
+  background-position: 60px 60px;
+}
+
+/* ── Section Themes ── */
+.section-light {
+  background: var(--light-bg);
+  color: var(--light-text);
+}
+
+.section-dark {
+  background: var(--dark-bg);
+  color: var(--dark-text);
+}
+
+/* ── Custom Cursor ── */
+.mag-cursor {
+  position: fixed;
+  top: 0; left: 0;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--cobalt);
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: exclusion;
+  transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+              height 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.mag-cursor.expanded {
+  width: 72px; height: 72px;
+  mix-blend-mode: normal;
+  background: var(--cobalt);
+}
+
+.mag-cursor-label {
+  color: white;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  white-space: nowrap;
+}
+
+.mag-cursor.expanded .mag-cursor-label {
+  opacity: 1;
+}
+
+/* ── Pill Buttons ── */
+.pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: 999px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid rgba(0,0,0,0.08);
+  background: white;
+  color: #0A0A0E;
+  backdrop-filter: blur(12px);
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pill-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(37,68,255,0.15);
+  border-color: var(--cobalt);
+  color: var(--cobalt);
+}
+
+.pill-btn-dark {
+  background: var(--dark-panel);
+  color: var(--dark-text);
+  border-color: var(--dark-border);
+}
+
+.pill-btn-dark:hover {
+  border-color: var(--cobalt);
+  color: var(--cobalt);
+}
+
+.pill-btn-cobalt {
+  background: var(--cobalt);
+  color: white;
+  border-color: var(--cobalt);
+}
+
+.pill-btn-cobalt:hover {
+  background: #1a36d4;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 24px rgba(37,68,255,0.35);
+}
+
+/* ── Blueprint Mission Cards ── */
+.mission-card {
+  position: relative;
+  width: 280px;
+  height: 420px;
+  border-radius: 16px;
+  background: var(--cobalt);
+  color: white;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-style: preserve-3d;
+  will-change: transform;
+  overflow: hidden;
+}
+
+.mission-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.2);
+  pointer-events: none;
+}
+
+.mission-card::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(255,255,255,0.12) 0%, transparent 50%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.mission-card:hover::after {
+  opacity: 1;
+}
+
+.mission-card.selected {
+  box-shadow: 0 0 0 3px white, 0 20px 60px rgba(37,68,255,0.4);
+}
+
+/* ── Site Gallery Cards ── */
+.gallery-card {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  background: white;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-style: preserve-3d;
+}
+
+.gallery-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 48px rgba(0,0,0,0.08);
+}
+
+.gallery-card-img {
+  width: 100%;
+  height: 320px;
+  object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.gallery-card:hover .gallery-card-img {
+  transform: scale(1.04);
+}
+
+.gallery-card-arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.gallery-card-arrow .arrow-icon {
+  transform: translateX(-20px);
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.gallery-card:hover .gallery-card-arrow .arrow-icon {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.gallery-card:hover .gallery-card-arrow .card-title {
+  transform: translateX(8px);
+}
+
+.gallery-card-arrow .card-title {
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Photo Comparator Slider ── */
+.comparator-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  touch-action: none;
+}
+
+.comparator-before,
+.comparator-after {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+}
+
+.comparator-before {
+  z-index: 2;
+}
+
+.comparator-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: white;
+  z-index: 3;
+  box-shadow: 0 0 12px rgba(0,0,0,0.3);
+}
+
+.comparator-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+  z-index: 4;
+  font-size: 14px;
+  color: #0A0A0E;
+  font-weight: bold;
+}
+
+/* ── Floating Calibration Dock ── */
+.calibration-dock {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(120%);
+  z-index: 100;
+  background: rgba(15, 16, 21, 0.92);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  padding: 20px 28px;
+  color: var(--dark-text);
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  max-width: 680px;
+  width: 90vw;
+}
+
+.calibration-dock.visible {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Leaflet Overrides ── */
+.leaflet-container {
+  background: #050508 !important;
+  font-family: 'JetBrains Mono', monospace !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: rgba(15,16,21,0.95) !important;
+  color: #E8E8EC !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+  backdrop-filter: blur(16px) !important;
+}
+
+.leaflet-popup-tip {
+  background: rgba(15,16,21,0.95) !important;
+}
+
+.leaflet-control-zoom a {
+  background: rgba(15,16,21,0.9) !important;
+  color: #E8E8EC !important;
+  border: 1px solid rgba(255,255,255,0.08) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.leaflet-control-zoom a:hover {
+  color: var(--cobalt) !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(5,5,8,0.7) !important;
+  color: rgba(255,255,255,0.3) !important;
+  font-size: 9px !important;
+}
+
+/* ── Keyframe Animations ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes floatParticle {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes drawLine {
+  from { stroke-dashoffset: 1000; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes pulseRing {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+@keyframes slideInCurtain {
+  from { clip-path: polygon(0 0, 0 0, 0 100%, 0 100%); }
+  to { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-delay-1 { animation-delay: 0.1s; }
+.animate-delay-2 { animation-delay: 0.2s; }
+.animate-delay-3 { animation-delay: 0.3s; }
+.animate-delay-4 { animation-delay: 0.4s; }
+.animate-delay-5 { animation-delay: 0.5s; }
+
+/* ── Tutorial Spotlight ── */
+.tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  pointer-events: auto;
+}
+
+.tutorial-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(5, 5, 8, 0.75);
+  backdrop-filter: blur(4px);
+}
+
+.tutorial-spotlight {
+  position: absolute;
+  border: 2px solid var(--cobalt);
+  border-radius: 16px;
+  box-shadow: 0 0 0 9999px rgba(5, 5, 8, 0.75),
+              0 0 40px rgba(37, 68, 255, 0.3);
+  transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Slider Styling ── */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--cobalt);
+  border: 2px solid white;
+  cursor: none !important;
+}
+
+/* ── Gravity Canvas Container ── */
+.gravity-canvas-wrap {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  background: #050508;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .mission-card {
+    width: 240px;
+    height: 360px;
+  }
+}
