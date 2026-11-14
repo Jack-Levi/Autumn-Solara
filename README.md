@@ -69,8 +69,8 @@ npm run preview
 
 ## Scientific Documentation
 Detailed dataset catalogs, mathematical derivations, and Earth analog justifications can be found in:
-* `DATASETS_CATALOGO.md`
-* `MATRIZ_JUSTIFICACION_ANALOGOS_TIERRA.docx`
-* `VARIABLES_TIERRA/`
-* `LUNA/`
-* `MARTE/`
+* `DATASETS_CATALOGO.md` — Complete catalog and indexing of all NASA Trek profiles.
+* `MATRIZ_JUSTIFICACION_ANALOGOS_TIERRA.docx` — Terrestrial analog geological justification matrix.
+* `VARIABLES_TIERRA/` — NASA Earth observation user guides (ASTER, MODIS, SMAP).
+* `LUNA/` — LOLA DEM elevation cross-sections & Diviner thermal datasets.
+* `MARTE/` — MOLA DEM elevation cross-sections & THEMIS/TES thermal inertia datasets.
