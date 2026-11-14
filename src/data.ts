@@ -1043,6 +1043,198 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
         "elevM": 2380
       }
     ]
+  },
+  {
+    "id": "MARS-GUS",
+    "body": "Marte",
+    "name": "Cráter Gusev — Colinas Columbia",
+    "subtitle": "Paleolago basáltico con sílice hidrotermal fósil explorado por el rover Spirit.",
+    "cardIcon": "MAR-07",
+    "coords": "14.57° S, 175.47° E",
+    "gravity": 3.72,
+    "pressure": "640 Pa",
+    "tempRange": "-100°C a +15°C",
+    "meanTemp": -58,
+    "focus": "Afloramientos de sílice opalina al 90% (sinter hidrotermal) en Home Plate, evidencia de sistemas hidrotermales alcalinos habitables.",
+    "mineralogy": "Sílice opalina, olivino rico en Fe, hematita, sulfatos de magnesio, basaltos picríticos",
+    "waterFraction": "1.5 - 3.0 wt% en minerales hidratados",
+    "radiation": "240 mSv/año",
+    "missionRef": "Mars Exploration Rover Spirit (NASA MER-A)",
+    "instrument": "MGS MOLA DEM & Spirit Pancam/Mini-TES/APXS",
+    "demSource": "NASA Trek MGS MOLA Global DEM (140.8 km transect de lecho a cumbre)",
+    "testingChallenge": "Tracción en regolito blando de sulfatos (falla de rueda de Spirit), ascenso de laderas escarpadas (>25°) y análisis de sinter hidrotermal.",
+    "thermalInertia": "TES: 280 J m⁻² K⁻¹ s⁻⁰·⁵ / Ciclo diurno -84 °C a -2 °C",
+    "primaryAnalog": "Campos geotermales de El Tatio (Chile) y Cuenca de Laguna Blanca (Puna)",
+    "vector": {
+      "topography": 84,
+      "geology": 96,
+      "environment": 88,
+      "resources": 79
+    },
+    "radar": {
+      "morphology": 86,
+      "mineralogy": 95,
+      "temperature": 78,
+      "aridity": 94,
+      "radiation": 86,
+      "isru": 76
+    },
+    "topo": [
+      { "distKm": 0.0, "elevM": -1869 },
+      { "distKm": 14.37, "elevM": -1906 },
+      { "distKm": 30.18, "elevM": -1912 },
+      { "distKm": 45.99, "elevM": -1898 },
+      { "distKm": 61.81, "elevM": -1938 },
+      { "distKm": 77.62, "elevM": -1900 },
+      { "distKm": 93.43, "elevM": -1718 },
+      { "distKm": 109.24, "elevM": -1747 },
+      { "distKm": 125.05, "elevM": -566 },
+      { "distKm": 140.86, "elevM": 1416 }
+    ]
+  },
+  {
+    "id": "MARS-KOR",
+    "body": "Marte",
+    "name": "Cráter Korolev — Domo Glaciar",
+    "subtitle": "Domo de 1.8 km de espesor de hielo de agua pura permanente en trampa fría circumpolar.",
+    "cardIcon": "MAR-08",
+    "coords": "72.77° N, 164.50° E",
+    "gravity": 3.72,
+    "pressure": "680 Pa",
+    "tempRange": "-135°C a -30°C",
+    "meanTemp": -80,
+    "focus": "Trampa fría atmosférica que preserva 2,200 km³ de hielo de agua no polar todo el año; recurso hídrico crítico de escala masiva para ISRU.",
+    "mineralogy": "Hielo de agua H₂O (>90% pureza volumétrica), polvo basáltico interestratificado, dióxido de carbono estacional",
+    "waterFraction": ">90 wt% en masa glaciar central",
+    "radiation": "210 mSv/año",
+    "missionRef": "ESA Mars Express (HRSC) & NASA Mars Reconnaissance Orbiter (SHARAD)",
+    "instrument": "MGS MOLA DEM & Mars Express HRSC Stereo Camera",
+    "demSource": "NASA Trek MGS MOLA Global DEM (78.5 km transect borde a domo)",
+    "testingChallenge": "Perforación de hielo criogénico a -100 °C, anclaje en pendientes de hielo compacto y presurización de hábitats en latitudes altas.",
+    "thermalInertia": "TES: 800 J m⁻² K⁻¹ s⁻⁰·⁵ (hielo masivo) / T_max -32 °C",
+    "primaryAnalog": "Glaciar Vatnajökull (Islandia) y Casquete Hielo Devon Island (Ártico Canadiense)",
+    "vector": {
+      "topography": 88,
+      "geology": 82,
+      "environment": 96,
+      "resources": 99
+    },
+    "radar": {
+      "morphology": 90,
+      "mineralogy": 80,
+      "temperature": 98,
+      "aridity": 90,
+      "radiation": 82,
+      "isru": 99
+    },
+    "topo": [
+      { "distKm": 0.0, "elevM": -3407 },
+      { "distKm": 8.72, "elevM": -5408 },
+      { "distKm": 17.45, "elevM": -4597 },
+      { "distKm": 26.17, "elevM": -4493 },
+      { "distKm": 34.9, "elevM": -4488 },
+      { "distKm": 43.62, "elevM": -4603 },
+      { "distKm": 52.35, "elevM": -4874 },
+      { "distKm": 61.07, "elevM": -5020 },
+      { "distKm": 69.79, "elevM": -6181 },
+      { "distKm": 78.52, "elevM": -4110 }
+    ]
+  },
+  {
+    "id": "MARS-MER",
+    "body": "Marte",
+    "name": "Meridiani Planum — Esferas de Hematita",
+    "subtitle": "Planicie evaporítica ácida con esferulitas de hematita ('blueberries') y sulfatos.",
+    "cardIcon": "MAR-09",
+    "coords": "0.10° S, 3.16° W",
+    "gravity": 3.72,
+    "pressure": "610 Pa",
+    "tempRange": "-95°C a +20°C",
+    "meanTemp": -50,
+    "focus": "Acuíferos ácidos someros del Noeico tardío, sedimentos de jarosita y concreciones de hematita gris cristalina (Fe₂O₃).",
+    "mineralogy": "Jarosita KFe³⁺₃(SO₄)₂(OH)₆, hematita gris cristalina, sulfato de magnesio, basaltos",
+    "waterFraction": "2.0 - 5.0 wt% en sales de sulfato hidratadas",
+    "radiation": "245 mSv/año",
+    "missionRef": "Mars Exploration Rover Opportunity (NASA MER-B)",
+    "instrument": "MGS MOLA DEM & Opportunity Mössbauer / Mini-TES / Microscopic Imager",
+    "demSource": "NASA Trek MGS MOLA Global DEM (20.4 km transect plano)",
+    "testingChallenge": "Navegación de larga distancia en dunas basálticas, perforación de capas de arenisca friable y procesado de óxidos de hierro para metalurgia ISRU.",
+    "thermalInertia": "TES: 210 J m⁻² K⁻¹ s⁻⁰·⁵ / Rango térmico -82 °C a +4 °C",
+    "primaryAnalog": "Cuenca Minera de Río Tinto (Huelva, España) y Salar de Uyuni (Bolivia)",
+    "vector": {
+      "topography": 74,
+      "geology": 98,
+      "environment": 84,
+      "resources": 89
+    },
+    "radar": {
+      "morphology": 75,
+      "mineralogy": 99,
+      "temperature": 76,
+      "aridity": 96,
+      "radiation": 86,
+      "isru": 88
+    },
+    "topo": [
+      { "distKm": 0.0, "elevM": -1450 },
+      { "distKm": 2.27, "elevM": -1461 },
+      { "distKm": 4.53, "elevM": -1454 },
+      { "distKm": 6.8, "elevM": -1437 },
+      { "distKm": 9.06, "elevM": -1427 },
+      { "distKm": 11.33, "elevM": -1418 },
+      { "distKm": 13.59, "elevM": -1403 },
+      { "distKm": 15.86, "elevM": -1384 },
+      { "distKm": 18.12, "elevM": -1397 },
+      { "distKm": 20.39, "elevM": -1433 }
+    ]
+  },
+  {
+    "id": "MARS-NOC",
+    "body": "Marte",
+    "name": "Noctis Labyrinthus — Red de Cañones",
+    "subtitle": "Intrincado sistema de fosas tectónicas, fallas y mesetas en el borde oeste de Valles Marineris.",
+    "cardIcon": "MAR-10",
+    "coords": "6.34° S, 101.18° W",
+    "gravity": 3.72,
+    "pressure": "450 Pa",
+    "tempRange": "-115°C a +5°C",
+    "meanTemp": -60,
+    "focus": "Cañones de falla de hasta 4 km de profundidad, depósitos volcánicos estratificados, arcillas de esmectita y posibles depósitos de hielo reliquia protegidos.",
+    "mineralogy": "Sulfatos polihidratados, esmectitas ricas en hierro, basaltos alcalinos, cenizas volcánicas",
+    "waterFraction": "3.0 - 6.0 wt% en depósitos de fondo de cañón",
+    "radiation": "235 mSv/año",
+    "missionRef": "NASA Mars Reconnaissance Orbiter (CRISM / HiRISE)",
+    "instrument": "MGS MOLA Global DEM & MRO Context Camera (CTX)",
+    "demSource": "NASA Trek MGS MOLA Global DEM (115.7 km transect a través de fallas y mesetas)",
+    "testingChallenge": "Navegación autónoma en cañones ciegos sin visibilidad orbital directa, descenso vertical de escarpes y comunicaciones de radio multicamino.",
+    "thermalInertia": "TES: 190 J m⁻² K⁻¹ s⁻⁰·⁵ / Fuerte gradiente térmico cañón-meseta",
+    "primaryAnalog": "Cañón del Colorado (Arizona, EE.UU.) y Valles de fisura volcánica en Islandia",
+    "vector": {
+      "topography": 98,
+      "geology": 92,
+      "environment": 89,
+      "resources": 84
+    },
+    "radar": {
+      "morphology": 99,
+      "mineralogy": 90,
+      "temperature": 84,
+      "aridity": 95,
+      "radiation": 88,
+      "isru": 82
+    },
+    "topo": [
+      { "distKm": 0.0, "elevM": 7699 },
+      { "distKm": 12.86, "elevM": 7932 },
+      { "distKm": 25.72, "elevM": 4923 },
+      { "distKm": 38.58, "elevM": 4307 },
+      { "distKm": 51.43, "elevM": 6972 },
+      { "distKm": 64.29, "elevM": 6031 },
+      { "distKm": 77.15, "elevM": 6263 },
+      { "distKm": 90.01, "elevM": 7243 },
+      { "distKm": 102.87, "elevM": 5911 },
+      { "distKm": 115.73, "elevM": 4932 }
+    ]
   }
 ];
 
