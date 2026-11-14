@@ -1,6 +1,11 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import type { EarthSite, ExtraTerrestrialTarget, VectorScores } from '../data';
-import { fidelityColor, fidelityLabel } from '../data';
+import {
+  fidelityColor,
+  fidelityLabel,
+  getTargetThermalCurve,
+  getSiteThermalCurve,
+} from '../data';
 import PhotoComparator from './PhotoComparator';
 
 interface SiteDetailModalProps {
@@ -27,6 +32,9 @@ export default function SiteDetailModal({
   const lastXRef = useRef(0);
   const lastTimeRef = useRef(performance.now());
   const velocityAnimRef = useRef<number>(0);
+
+  // Tab state for Topo DEM vs Thermal Radiometry
+  const [activeChartTab, setActiveChartTab] = useState<'topo' | 'thermal'>('topo');
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -133,6 +141,39 @@ export default function SiteDetailModal({
   const earthTopoPath = getTopoPath(site.topo);
   const targetTopoPath = getTopoPath(target.topo);
 
+  // Thermal Radiometry curves (Diviner / THEMIS & Earth Analog)
+  const targetThermal = getTargetThermalCurve(target);
+  const siteThermal = getSiteThermalCurve(site);
+
+  const allTemps = [
+    ...targetThermal.points.map((p) => p.tempC),
+    ...siteThermal.map((p) => p.tempC),
+  ];
+  const rawMinT = Math.min(...allTemps);
+  const rawMaxT = Math.max(...allTemps);
+  const padT = Math.max((rawMaxT - rawMinT) * 0.12, 6);
+  const chartMinT = Math.floor((rawMinT - padT) / 10) * 10;
+  const chartMaxT = Math.ceil((rawMaxT + padT) / 10) * 10;
+  const rangeT = chartMaxT - chartMinT || 1;
+
+  const getThermalPath = (pts: { tempC: number }[]) => {
+    const total = pts.length;
+    const coords = pts.map((p, i) => {
+      const x = 55 + (i / Math.max(1, total - 1)) * 580;
+      const y = 135 - ((p.tempC - chartMinT) / rangeT) * 95;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+    return 'M ' + coords.join(' L ');
+  };
+
+  const targetThermalPath = getThermalPath(targetThermal.points);
+  const siteThermalPath = getThermalPath(siteThermal);
+
+  const zeroY =
+    chartMinT <= 0 && chartMaxT >= 0
+      ? 135 - ((0 - chartMinT) / rangeT) * 95
+      : null;
+
   // Carousel motion blur & stretch calculation
   const carouselBlur = Math.min(Math.abs(carouselVelocity) * 0.18, 7);
   const carouselStretch = 1 + Math.min(Math.abs(carouselVelocity) * 0.005, 0.08);
@@ -170,13 +211,18 @@ export default function SiteDetailModal({
 
       {/* 2. Hero Editorial Case Study Header */}
       <div className="max-w-[1300px] mx-auto px-6 md:px-12 pt-12 pb-8">
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex flex-wrap items-center gap-3 mb-4">
           <span className="font-mono text-xs px-3 py-1 rounded-full font-bold bg-[#2544FF] text-white">
             {site.id}
           </span>
           <span className="font-mono text-xs text-[#6B6F7B] uppercase tracking-wider">
             CASO DE ESTUDIO GEOCIENTÍFICO // NASA EARTH SCIENCE
           </span>
+          {target.demSource && (
+            <span className="font-mono text-[10px] px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[#8E929F] hidden sm:inline">
+              DATOS: {target.demSource}
+            </span>
+          )}
         </div>
 
         <h1
@@ -320,42 +366,181 @@ export default function SiteDetailModal({
             </div>
           </div>
 
-          {/* Topographic Cross-Section SVG */}
+          {/* Interactive Scientific Profiles: DEM Topography vs Thermal Radiometry */}
           <div className="bg-[#0F1015] p-8 rounded-3xl border border-[rgba(255,255,255,0.08)] flex flex-col justify-between">
             <div>
-              <span className="font-mono text-xs uppercase tracking-widest text-[#6B6F7B] block mb-2">
-                TRANSECTO TOPOGRÁFICO CRUZADO // SRTM 30m vs {target.body.toUpperCase()}
-              </span>
-              <div className="flex items-center gap-4 font-mono text-xs mb-4">
-                <span className="text-[#2544FF] font-bold">— {site.id} (Δz: {Math.round(maxElev - minElev)}m)</span>
-                <span style={{ color: targetColor }}>-- {target.id}</span>
+              {/* Tab Selector Controls */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[rgba(255,255,255,0.08)] pb-4 mb-4">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveChartTab('topo')}
+                    className={`px-3.5 py-1.5 rounded-full font-mono text-xs font-semibold transition-all ${
+                      activeChartTab === 'topo'
+                        ? 'bg-[#2544FF] text-white shadow-lg shadow-[#2544FF]/25'
+                        : 'bg-white/5 text-[#8E929F] hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    TOPOGRAFÍA DEM
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveChartTab('thermal')}
+                    className={`px-3.5 py-1.5 rounded-full font-mono text-xs font-semibold transition-all ${
+                      activeChartTab === 'thermal'
+                        ? 'bg-[#2544FF] text-white shadow-lg shadow-[#2544FF]/25'
+                        : 'bg-white/5 text-[#8E929F] hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    FÍSICA TÉRMICA & INERCIA
+                  </button>
+                </div>
+
+                <span className="font-mono text-[10px] text-[#6B6F7B] hidden sm:inline uppercase">
+                  {activeChartTab === 'topo' ? 'SRTM 30m vs LOLA/MOLA' : targetThermal.instrument}
+                </span>
               </div>
+
+              {activeChartTab === 'topo' ? (
+                <>
+                  <div className="flex flex-wrap items-center justify-between font-mono text-xs mb-3 gap-2">
+                    <span className="text-[#6B6F7B] uppercase tracking-wider text-[11px]">
+                      TRANSECTO CRUZADO ({maxDist} km)
+                    </span>
+                    <div className="flex items-center gap-4">
+                      <span className="text-[#2544FF] font-bold">
+                        — {site.id} (Δz: {Math.round(maxElev - minElev)}m)
+                      </span>
+                      <span style={{ color: targetColor }} className="font-bold">
+                        -- {target.id} ({target.body})
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="w-full overflow-x-auto">
+                    <svg viewBox="0 0 680 160" className="w-full h-44 select-none">
+                      <line x1="50" y1="40" x2="630" y2="40" stroke="rgba(255,255,255,0.06)" strokeDasharray="3,3" />
+                      <line x1="50" y1="90" x2="630" y2="90" stroke="rgba(255,255,255,0.06)" strokeDasharray="3,3" />
+                      <line x1="50" y1="140" x2="630" y2="140" stroke="rgba(255,255,255,0.12)" />
+
+                      <path d={targetTopoPath} fill="none" stroke={targetColor} strokeWidth="1.8" strokeDasharray="4,3" />
+                      <path d={earthTopoPath} fill="none" stroke="#2544FF" strokeWidth="2.4" />
+
+                      <text x="42" y="44" fill="#6B6F7B" fontSize="9" fontFamily="JetBrains Mono" textAnchor="end">
+                        {Math.round(maxElev)}m
+                      </text>
+                      <text x="42" y="142" fill="#6B6F7B" fontSize="9" fontFamily="JetBrains Mono" textAnchor="end">
+                        {Math.round(minElev)}m
+                      </text>
+                      <text x="630" y="154" fill="#6B6F7B" fontSize="9" fontFamily="JetBrains Mono" textAnchor="end">
+                        {maxDist} km
+                      </text>
+                    </svg>
+                  </div>
+
+                  <div className="flex justify-between items-center text-[10px] font-mono text-[#6B6F7B] mt-2">
+                    <span>Fuente: USGS SRTM 1-arcsec vs NASA Solar System Treks (LOLA/MOLA DEM).</span>
+                    <span className="text-[#8E929F]">Elevación normalizada sobre datum medio</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex flex-wrap items-center justify-between font-mono text-xs mb-3 gap-2">
+                    <span className="text-[#6B6F7B] uppercase tracking-wider text-[11px]">
+                      CICLO DIURNO Y TERMORRADIOMETRÍA (°C)
+                    </span>
+                    <div className="flex items-center gap-4">
+                      <span className="text-[#2544FF] font-bold">
+                        — {site.id} ({site.tempMinC}°C a {site.tempMaxC}°C)
+                      </span>
+                      <span style={{ color: targetColor }} className="font-bold">
+                        -- {target.id} ({targetThermal.minTempC}°C a {targetThermal.maxTempC}°C)
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="w-full overflow-x-auto">
+                    <svg viewBox="0 0 680 160" className="w-full h-44 select-none">
+                      <line x1="50" y1="35" x2="635" y2="35" stroke="rgba(255,255,255,0.06)" strokeDasharray="3,3" />
+                      <line x1="50" y1="85" x2="635" y2="85" stroke="rgba(255,255,255,0.06)" strokeDasharray="3,3" />
+                      <line x1="50" y1="135" x2="635" y2="135" stroke="rgba(255,255,255,0.12)" />
+
+                      {/* 0°C Water Freezing Baseline */}
+                      {zeroY !== null && (
+                        <>
+                          <line
+                            x1="50"
+                            y1={zeroY}
+                            x2="635"
+                            y2={zeroY}
+                            stroke="#38BDF8"
+                            strokeWidth="1"
+                            strokeDasharray="2,2"
+                            opacity="0.5"
+                          />
+                          <text
+                            x="632"
+                            y={zeroY - 4}
+                            fill="#38BDF8"
+                            fontSize="8"
+                            fontFamily="JetBrains Mono"
+                            textAnchor="end"
+                            opacity="0.8"
+                          >
+                            0°C (CONGELACIÓN / AGUA LÍQUIDA)
+                          </text>
+                        </>
+                      )}
+
+                      {/* Curves */}
+                      <path d={targetThermalPath} fill="none" stroke={targetColor} strokeWidth="2" strokeDasharray="4,3" />
+                      <path d={siteThermalPath} fill="none" stroke="#2544FF" strokeWidth="2.4" />
+
+                      {/* Y Axis Labels */}
+                      <text x="44" y="38" fill="#6B6F7B" fontSize="9" fontFamily="JetBrains Mono" textAnchor="end">
+                        {chartMaxT}°C
+                      </text>
+                      <text x="44" y="138" fill="#6B6F7B" fontSize="9" fontFamily="JetBrains Mono" textAnchor="end">
+                        {chartMinT}°C
+                      </text>
+
+                      {/* X Axis Time Labels */}
+                      <text x="55" y="152" fill="#6B6F7B" fontSize="8.5" fontFamily="JetBrains Mono" textAnchor="start">
+                        00:00 (Noche)
+                      </text>
+                      <text x="345" y="152" fill="#6B6F7B" fontSize="8.5" fontFamily="JetBrains Mono" textAnchor="middle">
+                        12:00 (Cénit Solar)
+                      </text>
+                      <text x="635" y="152" fill="#6B6F7B" fontSize="8.5" fontFamily="JetBrains Mono" textAnchor="end">
+                        23:00 (Ocaso)
+                      </text>
+                    </svg>
+                  </div>
+
+                  {/* Thermal Metadata & Inertia Card */}
+                  <div className="mt-3 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06] text-xs font-mono">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+                      <span className="text-[#8E929F]">
+                        Inercia Térmica: <strong className="text-white">{targetThermal.inertia || 'N/A'}</strong>
+                      </span>
+                      <span className="text-[#6B6F7B] text-[10px]">
+                        Sensor: <strong className="text-[#E8E8EC]">{targetThermal.instrument}</strong>
+                      </span>
+                    </div>
+                    {targetThermal.note && (
+                      <p className="text-[11px] text-[#8E929F] leading-tight">
+                        {targetThermal.note}
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
 
-            <div className="w-full overflow-x-auto">
-              <svg viewBox="0 0 680 160" className="w-full h-44">
-                <line x1="50" y1="40" x2="630" y2="40" stroke="rgba(255,255,255,0.06)" strokeDasharray="3,3" />
-                <line x1="50" y1="90" x2="630" y2="90" stroke="rgba(255,255,255,0.06)" strokeDasharray="3,3" />
-                <line x1="50" y1="140" x2="630" y2="140" stroke="rgba(255,255,255,0.12)" />
-
-                <path d={targetTopoPath} fill="none" stroke={targetColor} strokeWidth="1.8" strokeDasharray="4,3" />
-                <path d={earthTopoPath} fill="none" stroke="#2544FF" strokeWidth="2.4" />
-
-                <text x="42" y="44" fill="#6B6F7B" fontSize="9" fontFamily="JetBrains Mono" textAnchor="end">
-                  {Math.round(maxElev)}m
-                </text>
-                <text x="42" y="142" fill="#6B6F7B" fontSize="9" fontFamily="JetBrains Mono" textAnchor="end">
-                  {Math.round(minElev)}m
-                </text>
-                <text x="630" y="154" fill="#6B6F7B" fontSize="9" fontFamily="JetBrains Mono" textAnchor="end">
-                  {maxDist} km
-                </text>
-              </svg>
+            <div className="mt-4 pt-3 border-t border-[rgba(255,255,255,0.06)] flex items-center justify-between font-mono text-[10px] text-[#6B6F7B]">
+              <span>MODO: {activeChartTab === 'topo' ? 'PERFIL TOPOGRÁFICO DE TRANSECTO' : 'RADIANCIA DIURNA / TERMORREGULACIÓN'}</span>
+              <span className="text-[#2544FF] font-semibold">DATOS OFICIALES NASA TREK</span>
             </div>
-
-            <p className="font-mono text-[10px] text-[#6B6F7B] mt-2">
-              Perfil digital normalizado de elevación SRTM 1-arcsec cruzado con LOLA/MOLA.
-            </p>
           </div>
         </div>
 
@@ -388,10 +573,22 @@ export default function SiteDetailModal({
               <p className="text-base text-[#E8E8EC] leading-relaxed font-light mb-4">
                 {site.summary}
               </p>
+              {site.engineeringBenchmark && (
+                <div className="p-4 rounded-2xl bg-[#2544FF]/10 border border-[#2544FF]/30 text-xs font-mono text-[#E8E8EC] leading-relaxed mb-4">
+                  <strong className="text-[#2544FF] block mb-1">BENCHMARK DE INGENIERÍA DE MISIÓN (NASA):</strong>
+                  {site.engineeringBenchmark}
+                </div>
+              )}
               {site.grayZone && (
-                <div className="p-4 rounded-2xl bg-[#FF4D24]/10 border border-[#FF4D24]/30 text-xs font-mono text-[#E8E8EC] leading-relaxed">
-                  <strong className="text-[#FF4D24] block mb-1"> JUSTIFICACIÓN SATELITAL ZONA GRIS:</strong>
+                <div className="p-4 rounded-2xl bg-[#FF4D24]/10 border border-[#FF4D24]/30 text-xs font-mono text-[#E8E8EC] leading-relaxed mb-4">
+                  <strong className="text-[#FF4D24] block mb-1">JUSTIFICACIÓN SATELITAL ZONA GRIS:</strong>
                   {site.grayZone}
+                </div>
+              )}
+              {target.testingChallenge && (
+                <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] text-xs font-mono text-[#8E929F] leading-relaxed">
+                  <strong className="text-white block mb-1">DESAFÍO TÉCNICO EN EL DESTINO ({target.name}):</strong>
+                  {target.testingChallenge}
                 </div>
               )}
             </div>
