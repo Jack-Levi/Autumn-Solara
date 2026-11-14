@@ -40,15 +40,20 @@ class TestExtractedDatasets(unittest.TestCase):
             self.assertFalse(df.isnull().any().any(), f"Null values found in {fname}")
 
     def test_luna_topography_datasets(self):
+        # Standardized datasets in LUNA/topografia
         files = [
-            "Copernicus_Crater_LOLA_DEM.csv",
-            "Shackleton_Crater_Polo_Sur_Artemis_LOLA_DEM.csv"
+            ("Copernicus_Crater_LOLA_DEM.csv", 100),
+            ("Shackleton_Crater_Polo_Sur_Artemis_LOLA_DEM.csv", 100),
+            ("Aristarchus_Crater_Vallis_Schroteri_LOLA_DEM.csv", 100),
+            ("Copernicus_Crater_Transect_LOLA_DEM.csv", 99),
+            ("Hadley_Rille_Apollo_15_LOLA_DEM.csv", 100),
+            ("Montes_Apenninus_Transect_LOLA_DEM.csv", 100)
         ]
-        for fname in files:
+        for fname, expected_len in files:
             path = os.path.join(self.base_dir, "LUNA", "topografia", fname)
             self.assertTrue(os.path.isfile(path), f"File not found: {path}")
             df = pd.read_csv(path)
-            self.assertEqual(len(df), 100, f"Expected 100 points in {fname}, got {len(df)}")
+            self.assertEqual(len(df), expected_len, f"Expected {expected_len} points in {fname}, got {len(df)}")
             self.assertIn("Longitude", df.columns)
             self.assertIn("Latitude", df.columns)
             self.assertIn("Distance", df.columns)

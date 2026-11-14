@@ -26,6 +26,7 @@ Autumn Solara is an advanced aerospace visualization platform designed to bridge
 * **MOON-COP**: Copernicus Crater (Complex central peak impact crater)
 * **MOON-APN**: Montes Apenninus (Massive lunar mountain range from Imbrium basin impact)
 * **MOON-TYC**: Tycho Crater (Prominent rayed impact crater)
+* **MOON-HAD**: Hadley Rille (Apollo 15 landing site & sinuous basaltic lava channel)
 
 ### Mars
 * **MARS-JEZ**: Jezero Crater Delta (Perseverance rover landing site, Neretva Vallis delta)

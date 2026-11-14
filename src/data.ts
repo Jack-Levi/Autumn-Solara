@@ -577,6 +577,54 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
     ]
   },
   {
+    "id": "MOON-HAD",
+    "body": "Luna",
+    "name": "Rima Hadley — Palus Putredinis",
+    "subtitle": "Canal sinuoso de lava basáltica y sitio geológico histórico de Apollo 15 al pie de Apenninus.",
+    "cardIcon": "LUN-07",
+    "coords": "26.13° N, 3.63° E",
+    "gravity": 1.62,
+    "pressure": "10⁻¹² Pa",
+    "tempRange": "-160°C a +120°C",
+    "meanTemp": -25,
+    "focus": "Garganta volcánica de colapso de 1.5 km de ancho y 300 m de profundidad; estratigrafía basal expuesta.",
+    "mineralogy": "Basalto de cuarzo normativo, anortosita ferrosa de tierras altas, piroxeno, ilmenita",
+    "waterFraction": "0.02 wt% H₂O",
+    "radiation": "380 mSv/año",
+    "missionRef": "NASA Apollo 15 (Falcon/Endeavour) & LRO LOLA",
+    "instrument": "LRO LOLA DEM & Apollo 15 Panoramic Cam",
+    "demSource": "NASA Trek LRO LOLA (45.5 km transect Hadley Rille a laderas Apenninus)",
+    "testingChallenge": "Tracción rover en taludes de derrubios basálticos (>20°) en los bordes de la rima sinuosa.",
+    "thermalInertia": "Regolito volcánico fino con bloques basálticos expuestos",
+    "primaryAnalog": "Garganta del Río Columbia (EE.UU.) y Cueva del Viento (Tenerife)",
+    "vector": {
+      "topography": 89,
+      "geology": 95,
+      "environment": 80,
+      "resources": 72
+    },
+    "radar": {
+      "morphology": 94,
+      "mineralogy": 93,
+      "temperature": 79,
+      "aridity": 98,
+      "radiation": 82,
+      "isru": 70
+    },
+    "topo": [
+      { "distKm": 0.0, "elevM": -1218 },
+      { "distKm": 5.05, "elevM": -1930 },
+      { "distKm": 10.1, "elevM": -1918 },
+      { "distKm": 15.15, "elevM": -1913 },
+      { "distKm": 20.2, "elevM": -1922 },
+      { "distKm": 25.25, "elevM": -1925 },
+      { "distKm": 30.3, "elevM": -1968 },
+      { "distKm": 35.35, "elevM": -1376 },
+      { "distKm": 40.41, "elevM": -798 },
+      { "distKm": 45.46, "elevM": 788 }
+    ]
+  },
+  {
     "id": "MARS-JEZ",
     "body": "Marte",
     "name": "Cráter Jezero Delta",
