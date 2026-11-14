@@ -120,7 +120,7 @@ export default function TutorialOverlay({
               onClick={onClose}
               className="text-xs font-mono text-[#6B6F7B] hover:text-white transition-colors py-2"
             >
-              Saltar Tutorial e Ir a la Plataforma ✕
+              Saltar Tutorial e Ir a la Plataforma
             </button>
           </div>
         </div>
@@ -136,7 +136,7 @@ export default function TutorialOverlay({
               onClick={onClose}
               className="text-xs font-mono text-[#6B6F7B] hover:text-white transition-colors"
             >
-              ✕ Cerrar (Esc)
+              Cerrar (Esc) [X]
             </button>
           </div>
 

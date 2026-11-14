@@ -152,9 +152,34 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
                   </div>
                 </div>
 
-                {/* Center: Icon & Title */}
+                {/* Center: Technical Aerospace Vector & Title */}
                 <div className="relative z-10 my-4">
-                  <div className="text-3xl mb-2">{target.cardIcon}</div>
+                  <div className="mb-3 flex items-center gap-2">
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      className="opacity-90"
+                    >
+                      {target.body === 'Luna' ? (
+                        <>
+                          <circle cx="12" cy="12" r="9" strokeDasharray="3 2" />
+                          <circle cx="12" cy="12" r="4" fill="currentColor" fillOpacity="0.25" />
+                        </>
+                      ) : (
+                        <>
+                          <circle cx="12" cy="12" r="8" />
+                          <ellipse cx="12" cy="12" rx="11" ry="4" strokeDasharray="2 2" />
+                        </>
+                      )}
+                    </svg>
+                    <span className="font-mono text-[11px] font-bold tracking-widest opacity-70">
+                      {target.id}
+                    </span>
+                  </div>
                   <h3
                     className="text-xl font-bold tracking-tight leading-snug"
                     style={{ color: isSelected ? '#0A0A0E' : 'white' }}
@@ -199,7 +224,16 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
                         : 'bg-white text-[#2544FF] hover:bg-white/90 shadow-sm'
                     }`}
                   >
-                    <span>{isSelected ? '● DESTINO ACTIVO' : 'ACTIVAR MISIÓN →'}</span>
+                    <span className="flex items-center gap-2">
+                      {isSelected ? (
+                        <>
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                          <span>DESTINO ACTIVO</span>
+                        </>
+                      ) : (
+                        <span>ACTIVAR MISIÓN →</span>
+                      )}
+                    </span>
                   </button>
                 </div>
               </div>

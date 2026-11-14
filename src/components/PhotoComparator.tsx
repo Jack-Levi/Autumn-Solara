@@ -157,7 +157,20 @@ export default function PhotoComparator({
             className="comparator-handle absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white text-[#0A0A0E] flex items-center justify-center font-bold text-xs shadow-2xl z-30 cursor-grab active:cursor-grabbing border-2 border-[#2544FF]"
             onPointerDown={handlePointerDown}
           >
-            <span style={{ fontSize: 13, letterSpacing: 1.5, userSelect: 'none' }}>◀▶</span>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#0A0A0E"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="pointer-events-none"
+            >
+              <polyline points="8 7 3 12 8 17" />
+              <polyline points="16 7 21 12 16 17" />
+            </svg>
           </div>
         </div>
 

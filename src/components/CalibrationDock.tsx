@@ -69,13 +69,13 @@ export default function CalibrationDock({
               onClick={onResetWeights}
               className="font-mono text-[10px] text-[#6B6F7B] hover:text-white transition-colors"
             >
-              ↺ RESTABLECER (25%)
+              RESTABLECER (25%)
             </button>
             <button
               onClick={onClose}
               className="font-mono text-[10px] text-[#6B6F7B] hover:text-[#FF4D24] transition-colors font-bold"
             >
-              ✕ CERRAR
+              CERRAR [X]
             </button>
           </div>
         </div>

@@ -421,7 +421,7 @@ export default function SatelliteMap({
 
             {scanModeActive && (
               <div className="bg-[#FF4D24]/15 backdrop-blur-md border border-[#FF4D24]/40 px-4 py-2 rounded-full font-mono text-xs text-[#FF4D24] font-bold flex items-center gap-2">
-                <span className="animate-spin text-sm leading-none">✛</span>
+                <span className="w-2 h-2 rounded-full bg-current animate-ping" />
                 <span>MODO DESCUBRIMIENTO ACTIVO: HAZ CLIC EN CUALQUIER PUNTO DE LA TIERRA</span>
               </div>
             )}
@@ -437,9 +437,9 @@ export default function SatelliteMap({
                 </span>
                 <button
                   onClick={() => setCurrentScan(null)}
-                  className="text-[#6B6F7B] hover:text-white"
+                  className="text-[#6B6F7B] hover:text-white font-bold"
                 >
-                  ✕
+                  [X]
                 </button>
               </div>
 
@@ -475,7 +475,7 @@ export default function SatelliteMap({
                     : 'bg-[#FF4D24] hover:bg-[#e03f19] text-white shadow-md'
                 }`}
               >
-                <span>{candidateSaved ? '✓ GUARDADO EN LA GALERÍA' : '+ GUARDAR NUEVO SITIO DESCUBIERTO'}</span>
+                <span>{candidateSaved ? 'GUARDADO EN LA GALERÍA' : '+ GUARDAR NUEVO SITIO DESCUBIERTO'}</span>
               </button>
             </div>
           )}

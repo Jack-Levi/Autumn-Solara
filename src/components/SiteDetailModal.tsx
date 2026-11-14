@@ -240,7 +240,7 @@ export default function SiteDetailModal({
         <div className="rounded-3xl overflow-hidden border border-[rgba(255,255,255,0.12)] shadow-2xl mb-14">
           <div className="bg-[#0F1015] px-6 py-3 border-b border-[rgba(255,255,255,0.08)] flex items-center justify-between font-mono text-xs text-[#8E929F]">
             <span>COMPARADOR DE CORTINA FOTOGRÁFICA // FOTOS REALES DE ALTA RESOLUCIÓN</span>
-            <span className="text-[#2544FF] font-semibold">ARRASTRA EL DIVISOR CENTRAL ◀▶</span>
+            <span className="text-[#2544FF] font-semibold">ARRASTRA EL DIVISOR CENTRAL</span>
           </div>
           <PhotoComparator
             earthPhoto={site.photoEarth}
@@ -263,7 +263,7 @@ export default function SiteDetailModal({
               </h3>
             </div>
             <span className="font-mono text-xs text-[#6B6F7B] hidden sm:inline">
-              ARRASTRA HORIZONTALMENTE (VELOCITY BLUR) ↔
+              ARRASTRA HORIZONTALMENTE (VELOCITY BLUR)
             </span>
           </div>
 
