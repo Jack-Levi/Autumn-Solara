@@ -39,6 +39,74 @@ const REFERENCE_TARGET_BUTTONS = [
   { id: 'MARS-ALB', label: 'Alba Mons Tharsis', body: 'Marte' },
 ];
 
+// ─── Scroll-driven Word Highlight (Lusion Case Study Narrative) ──────────────
+function ScrollWordHighlight({
+  text,
+  scrollContainerRef,
+  className = '',
+}: {
+  text: string;
+  scrollContainerRef: React.RefObject<HTMLDivElement | null>;
+  className?: string;
+}) {
+  const containerRef = useRef<HTMLParagraphElement>(null);
+  const words = useMemo(() => text.split(/\s+/), [text]);
+  const [illuminatedRatio, setIlluminatedRatio] = useState(0.4);
+
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+
+      // Reading horizon line located at 70% from top of viewport
+      const readingLineY = viewportHeight * 0.7;
+      const elementTop = rect.top;
+      const elementHeight = rect.height || 1;
+
+      const progress = (readingLineY - elementTop) / elementHeight;
+      const clamped = Math.max(0, Math.min(1, progress));
+      setIlluminatedRatio(clamped);
+    };
+
+    handleScroll();
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [scrollContainerRef]);
+
+  const activeWordCount = Math.floor(illuminatedRatio * words.length);
+
+  return (
+    <p ref={containerRef} className={`scroll-word-highlight ${className}`}>
+      {words.map((word, idx) => {
+        const isLit = idx <= activeWordCount;
+        return (
+          <React.Fragment key={idx}>
+            <span
+              className="scroll-word"
+              style={{
+                opacity: isLit ? 1 : 0.22,
+                color: isLit ? '#0A0A0E' : '#8E9299',
+                transition: 'opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
+            >
+              {word}
+            </span>
+            {' '}
+          </React.Fragment>
+        );
+      })}
+    </p>
+  );
+}
+
 export default function SiteDetailModal({
   site,
   target,
@@ -238,15 +306,26 @@ export default function SiteDetailModal({
         className="sticky top-0 z-50 shrink-0 h-[68px] bg-[#0C0E14]/95 backdrop-blur-xl border-b border-[rgba(255,255,255,0.1)] px-6 md:px-10 flex items-center justify-between gap-4"
         style={{ height: '68px' }}
       >
-        {/* Left: Back Button */}
+        {/* Left: Floating Lusion-Style Back Pill */}
         <button
           onClick={onClose}
-          className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg font-sans text-xs font-semibold transition-all flex items-center gap-2 border border-white/15 shrink-0"
+          className="group bg-white/10 hover:bg-white/20 text-white px-5 py-2 rounded-full font-sans text-xs font-semibold transition-all duration-300 flex items-center gap-2.5 border border-white/15 hover:border-white/30 backdrop-blur-md shrink-0 shadow-sm"
         >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M7.5 1.5L3 6l4.5 4.5" />
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="transform group-hover:-translate-x-1 transition-transform duration-300"
+          >
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
           </svg>
-          <span>Volver a la galería (Esc)</span>
+          <span className="tracking-wide">Volver a la galería (Esc)</span>
         </button>
 
         {/* Center: Previous / Next Site Quick Switcher */}
@@ -413,16 +492,18 @@ export default function SiteDetailModal({
             </div>
           </div>
 
-          {/* Human-Language Analogy Key Callout */}
+          {/* Human-Language Analogy Key Callout with Lusion Scroll-driven Word Highlight */}
           {site.analogySummary && (
-            <div className="mb-8 p-5 rounded-2xl bg-white border border-[#E2E4EC] shadow-sm">
-              <div className="font-mono text-[10px] text-[#6B7280] uppercase tracking-wider mb-1.5 flex items-center gap-2">
+            <div className="mb-8 p-6 md:p-8 rounded-3xl bg-white border border-[#E2E4EC] shadow-sm">
+              <div className="font-mono text-[10px] text-[#6B7280] uppercase tracking-wider mb-3 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#0A0A0C]" />
                 <span>Clave Científica de la Analogía (¿Qué tienen en común aunque a simple vista parezcan distintos?)</span>
               </div>
-              <p className="text-sm text-[#0A0A0E] leading-relaxed font-sans font-medium">
-                {site.analogySummary}
-              </p>
+              <ScrollWordHighlight
+                text={site.analogySummary}
+                scrollContainerRef={scrollContainerRef}
+                className="text-base md:text-lg text-[#0A0A0E] leading-relaxed font-sans font-medium"
+              />
             </div>
           )}
         </div>

@@ -248,7 +248,7 @@ export function GeologicalSiteImage({ site }: { site: EarthSite }) {
   );
 }
 
-// ─── Single Site Gallery Card ────────────────────────────────────────────────
+// ─── Single Site Gallery Card (Lusion Aesthetics & Kinetic Arrow) ───────────
 const SiteCard = React.memo(function SiteCard({
   rankedSite,
   onSelect,
@@ -270,10 +270,10 @@ const SiteCard = React.memo(function SiteCard({
 
     const tween = gsap.fromTo(
       frame,
-      { yPercent: -8, scale: 1.08 },
+      { yPercent: -6, scale: 1.06 },
       {
-        yPercent: 8,
-        scale: 1.08,
+        yPercent: 6,
+        scale: 1.06,
         ease: 'none',
         scrollTrigger: {
           trigger: card,
@@ -297,14 +297,14 @@ const SiteCard = React.memo(function SiteCard({
     const rect = cardRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
-    const rotateY = (x - 0.5) * 8;
-    const rotateX = (0.5 - y) * 8;
-    cardRef.current.style.transform = `perspective(1200px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-6px)`;
+    const rotateY = (x - 0.5) * 9;
+    const rotateX = (0.5 - y) * 9;
+    cardRef.current.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-5px)`;
   }, []);
 
   const handleMouseLeave = useCallback(() => {
     if (!cardRef.current) return;
-    cardRef.current.style.transform = 'perspective(1200px) rotateX(0deg) rotateY(0deg) translateY(0px)';
+    cardRef.current.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px)';
   }, []);
 
   const pfiDisplay = Math.round(pfi);
@@ -312,108 +312,105 @@ const SiteCard = React.memo(function SiteCard({
   return (
     <div
       ref={cardRef}
-      className="gallery-card group bg-white border border-[#E2E4EC] hover:border-[#0A0A0E] shadow-sm hover:shadow-xl rounded-3xl overflow-hidden transition-all duration-300 cursor-pointer flex flex-col justify-between"
-      style={{
-        borderRadius: '24px',
-        willChange: 'transform, box-shadow, border-color',
-        transition: 'transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, border-color 0.3s ease',
-      }}
+      className="lusion-card group cursor-pointer flex flex-col justify-between"
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onClick={onSelect}
     >
-      {/* Top Metadata Strip in Clean Editorial Sans/Mono */}
-      <div className="px-6 py-3.5 bg-[#FAFBFD] border-b border-[#EAEAED] flex items-center justify-between text-xs">
-        <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
-          <strong className="text-[#0A0A0E] font-bold font-mono">{site.id}</strong>
-          <span className="text-[#A0A4B0]">·</span>
-          <span className="text-[#686B75] text-[11px] truncate font-sans">
-            {site.nasaDatasets || 'NASA SRTM 30m / ASTER'}
-          </span>
-          <span className="text-[#A0A4B0]">·</span>
-          <span className="text-[#0A0A0E] font-medium text-[11px] font-sans">{site.biome}</span>
-        </div>
-
-        {/* Sober Black PFI Badge (Zero Traffic-Light Neon) */}
-        <div className="flex items-center gap-1.5 shrink-0 ml-2">
-          {site.isCandidate && (
-            <span className="font-sans text-[10px] px-2 py-0.5 rounded-full font-medium bg-[#18181B] text-white">
-              {site.id.startsWith('DISC-') ? 'Satélite' : 'Candidato'}
-            </span>
-          )}
-          <span className="font-mono text-xs px-2.5 py-0.5 rounded-full font-bold bg-[#0A0A0C] text-white shadow-sm">
-            {pfiDisplay}% PFI
-          </span>
-        </div>
-      </div>
-
-      {/* Large Geological Image with Guaranteed Real Image and Window Parallax */}
-      <div className="relative w-full h-[320px] overflow-hidden bg-[#181B24] parallax-frame">
-        <div ref={imgFrameRef} className="parallax-frame-img w-full h-full">
+      {/* ── 1. Hero Media Frame (Full-bleed 28px rounded with glass badges) ── */}
+      <div className="lusion-card-media relative w-full h-[340px] sm:h-[390px] md:h-[420px] mb-5">
+        <div ref={imgFrameRef} className="w-full h-full parallax-frame-img">
           <GeologicalSiteImage site={site} />
         </div>
 
-        {/* Coordinates Pill on Image Bottom */}
-        <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between pointer-events-none z-10">
-          <span className="font-mono text-[10px] text-white/90 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/15">
-            {site.dms} · {site.elevM} m s.n.m.
+        {/* Top Floating Glass Badges */}
+        <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
+          {/* Top Left: Site ID & Biome */}
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[11px] font-bold text-white bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/15 shadow-sm">
+              {site.id}
+            </span>
+            <span className="font-sans text-[11px] uppercase tracking-wider text-white/90 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 hidden sm:inline-block">
+              {site.biome}
+            </span>
+          </div>
+
+          {/* Top Right: Candidate & PFI Score */}
+          <div className="flex items-center gap-2">
+            {site.isCandidate && (
+              <span className="font-sans text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-full bg-white text-[#0A0A0C] shadow-sm">
+                {site.id.startsWith('DISC-') ? 'Satélite' : 'Candidato'}
+              </span>
+            )}
+            <span className="font-mono text-xs font-bold px-3 py-1.5 rounded-full bg-black/75 backdrop-blur-md text-white border border-white/15 tabular-nums shadow-sm">
+              {pfiDisplay}% PFI
+            </span>
+          </div>
+        </div>
+
+        {/* Bottom Coordinates & Fidelity HUD */}
+        <div className="absolute bottom-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
+          <span className="font-mono text-[10px] text-white/90 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/15 tabular-nums">
+            {site.dms} · {site.elevM.toLocaleString()} m s.n.m.
           </span>
-          <span className="font-sans text-[10px] text-white/80 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/15 font-medium">
+          <span className="font-sans text-[10px] text-white/85 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/15 font-medium">
             {fidelityLabel(pfiDisplay)}
           </span>
         </div>
       </div>
 
-      {/* Card Body */}
-      <div className="p-7 flex-1 flex flex-col justify-between">
+      {/* ── 2. Editorial Typography & Kinetic Arrow (Lusion Design) ── */}
+      <div className="flex-1 flex flex-col justify-between px-1">
         <div>
-          {/* Title & Arrow Interaction */}
-          <div className="gallery-card-arrow mb-1.5">
-            <span className="arrow-icon text-[#0A0A0E] text-lg font-bold leading-none">
-              →
+          {/* Uppercase Mono Micro-label */}
+          <div className="flex items-center gap-2 font-mono text-[11px] text-[#8E9299] uppercase tracking-[0.14em] mb-1.5">
+            <span className="truncate">{site.nasaDatasets || 'NASA SRTM 30M / ASTER GDEM'}</span>
+            <span className="text-[#C4C7CE] shrink-0">•</span>
+            <span className="shrink-0">ANALOGÍA NASA</span>
+          </div>
+
+          {/* Title Row with Lusion Expanding Kinetic Arrow */}
+          <div className="lusion-arrow-wrap mb-1.5">
+            <span className="lusion-arrow" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="4" y1="12" x2="20" y2="12"></line>
+                <polyline points="13 5 20 12 13 19"></polyline>
+              </svg>
             </span>
-            <h3 className="card-title text-2xl font-bold text-[#0A0A0E] tracking-tight group-hover:text-black transition-colors leading-tight font-sans">
+            <h3 className="lusion-card-title text-2xl md:text-[28px] font-bold text-[#0A0A0E] tracking-tight leading-tight font-sans">
               {site.name}
             </h3>
           </div>
 
-          {/* Location Line */}
-          <p className="font-sans text-xs text-[#686B75] mb-4">
+          {/* Geographic Subtitle */}
+          <p className="font-sans text-xs text-[#71717A] mb-4">
             {site.country} · {site.region}
           </p>
 
-          {/* Editorial Block: Micro-escala & Proceso activo with left label & right description */}
-          <div className="my-5 border-t border-[#E5E7EB] text-left">
-            <div className="flex flex-col sm:flex-row sm:items-start py-3.5 border-b border-[#E5E7EB] gap-1 sm:gap-4">
-              <span className="shrink-0 sm:w-[130px] font-sans text-[13px] text-[#71717A] font-normal">
-                Micro-escala
-              </span>
-              <p className="flex-1 font-sans text-[14px] text-[#18181B] leading-snug font-normal">
-                {site.microScale}
-              </p>
+          {/* Clean Editorial Micro-Details (Micro-escala & Proceso activo) */}
+          <div className="pt-3 border-t border-[#E5E7EB] mb-4 text-xs font-sans space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 sm:gap-4">
+              <span className="text-[#71717A] font-medium shrink-0">Proceso activo:</span>
+              <span className="text-[#18181B] truncate text-left sm:text-right font-normal">{site.activeProcess}</span>
             </div>
-            <div className="flex flex-col sm:flex-row sm:items-start py-3.5 border-b border-[#E5E7EB] gap-1 sm:gap-4">
-              <span className="shrink-0 sm:w-[130px] font-sans text-[13px] text-[#71717A] font-normal">
-                Proceso activo
-              </span>
-              <p className="flex-1 font-sans text-[14px] text-[#18181B] leading-snug font-normal">
-                {site.activeProcess}
-              </p>
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 sm:gap-4">
+              <span className="text-[#71717A] font-medium shrink-0">Micro-escala:</span>
+              <span className="text-[#18181B] truncate text-left sm:text-right font-normal">{site.microScale}</span>
             </div>
           </div>
 
           {/* Summary */}
-          <p className="text-[13px] text-[#4B5563] leading-[1.65] line-clamp-2 font-normal font-sans">
+          <p className="text-[13px] text-[#4B5563] leading-[1.65] line-clamp-2 font-normal font-sans mb-4">
             {site.summary}
           </p>
         </div>
 
-        {/* Bottom CTA Link: Explorar caracterización del sitio → */}
-        <div className="mt-5 pt-4 border-t border-[#E5E7EB] flex items-center justify-between font-sans text-[13px] text-[#18181B] font-medium group-hover:text-black transition-colors">
-          <span className="relative inline-block after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-[#18181B] group-hover:after:w-full after:transition-all after:duration-300">
-            Explorar caracterización del sitio
+        {/* Bottom CTA Link: Explorar caso de estudio geológico → */}
+        <div className="pt-3.5 border-t border-[#E5E7EB]/80 flex items-center justify-between text-xs font-semibold text-[#0A0A0E] font-sans">
+          <span className="relative inline-block after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-[#0A0A0E] group-hover:after:w-full after:transition-all after:duration-300">
+            Explorar caso de estudio geológico
           </span>
-          <span className="text-sm font-normal transform group-hover:translate-x-1.5 transition-transform duration-300">
+          <span className="text-sm transform group-hover:translate-x-1.5 transition-transform duration-300 font-normal">
             →
           </span>
         </div>
@@ -439,6 +436,34 @@ export default function SiteGallery({
   scrollVelocity = 0,
 }: SiteGalleryProps) {
   const [activeFilter, setActiveFilter] = useState('Todos');
+  const filterTrackRef = useRef<HTMLDivElement>(null);
+  const filterBtnRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const [pillStyle, setPillStyle] = useState<{ left: number; width: number; opacity: number }>({
+    left: 0,
+    width: 0,
+    opacity: 0,
+  });
+
+  // Calculate sliding magnetic bubble position
+  const updatePillPosition = useCallback(() => {
+    const activeBtn = filterBtnRefs.current.get(activeFilter);
+    const track = filterTrackRef.current;
+    if (activeBtn && track) {
+      const trackRect = track.getBoundingClientRect();
+      const btnRect = activeBtn.getBoundingClientRect();
+      setPillStyle({
+        left: btnRect.left - trackRect.left,
+        width: btnRect.width,
+        opacity: 1,
+      });
+    }
+  }, [activeFilter]);
+
+  useEffect(() => {
+    updatePillPosition();
+    window.addEventListener('resize', updatePillPosition);
+    return () => window.removeEventListener('resize', updatePillPosition);
+  }, [updatePillPosition]);
 
   // Filter ranked sites based on user-selected filter chip
   const filteredRankedSites = rankedSites.filter((rs) => {
@@ -494,29 +519,50 @@ export default function SiteGallery({
           </div>
         </div>
 
-        {/* Biome / Candidate Filter Bar */}
-        <div className="flex flex-wrap items-center gap-2 mb-12 pb-2">
-          {GALLERY_FILTERS.map((f) => {
-            const isSelected = activeFilter === f.key;
-            return (
-              <button
-                key={f.key}
-                onClick={() => setActiveFilter(f.key)}
-                className={`font-sans text-xs px-4 py-2 rounded-full transition-all duration-200 border ${
-                  isSelected
-                    ? 'bg-[#0A0A0E] text-white border-[#0A0A0E] font-semibold shadow-sm'
-                    : 'bg-white text-[#686B75] border-[#E2E4EC] hover:text-[#0A0A0E] hover:border-[#CBD5E1]'
-                }`}
-              >
-                {f.label}
-              </button>
-            );
-          })}
+        {/* ── Magnetic Sliding Pill Filter Bar (Lusion Interactive Bubble) ── */}
+        <div className="mb-14 overflow-x-auto pb-2 scrollbar-none">
+          <div
+            ref={filterTrackRef}
+            className="relative inline-flex items-center gap-1 p-1.5 bg-white/90 backdrop-blur-md rounded-full border border-[#E2E4EC] shadow-sm"
+          >
+            {/* Sliding Elastic Active Pill */}
+            <div
+              className="absolute rounded-full bg-[#0A0A0E] pointer-events-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-sm"
+              style={{
+                left: `${pillStyle.left}px`,
+                width: `${pillStyle.width}px`,
+                top: '6px',
+                bottom: '6px',
+                opacity: pillStyle.opacity,
+              }}
+            />
+
+            {GALLERY_FILTERS.map((f) => {
+              const isSelected = activeFilter === f.key;
+              return (
+                <button
+                  key={f.key}
+                  ref={(el) => {
+                    if (el) filterBtnRefs.current.set(f.key, el);
+                    else filterBtnRefs.current.delete(f.key);
+                  }}
+                  onClick={() => setActiveFilter(f.key)}
+                  className={`relative z-10 font-sans text-xs px-4 py-2 rounded-full transition-colors duration-200 whitespace-nowrap ${
+                    isSelected
+                      ? 'text-white font-semibold'
+                      : 'text-[#686B75] hover:text-[#0A0A0E] font-medium'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* 2-Column Spacious Editorial Grid */}
         <div
-          className="grid grid-cols-1 md:grid-cols-2 gap-10 items-stretch"
+          className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-16 items-start"
           style={{
             willChange: 'transform',
             transform: Math.abs(scrollVelocity) > 2 ? `skewY(${Math.min(Math.max(scrollVelocity * 0.04, -1.2), 1.2)}deg)` : 'none',
