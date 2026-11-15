@@ -1,10 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 
 // ─── Lusion-Grade Liquid Glass / Iridescent Fluid Trail ───────────────────────
-// Real-time 2D Navier-Stokes fluid simulation with double-buffered Ping-Pong FBOs,
-// sub-frame mouse interpolation, 3D normal reconstruction from heightfield,
-// thin-film iridescence (#ffb085, #6be8ff, #d4b2ff), chromatic dispersion,
-// viscous momentum diffusion and studio specular highlights.
+// Real-time 2D Navier-Stokes fluid simulation in WebGL2 with double-buffered
+// Ping-Pong FBOs, sub-frame mouse interpolation, 3D normal reconstruction from
+// heightfield, physical meniscus absorption, thin-film iridescence (#ffb085, #6be8ff, #d4b2ff),
+// chromatic dispersion and crisp studio specular highlights on white backgrounds.
 
 export default function FluidTrail() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -82,7 +82,7 @@ export default function FluidTrail() {
         fragColor = uDissipation * texture(uSource, coord);
     }`;
 
-    // Viscous Velocity Diffusion (Jacobi iteration)
+    // Viscous Velocity Diffusion (Jacobi iteration for thick liquid glass)
     const diffuseShader = `#version 300 es
     precision highp float;
     in vec2 vUv;
@@ -200,7 +200,7 @@ export default function FluidTrail() {
         fragColor = vec4(vel, 0.0, 1.0);
     }`;
 
-    // Viscous Surface Tension & Relaxation for Heightfield
+    // Viscous Surface Tension & Snappy Relaxation for Heightfield
     const surfaceTensionShader = `#version 300 es
     precision highp float;
     in vec2 vUv;
@@ -220,14 +220,14 @@ export default function FluidTrail() {
         vec4 laplacian = (L + R + B + T) * 0.25 - C;
         vec4 result = C + laplacian * uTension;
         
-        // Non-linear decay: cores hold mass smoothly while wisps dissolve quickly
-        float decayFactor = mix(uDecay * 0.95, uDecay, smoothstep(0.02, 0.28, C.r));
+        // Fast non-linear decay: evaporates cleanly in ~1 second
+        float decayFactor = mix(uDecay * 0.94, uDecay, smoothstep(0.02, 0.25, C.r));
         result *= decayFactor;
         
         fragColor = max(vec4(0.0), result);
     }`;
 
-    // ── Master Optical Display Shader (Liquid Glass / Iridescent Refraction) ─
+    // ── Master Optical Display Shader: Physical Liquid Glass on Light Background ──
     const opticalDisplayShader = `#version 300 es
     precision highp float;
     in vec2 vUv;
@@ -244,7 +244,7 @@ export default function FluidTrail() {
         float hC = texture(uDensity, vUv).r;
 
         // Skip completely clear regions for maximum performance
-        if (hC < 0.002 || uVisibility < 0.001) {
+        if (hC < 0.003 || uVisibility < 0.001) {
             fragColor = vec4(0.0);
             return;
         }
@@ -273,22 +273,17 @@ export default function FluidTrail() {
 
         // Dielectric Fresnel reflectance (water/glass ~1.45 IOR)
         float F0 = 0.04;
-        float fresnel = F0 + (1.0 - F0) * pow(1.0 - NdotV, 3.2);
+        float fresnel = F0 + (1.0 - F0) * pow(1.0 - NdotV, 3.5);
 
-        // Dual Studio Key & Fill Lights (softbox overhead configuration)
-        vec3 lightDir1 = normalize(vec3(0.45, 0.75, 0.82));   // Primary overhead key light
-        vec3 lightDir2 = normalize(vec3(-0.55, -0.40, 0.65)); // Soft fill/rim light
-
+        // Studio Key Light (softbox overhead, crisp but controlled reflection)
+        vec3 lightDir1 = normalize(vec3(0.40, 0.70, 0.85));
         vec3 half1 = normalize(lightDir1 + viewDir);
-        vec3 half2 = normalize(lightDir2 + viewDir);
-
         float NdotH1 = max(dot(normal, half1), 0.0);
-        float NdotH2 = max(dot(normal, half2), 0.0);
 
-        float specSharp = pow(NdotH1, 64.0) * 2.2;
-        float specSoft = pow(NdotH1, 16.0) * 0.5;
-        float specRim = pow(NdotH2, 28.0) * 0.7;
-        float specular = specSharp + specSoft + specRim;
+        // Pinpoint specular glint (controlled, NOT blown-out white)
+        float specSharp = pow(NdotH1, 80.0) * 0.95;
+        float specSoft = pow(NdotH1, 20.0) * 0.22;
+        float totalSpec = specSharp + specSoft;
 
         // ── Iridescent Thin-Film Spectral Palette ───────────────────────────
         // Peach/amber (#ffb085): vec3(1.0, 0.69, 0.52)
@@ -299,7 +294,7 @@ export default function FluidTrail() {
         vec3 cLavender = vec3(0.83, 0.70, 1.0);
 
         // Interference phase along surface curvature and viewing angle
-        float phase = fract(slope * 4.2 + (1.0 - NdotV) * 2.5 + hC * 0.4);
+        float phase = fract(slope * 3.8 + (1.0 - NdotV) * 2.4 + hC * 0.35);
         vec3 iridColor;
         if (phase < 0.33) {
             iridColor = mix(cPeach, cCyan, phase / 0.33);
@@ -311,49 +306,52 @@ export default function FluidTrail() {
 
         // ── Chromatic Dispersion (Prismatic RGB Split on Curvature) ────────
         vec3 chromaticRim = vec3(
-            smoothstep(0.03, 0.26, slope * 1.15),
-            smoothstep(0.03, 0.26, slope * 1.00),
-            smoothstep(0.03, 0.26, slope * 0.85)
+            smoothstep(0.025, 0.22, slope * 1.15),
+            smoothstep(0.025, 0.22, slope * 1.00),
+            smoothstep(0.025, 0.22, slope * 0.85)
         );
-        vec3 dispersion = chromaticRim.r * cPeach * 0.65 +
-                          chromaticRim.g * cCyan * 0.85 +
-                          chromaticRim.b * cLavender * 0.65;
+        vec3 dispersion = chromaticRim.r * cPeach * 0.55 +
+                          chromaticRim.g * cCyan * 0.75 +
+                          chromaticRim.b * cLavender * 0.55;
 
-        // ── Beveled Meniscus & Caustic Core ─────────────────────────────────
-        // Meniscus ring defines the crisp droplet contact angle
-        float bevel = smoothstep(0.015, 0.08, hC) * (1.0 - smoothstep(0.08, 0.45, hC));
+        // ── Physical Meniscus Absorption & Bevel Contrast ───────────────────
+        // In physical liquid glass on a white/light surface, the curved edge bends
+        // light away, creating a subtle dark meniscus rim that defines the droplet!
+        vec3 meniscusDark = vec3(0.14, 0.18, 0.30); // Deep aerospace cobalt glass
+        float edgeMeniscus = smoothstep(0.02, 0.16, slope) * (1.0 - smoothstep(0.12, 0.45, hC));
+
+        // Bevel highlights the curved contact angle
+        float bevel = smoothstep(0.012, 0.07, hC) * (1.0 - smoothstep(0.07, 0.38, hC));
         
-        // Caustic internal illumination in thick fluid body
-        float caustic = pow(hC, 0.80) * 0.35;
-
         // ── Ultra-Smooth Edge Falloff ───────────────────────────────────────
-        float edgeAlpha = smoothstep(0.005, 0.040, hC);
+        float edgeAlpha = smoothstep(0.005, 0.035, hC);
 
-        // Composite Optical Color
+        // Assemble realistic liquid glass color:
+        // Edge is defined by dark meniscus refraction blended with iridescent sheen
+        vec3 baseEdge = mix(meniscusDark, iridColor, 0.65);
+        
         vec3 fluidColor = vec3(0.0);
-
-        // 1. Crystalline ultra-clear core with subtle caustics
-        fluidColor += cCyan * caustic * 0.30;
-
-        // 2. Pearlescent iridescent fringes on bevel contour
-        fluidColor += iridColor * (fresnel * 1.35 + bevel * 0.85);
-        fluidColor += dispersion * 0.40;
-
-        // 3. Crisp specular reflections (pure white high-key gleams)
+        fluidColor = mix(fluidColor, baseEdge, bevel * 0.85 + edgeMeniscus * 0.55);
+        fluidColor += dispersion * (fresnel * 0.65 + bevel * 0.40);
+        
+        // Specular glint (crisp, elegant reflection)
         fluidColor += vec3(1.0) * totalSpec;
 
-        // Alpha calculation: more transparent interior, luminous high-contrast edges & gleams
+        // Center is ultra-clear (letting text & background breathe)
+        fluidColor += cCyan * (hC * 0.08);
+
+        // Refined transparency calculation:
+        // Clear inside, defined at meniscus edges and specular highlights
         float alpha = edgeAlpha * (
-            fresnel * 0.70 +
-            bevel * 0.55 +
-            specular * 0.95 +
-            caustic * 0.18 +
+            bevel * 0.48 +
+            edgeMeniscus * 0.35 +
+            fresnel * 0.42 +
+            totalSpec * 0.85 +
             hC * 0.04
         );
-        // Calibrated transparency (~25% more transparent), letting background text breathe cleanly
-        alpha = clamp(alpha * 0.75 * uVisibility, 0.0, 0.88);
+        alpha = clamp(alpha * 0.75 * uVisibility, 0.0, 0.82);
 
-        // Pre-multiplied alpha output
+        // Output with standard premultiplied alpha
         fragColor = vec4(fluidColor * alpha, alpha);
     }`;
 
@@ -541,12 +539,12 @@ export default function FluidTrail() {
       const fadeEnd = 0;
 
       if (rect.bottom >= fadeStart) {
-        targetVis = 0.30; // subtle liquid refraction over Hero
+        targetVis = 0.35; // refined liquid refraction over Hero
       } else if (rect.bottom <= fadeEnd) {
         targetVis = 1.0;  // 100% active from Slide 2 onward
       } else {
         const ratio = (fadeStart - rect.bottom) / (fadeStart - fadeEnd);
-        targetVis = 0.30 + ratio * 0.70;
+        targetVis = 0.35 + ratio * 0.65;
       }
     };
 
@@ -608,8 +606,8 @@ export default function FluidTrail() {
         const numSteps = Math.min(30, Math.max(1, Math.ceil(dist / 3.5)));
 
         // Dynamic radius scales with cursor velocity: rounded head + wide wake
-        const baseRadius = 0.024; // ~2.4% of viewport width
-        const radius = baseRadius + Math.min(speed * 0.0009, 0.038);
+        const baseRadius = 0.022; // ~2.2% of viewport width
+        const radius = baseRadius + Math.min(speed * 0.0008, 0.034);
 
         for (let s = 0; s < numSteps; s++) {
           const t = (s + 0.5) / numSteps;
@@ -617,11 +615,11 @@ export default function FluidTrail() {
           const py = 1.0 - (mouse.prevY + dy * t) / window.innerHeight;
 
           // Inject fluid momentum
-          const vScale = 2.6;
+          const vScale = 2.4;
           splat(velocity, px, py, [mouse.vx * vScale, mouse.vy * vScale, 0], radius * 1.15);
 
           // Inject fluid heightfield density (refined initial droplet mass)
-          const hScale = Math.min(0.72, 0.28 + speed * 0.014);
+          const hScale = Math.min(0.68, 0.25 + speed * 0.012);
           splat(density, px, py, [hScale, hScale * 0.8, speed * 0.1], radius);
         }
 
@@ -637,7 +635,7 @@ export default function FluidTrail() {
       const texelSize: [number, number] = [1.0 / simW, 1.0 / simH];
 
       // ── Step 2: Viscous Momentum Diffusion (Gel/Liquid Glass Viscosity) ────
-      const viscosity = 0.35;
+      const viscosity = 0.32;
       const alpha = (texelSize[0] * texelSize[0]) / (viscosity * dt + 0.00001);
       const rBeta = 1.0 / (4.0 + alpha);
 
@@ -676,7 +674,7 @@ export default function FluidTrail() {
       gl.activeTexture(gl.TEXTURE1);
       gl.bindTexture(gl.TEXTURE_2D, curl.tex);
       gl.uniform1f(gl.getUniformLocation(prgVorticity, 'uDt'), dt);
-      gl.uniform1f(gl.getUniformLocation(prgVorticity, 'uCurlScale'), 16.0); // Organic swirl strength
+      gl.uniform1f(gl.getUniformLocation(prgVorticity, 'uCurlScale'), 15.0); // Organic swirl strength
       gl.uniform2f(gl.getUniformLocation(prgVorticity, 'uTexelSize'), texelSize[0], texelSize[1]);
       renderQuad(velocity.write.fbo, simW, simH);
       velocity.swap();
@@ -725,7 +723,7 @@ export default function FluidTrail() {
       gl.uniform1i(gl.getUniformLocation(prgAdvection, 'uSource'), 0);
       gl.uniform2f(gl.getUniformLocation(prgAdvection, 'uTexelSize'), texelSize[0], texelSize[1]);
       gl.uniform1f(gl.getUniformLocation(prgAdvection, 'uDt'), dt);
-      gl.uniform1f(gl.getUniformLocation(prgAdvection, 'uDissipation'), 0.958); // Velocity momentum decay (~2s faster)
+      gl.uniform1f(gl.getUniformLocation(prgAdvection, 'uDissipation'), 0.955); // Fast momentum decay (~1s total life)
       renderQuad(velocity.write.fbo, simW, simH);
       velocity.swap();
 
@@ -739,7 +737,7 @@ export default function FluidTrail() {
       gl.bindTexture(gl.TEXTURE_2D, density.read.tex);
       gl.uniform2f(gl.getUniformLocation(prgAdvection, 'uTexelSize'), texelSize[0], texelSize[1]);
       gl.uniform1f(gl.getUniformLocation(prgAdvection, 'uDt'), dt);
-      gl.uniform1f(gl.getUniformLocation(prgAdvection, 'uDissipation'), 0.962); // Fast fluid dissipation (~2s faster)
+      gl.uniform1f(gl.getUniformLocation(prgAdvection, 'uDissipation'), 0.958); // Snappy height dissipation (~1s total life)
       renderQuad(density.write.fbo, simW, simH);
       density.swap();
 
@@ -749,8 +747,8 @@ export default function FluidTrail() {
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, density.read.tex);
       gl.uniform2f(gl.getUniformLocation(prgSurfaceTension, 'uTexelSize'), texelSize[0], texelSize[1]);
-      gl.uniform1f(gl.getUniformLocation(prgSurfaceTension, 'uTension'), 0.30); // Cohesive droplet rounding
-      gl.uniform1f(gl.getUniformLocation(prgSurfaceTension, 'uDecay'), 0.960);   // Dissolves in ~1.1s (2s faster)
+      gl.uniform1f(gl.getUniformLocation(prgSurfaceTension, 'uTension'), 0.32); // Cohesive droplet rounding
+      gl.uniform1f(gl.getUniformLocation(prgSurfaceTension, 'uDecay'), 0.956);   // Dissolves cleanly in ~1s
       renderQuad(density.write.fbo, simW, simH);
       density.swap();
 
@@ -775,7 +773,7 @@ export default function FluidTrail() {
       gl.bindTexture(gl.TEXTURE_2D, velocity.read.tex);
 
       gl.uniform2f(gl.getUniformLocation(prgOptical, 'uResolution'), canvas.width, canvas.height);
-      gl.uniform1f(gl.getUniformLocation(prgOptical, 'uNormalStrength'), 12.0);
+      gl.uniform1f(gl.getUniformLocation(prgOptical, 'uNormalStrength'), 11.0);
       gl.uniform1f(gl.getUniformLocation(prgOptical, 'uVisibility'), currentVis);
 
       gl.bindVertexArray(quadVao);
