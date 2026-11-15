@@ -185,6 +185,14 @@ export interface GeologicalInspectionPhoto {
   caption: string;
 }
 
+export interface VisualGuide {
+  earthObservation: string;
+  targetObservation: string;
+  scientificKey: string;
+  earthScaleKm: number;
+  targetScaleKm: number;
+}
+
 export interface EarthSite {
   id: string;
   name: string;
@@ -226,6 +234,10 @@ export interface EarthSite {
   inspectionGallery: GeologicalInspectionPhoto[];
   targetHomologue?: string;
   engineeringBenchmark?: string;
+  optimalTargetId?: 'MOON-SHK' | 'MOON-COP' | 'MARS-JEZ' | 'MARS-ALB';
+  optimalReason?: string;
+  analogySummary?: string;
+  visualGuide?: VisualGuide;
 }
 
 export interface RankedSite {
@@ -298,6 +310,53 @@ export function fidelityLabel(score: number): string {
   if (score >= 68) return 'Fidelidad media';
   return 'Fidelidad exploratoria';
 }
+
+export const TARGET_ORBITAL_PHOTOS: Record<
+  string,
+  { photo: string; caption: string; scaleLabel: string; scaleKm: number }
+> = {
+  'MOON-SHK': {
+    photo:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/Lunar_south_pole_summer_annotated.jpg/1280px-Lunar_south_pole_summer_annotated.jpg',
+    caption: 'Luna: Cráter Shackleton · Mosaico orbital cenital LRO LOLA/WAC de trampas frías polares',
+    scaleLabel: 'Escala lunar: 20 km',
+    scaleKm: 20,
+  },
+  'MOON-COP': {
+    photo:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/Copernicus_%28LRO%29_2.png/1280px-Copernicus_%28LRO%29_2.png',
+    caption: 'Luna: Cráter Copernicus · Ortoimagen orbital cenital LRO WAC con terrazas y picos centrales',
+    scaleLabel: 'Escala lunar: 93 km',
+    scaleKm: 93,
+  },
+  'MOON-LAV': {
+    photo:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Mare_Tranquillitatis_pit_crater.jpg/1024px-Mare_Tranquillitatis_pit_crater.jpg',
+    caption: 'Luna: Mare Tranquillitatis · Claraboya natural cenital a conducto lávico (NASA LRO)',
+    scaleLabel: 'Escala lunar: 5 km',
+    scaleKm: 5,
+  },
+  'MARS-JEZ': {
+    photo: 'https://photojournal.jpl.nasa.gov/jpeg/PIA23984.jpg',
+    caption: 'Marte: Cráter Jezero · Vista orbital cenital MRO CTX/HiRISE del paleo-delta fluvial occidental',
+    scaleLabel: 'Escala marciana: 10 km',
+    scaleKm: 10,
+  },
+  'MARS-ALB': {
+    photo:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Alba_Mons_Viking_DIM.jpg/1280px-Alba_Mons_Viking_DIM.jpg',
+    caption: 'Marte: Alba Mons (Tharsis) · Vista orbital cenital MGS MOLA/THEMIS de calderas y fallas volcánicas',
+    scaleLabel: 'Escala marciana: 100 km',
+    scaleKm: 100,
+  },
+  'MARS-ARC': {
+    photo:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/OSIRIS_Mars_true_color.jpg/1280px-OSIRIS_Mars_true_color.jpg',
+    caption: 'Marte: Arcadia Planitia · Vista orbital cenital de llanuras basálticas con permafrost (ESA / NASA)',
+    scaleLabel: 'Escala marciana: 50 km',
+    scaleKm: 50,
+  },
+};
 
 export const SPACE_PHOTOS = {
   mars: 'https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?auto=format&fit=crop&w=1200&q=80',
@@ -1788,6 +1847,16 @@ export const SITES: EarthSite[] = [
     "photoSpace": "https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?auto=format&fit=crop&w=1200&q=80",
     "photoEarthCaption": "Valle de la Luna, Cuenca de Atacama — Domos salinos y cuencas hiperáridas",
     "photoSpaceCaption": "Marte, Cráter Gale / Jezero — NASA/JPL",
+    "optimalTargetId": "MARS-JEZ",
+    "optimalReason": "su hiperaridez de más de 15 Ma, regolito rico en percloratos y preservación de biofirmas fósiles",
+    "analogySummary": "Aunque Atacama parece una meseta desértica común, su sequedad extrema de millones de años y sus suelos saturados de percloratos replican la química exacta del Cráter Jezero. En ambos terrenos no llueve casi nunca y los instrumentos de detección biológica deben hallar materia orgánica atrapada en cristales de sal microscópicos.",
+    "visualGuide": {
+          "earthObservation": "Planicie hiperárida salina de Yungay con costras de halita y nitratos sin vegetación.",
+          "targetObservation": "Lecho lacustre seco del Cráter Jezero y abanico sedimentario con minerales evaporíticos.",
+          "scientificKey": "Valida sensores Raman, espectrómetros de fluorescencia y taladros de regolito seco antes de operar en Marte.",
+          "earthScaleKm": 10,
+          "targetScaleKm": 10
+    },
     "inspectionGallery": [
       {
         "title": "Vista Satelital SRTM",
@@ -1880,6 +1949,16 @@ export const SITES: EarthSite[] = [
     "photoSpace": "https://images.unsplash.com/photo-1545156521-77bd85671d30?auto=format&fit=crop&w=1200&q=80",
     "photoEarthCaption": "Cráter Haughton en Isla Devon — Brechas de impacto y permafrost",
     "photoSpaceCaption": "Marte, Cráter Holden / Jezero — NASA/JPL",
+    "optimalTargetId": "MOON-SHK",
+    "optimalReason": "su morfología de cuenca de impacto polar preservada en permafrost continuo y brechas criogénicas",
+    "analogySummary": "Aunque Haughton está en el Ártico canadiense y Shackleton en el Polo Sur Lunar, ambos son cráteres de impacto de alta latitud donde el regolito pulverizado se mezcla con hielo permanente. Las sombras profundas y el frío extremo de Haughton son el mejor laboratorio para ensayar la movilidad de rovers en las trampas frías polares de la Luna.",
+    "visualGuide": {
+          "earthObservation": "Astroblema de 23 km en la Isla Devon con lomas de brecha de impacto y permafrost masivo.",
+          "targetObservation": "Borde elevado y pendientes escarpadas del Cráter Shackleton en sombra permanente (PSR).",
+          "scientificKey": "Evalúa la mecánica de ruedas metálicas en regolito brechado y algoritmos de navegación con iluminación solar rasante.",
+          "earthScaleKm": 23,
+          "targetScaleKm": 20
+    },
     "inspectionGallery": []
   },
   {
@@ -1955,6 +2034,16 @@ export const SITES: EarthSite[] = [
     "photoSpace": "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=1200&q=80",
     "photoEarthCaption": "Cueva de los Verdes — Bóveda basáltica de tubo de lava",
     "photoSpaceCaption": "Luna, Marius Hills Skylight — LRO LOLA NASA",
+    "optimalTargetId": "MOON-COP",
+    "optimalReason": "sus claraboyas de colapso en conductos basálticos masivos como análogo directo de hábitats subterráneos lunares",
+    "analogySummary": "Aunque La Corona se formó por vulcanismo terrestre y Copernicus por un impacto de asteroide, ambos albergan estructuras basálticas masivas y conductos subterráneos que aíslan la superficie de la radiación cósmica. Las secciones intactas de este tubo volcánico permiten ensayar espeleología robótica y comunicaciones en conductos ciegos idénticos a las cavidades lunares.",
+    "visualGuide": {
+          "earthObservation": "Línea de jameos (claraboyas colapsadas) a lo largo del tubo basáltico de 7.6 km hacia el mar.",
+          "targetObservation": "Paredes terrazadas, colapsos concéntricos y manto de eyección basáltico en el Cráter Copernicus.",
+          "scientificKey": "Prueba sistemas autónomos de drones subterráneos y LiDAR tridimensional para exploración de hábitats protegidos.",
+          "earthScaleKm": 8,
+          "targetScaleKm": 93
+    },
     "inspectionGallery": []
   },
   {
@@ -2030,6 +2119,16 @@ export const SITES: EarthSite[] = [
     "photoSpace": "https://images.unsplash.com/photo-1545156521-77bd85671d30?auto=format&fit=crop&w=1200&q=80",
     "photoEarthCaption": "Cráter maar El Elegante en El Pinacate, Sonora",
     "photoSpaceCaption": "Marte, Cráter volcánico en Tharsis — NASA MGS",
+    "optimalTargetId": "MOON-COP",
+    "optimalReason": "sus cráteres maar freatomagmáticos de fondo plano y campos de escoria utilizados históricamente en los entrenamientos Apollo",
+    "analogySummary": "Aunque los cráteres maar de El Pinacate nacieron por vapor volcánico y Copernicus por un meteorito colosal, ambos produjeron cuencas profundas de fondo plano rodeadas de conos de eyección y bloques basálticos. La NASA entrenó aquí a los astronautas de las misiones Apollo porque su campo de piedras y depósitos piroclásticos replica la textura del suelo lunar.",
+    "visualGuide": {
+          "earthObservation": "Cráter maar El Elegante (1.6 km) con bordes afilados y llanuras de escoria volcánica.",
+          "targetObservation": "Complejo de impacto de Copernicus con picos centrales, terrazas y manto de regolito eyeccionado.",
+          "scientificKey": "Calibra radares altimétricos y entrenamiento geológico de tripulaciones EVA en terrenos rocosos de alto contraste.",
+          "earthScaleKm": 5,
+          "targetScaleKm": 93
+    },
     "inspectionGallery": []
   },
   {
@@ -2105,6 +2204,16 @@ export const SITES: EarthSite[] = [
     "photoSpace": "https://images.unsplash.com/photo-1522030299830-16b8d3d049fe?auto=format&fit=crop&w=1200&q=80",
     "photoEarthCaption": "Valles Secos de McMurdo — Terreno poligonal periglaciar",
     "photoSpaceCaption": "Marte, Llanuras del Polo Norte — NASA Phoenix",
+    "optimalTargetId": "MOON-SHK",
+    "optimalReason": "sus condiciones de hiperaridez polar extrema a temperaturas bajo cero y permafrost masivo análogo a trampas frías",
+    "analogySummary": "Aunque McMurdo está en la Antártida y Shackleton en la Luna, ambos son desiertos congelados perpetuos donde el agua líquida no existe y el hielo solo sobrevive enterrado en el subsuelo. Los vientos catabáticos y las temperaturas extremas de McMurdo replican las condiciones de sublimación y dureza del hielo polar lunar.",
+    "visualGuide": {
+          "earthObservation": "Valles polares de roca desnuda (Taylor y Wright) libres de nieve con polígonos de hielo subterráneo.",
+          "targetObservation": "Trampas frías criogénicas del interior de Shackleton a menos de 40 Kelvin.",
+          "scientificKey": "Valida taladros criogénicos autónomos y detectores de neutrones para prospección de hielo de agua ISRU.",
+          "earthScaleKm": 15,
+          "targetScaleKm": 20
+    },
     "inspectionGallery": []
   },
   {
@@ -2180,6 +2289,16 @@ export const SITES: EarthSite[] = [
     "photoSpace": "https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?auto=format&fit=crop&w=1200&q=80",
     "photoEarthCaption": "Campo de Piedra Pómez en Catamarca — Mega-yardangs de ignimbrita",
     "photoSpaceCaption": "Marte, Medusae Fossae — NASA MRO HiRISE",
+    "optimalTargetId": "MARS-ALB",
+    "optimalReason": "su megadepósito ignimbrítico con morfología de yardangs e inercia térmica ultrabaja análoga al manto de polvo de Tharsis",
+    "analogySummary": "Aunque la Puna argentina está a gran altitud terrestre y Alba Mons en Marte, ambos presentan inmensos campos de ceniza e ignimbritas tallados por vientos feroces en formas de yardangs aerodinámicos. El suelo de pómez pulverizada tiene una inercia térmica mínima casi idéntica al fino manto de polvo que cubre los volcanes gigantes marcianos.",
+    "visualGuide": {
+          "earthObservation": "Laberinto de yardangs blancos de ignimbrita esculpidos por viento en una meseta a 3,000 m.",
+          "targetObservation": "Crestas tectónicas, fallas radiales y mantos de ceniza volcánica en las laderas de Alba Mons.",
+          "scientificKey": "Analiza la sustentación de palas de helicópteros tipo Ingenuity y la tracción de ruedas en ceniza ultrafina.",
+          "earthScaleKm": 12,
+          "targetScaleKm": 100
+    },
     "inspectionGallery": []
   },
   {
@@ -2255,6 +2374,16 @@ export const SITES: EarthSite[] = [
     "photoSpace": "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=1200&q=80",
     "photoEarthCaption": "Caldera de Askja y cráter hidrotermal Víti en Islandia",
     "photoSpaceCaption": "Luna, Mare Imbrium — NASA LRO",
+    "optimalTargetId": "MOON-COP",
+    "optimalReason": "sus coladas de lava basáltica máfica de inundación y terreno histórico de pruebas geológicas de las tripulaciones Apollo",
+    "analogySummary": "Aunque Askja se sitúa en las tierras altas de Islandia y Copernicus en la Luna, las coladas basálticas de Holuhraun son químicamente gemelas al regolito basáltico de las llanuras lunares. Neil Armstrong y Buzz Aldrin practicaron recolección geológica aquí por la ausencia de vegetación y la pureza mineral de sus basaltos.",
+    "visualGuide": {
+          "earthObservation": "Campo de lava basáltica rugosa de Holuhraun (85 km²) y caldera colapsada de Askja.",
+          "targetObservation": "Suelo plano de lava y terrazas concéntricas de Copernicus cubiertas de regolito máfico.",
+          "scientificKey": "Evalúa el desgaste mecánico de ruedas rígidas y herramientas de corte en vidrio basáltico y escoria porosa.",
+          "earthScaleKm": 15,
+          "targetScaleKm": 93
+    },
     "inspectionGallery": []
   },
   {
@@ -2330,6 +2459,16 @@ export const SITES: EarthSite[] = [
     "photoSpace": "https://images.unsplash.com/photo-1545156521-77bd85671d30?auto=format&fit=crop&w=1200&q=80",
     "photoEarthCaption": "Terrazas de azufre y salmuera hidrotermal en Dallol, Etiopía",
     "photoSpaceCaption": "Marte, Depósitos hidrotermales en Gusev / Nili Fossae — NASA MRO",
+    "optimalTargetId": "MARS-JEZ",
+    "optimalReason": "sus manantiales hidrotermales hipersalinos y precipitados de hierro análogos a la fase acuosa temprana de Marte",
+    "analogySummary": "Aunque Danakil es hoy un hervidero geotérmico a 120 metros bajo el nivel del mar, sus chimeneas de sal y manantiales de sulfato ferroso son la viva estampa del Marte primitivo cuando el Cráter Jezero tenía actividad hidrotermal. Las biofirmas fósiles atrapadas en los minerales de hierro de Dallol enseñan a Perseverance qué buscar en los sedimentos marcianos.",
+    "visualGuide": {
+          "earthObservation": "Estructuras hidrotermales hiperácidas de salitre, sulfuros de hierro y piscinas geotérmicas.",
+          "targetObservation": "Capas estratificadas del delta de Jezero enriquecidas con sales de sulfato y carbonatos.",
+          "scientificKey": "Prueba espectrómetros Raman y PIXL en matrices complejas de hierro y cloro para descartar falsos positivos biológicos.",
+          "earthScaleKm": 4,
+          "targetScaleKm": 10
+    },
     "inspectionGallery": []
   },
   {
@@ -2405,6 +2544,16 @@ export const SITES: EarthSite[] = [
     "photoSpace": "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=1200&q=80",
     "photoEarthCaption": "Pampa Negra en La Payunia, Mendoza — Conos de escoria basáltica",
     "photoSpaceCaption": "Luna, Mare Tranquillitatis — NASA Apollo 11",
+    "optimalTargetId": "MARS-ALB",
+    "optimalReason": "su megacampo volcánico de pendiente mínima (<1°), mantos piroclásticos extensos y lavas pahoehoe basálticas",
+    "analogySummary": "Aunque La Payunia se ubica en Mendoza y Alba Mons en la meseta de Tharsis, ambos son los mayores campos de volcanes basálticos de sus respectivos planetas, caracterizados por pendientes sumamente suaves y extensiones kilométricas de lava. El manto ininterrumpido de arenas negras y basaltos sin vegetación de La Payunia es el doble terrestre más fiel de las planicies marcianas.",
+    "visualGuide": {
+          "earthObservation": "Coladas basálticas extensas (Llanura de la Yesera), conos piroclásticos y mantos de arena negra.",
+          "targetObservation": "Flancos volcánicos de ángulo bajo (<1°) atravesados por grabens y campos de lava de Alba Mons.",
+          "scientificKey": "Permite probar la autonomía de conducción de rovers de largo recorrido en planicies volcánicas continuas.",
+          "earthScaleKm": 25,
+          "targetScaleKm": 100
+    },
     "inspectionGallery": []
   },
   {
@@ -2480,6 +2629,16 @@ export const SITES: EarthSite[] = [
     "photoSpace": "https://images.unsplash.com/photo-1545156521-77bd85671d30?auto=format&fit=crop&w=1200&q=80",
     "photoEarthCaption": "Lago Salda — Playas blancas de hidromagnesita (NASA Earth Observatory)",
     "photoSpaceCaption": "Marte, Delta de Jezero — NASA/JPL/MRO",
+    "optimalTargetId": "MARS-JEZ",
+    "optimalReason": "ser el único análogo terrestre con estromatolitos y depósitos deltaicos de hidromagnesita idénticos al abanico de Jezero",
+    "analogySummary": "Aunque hoy el Cráter Jezero es un desierto seco y el Lago Salda tiene agua, hace 3,500 millones de años Jezero fue un lago idéntico a Salda. Las playas blancas de Salda son el único lugar de la Tierra con los mismos sedimentos de hidromagnesita y deltas fosilizados donde el rover Perseverance busca rastros de vida antigua.",
+    "visualGuide": {
+          "earthObservation": "Playas de hidromagnesita blanca y estromatolitos microbiológicos en las costas del lago.",
+          "targetObservation": "Abanico del delta fluvial occidental del Cráter Jezero con depósitos de carbonatos lacustres.",
+          "scientificKey": "Calibra instrumentos de muestreo de núcleos geológicos (coring) y preservación de materia orgánica en carbonatos.",
+          "earthScaleKm": 6,
+          "targetScaleKm": 10
+    },
     "inspectionGallery": []
   },
   {
@@ -2555,6 +2714,16 @@ export const SITES: EarthSite[] = [
     "photoSpace": "https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?auto=format&fit=crop&w=1200&q=80",
     "photoEarthCaption": "Salar de Uyuni — Patrones poligonales de evaporación halítica",
     "photoSpaceCaption": "Marte, Arcadia Planitia — NASA MRO",
+    "optimalTargetId": "MARS-JEZ",
+    "optimalReason": "su paleocuenca evaporítica con sedimentación salina estratificada idéntica a los lechos lacustres marcianos",
+    "analogySummary": "Aunque Uyuni es el mayor desierto de sal del mundo y Jezero una cuenca de impacto marciana, ambos compartieron un pasado como inmensos lagos terminales que se secaron lentamente dejando gruesas costras minerales. La planitud perfecta y la reflexión espectral de Uyuni son usadas por la NASA para calibrar los altímetros láser y sensores infrarrojos orbitales.",
+    "visualGuide": {
+          "earthObservation": "Costra de sal poligonal de 10,000 km² con reflectancia óptica ultra-homogénea y horizontes planos.",
+          "targetObservation": "Llanura sedimentaria evaporítica del fondo del Cráter Jezero con sulfatos y arcillas deshidratadas.",
+          "scientificKey": "Calibra altímetros orbitales láser (LOLA/MOLA) y prueba la tracción de rovers en costras salinas friables.",
+          "earthScaleKm": 30,
+          "targetScaleKm": 10
+    },
     "inspectionGallery": []
   },
   {
@@ -2630,6 +2799,16 @@ export const SITES: EarthSite[] = [
     "photoSpace": "https://images.unsplash.com/photo-1522030299830-16b8d3d049fe?auto=format&fit=crop&w=1200&q=80",
     "photoEarthCaption": "Nevado Ojos del Salado — Cumbres volcánicas y lagunas criogénicas",
     "photoSpaceCaption": "Marte, Olympus Mons — NASA Viking / MGS",
+    "optimalTargetId": "MARS-ALB",
+    "optimalReason": "su altitud extrema a >6,800 m, presión barométrica reducida a la mitad y radiación UV comparable a Tharsis",
+    "analogySummary": "Aunque Ojos del Salado es el volcán activo más alto de la Tierra y Alba Mons un volcán gigante marciano, la cima de Ojos del Salado alcanza una presión atmosférica reducida a menos de la mitad y una radiación ultravioleta tan destructiva como la de Marte. La laguna de cráter a 6,390 m es el cuerpo de agua más alto del planeta, simulando los microambientes que pudieron subsistir en Tharsis.",
+    "visualGuide": {
+          "earthObservation": "Cráter somital a 6,893 m con fumarolas activas, campos de penitentes de hielo y regolito periglacial.",
+          "targetObservation": "Caldera central colapsada de Alba Mons y crestas de alta cota bajo radiación solar directa.",
+          "scientificKey": "Evalúa la resistencia de paneles solares, baterías criogénicas y lubricantes en condiciones de baja presión y frío extremo.",
+          "earthScaleKm": 10,
+          "targetScaleKm": 100
+    },
     "inspectionGallery": []
   },
   {
@@ -2705,6 +2884,16 @@ export const SITES: EarthSite[] = [
     "photoSpace": "https://images.unsplash.com/photo-1545156521-77bd85671d30?auto=format&fit=crop&w=1200&q=80",
     "photoEarthCaption": "Meteor Crater en Winslow, Arizona — Bol de impacto intacto",
     "photoSpaceCaption": "Luna, Cráter Linné — NASA LRO",
+    "optimalTargetId": "MOON-COP",
+    "optimalReason": "su morfología canónica de cráter de impacto con brechas eyectadas, paredes estratificadas y manto invertido",
+    "analogySummary": "Aunque Barringer mide 1.2 km y Copernicus 93 km, ambos representan la física pura del impacto hiperveloz con bordes volcados, capas estratigráficas invertidas y brechas de impacto vítreas. Eugene Shoemaker y los astronautas de las misiones Apollo entrenaron en el fondo de Barringer para aprender a identificar las rocas expulsadas desde las profundidades de la corteza.",
+    "visualGuide": {
+          "earthObservation": "Cráter de impacto canónico de 1,200 m de diámetro bien preservado con rim elevado y brechas.",
+          "targetObservation": "Cuenca de impacto compleja de Copernicus con paredes escalonadas, picos centrales y rayos de eyección.",
+          "scientificKey": "Entrena a tripulaciones y valida espectrómetros de campo para diferenciar roca autóctona de eyecta alóctona.",
+          "earthScaleKm": 2,
+          "targetScaleKm": 93
+    },
     "inspectionGallery": []
   },
   {
@@ -2780,6 +2969,16 @@ export const SITES: EarthSite[] = [
     "photoSpace": "https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?auto=format&fit=crop&w=1200&q=80",
     "photoEarthCaption": "Aguas rojas ricas en hierro y jarosita en Río Tinto, España",
     "photoSpaceCaption": "Marte, Meridiani Planum — NASA Opportunity",
+    "optimalTargetId": "MARS-JEZ",
+    "optimalReason": "su mineralogía de jarosita y óxidos de hierro nacidos de meteorización ácida idénticos a los estratos de Jezero",
+    "analogySummary": "Aunque Río Tinto fluye en Andalucía con aguas rojas líquidas y Jezero es un cauce marciano seco, ambos comparten exactamente el mismo ensamblaje de minerales: jarosita, goethita y hematita nacidos de la oxidación ácida de sulfuros. Los microorganismos que prosperan en el hierro y azufre de Río Tinto sin luz solar son el modelo principal de la NASA para la vida subterránea en Marte.",
+    "visualGuide": {
+          "earthObservation": "Cauce de aguas ácidas saturadas de hierro disuelto, terrazas de gossan y precipitados de jarosita.",
+          "targetObservation": "Estratos sedimentarios del delta de Jezero ricos en sulfatos hidratados y óxidos de hierro.",
+          "scientificKey": "Valida la detección espectral de jarosita mediante SHERLOC y SuperCam para reconstruir la historia del agua ácida.",
+          "earthScaleKm": 5,
+          "targetScaleKm": 10
+    },
     "inspectionGallery": []
   }
 ];

@@ -9,8 +9,10 @@ import {
   getTemperaturePositionPct,
 } from '../data/nasaExtractedDatasets';
 import type { PlanetaryTopoTransect } from '../data/nasaExtractedDatasets';
+import { TARGET_ORBITAL_PHOTOS, SITES } from '../data';
+import type { VisualGuide } from '../data';
+import ZenithSatelliteView from './ZenithSatelliteView';
 import DiurnalThermal24hSimulator from './DiurnalThermal24hSimulator';
-import { useWikipediaImage } from '../services/wikipediaImages';
 
 interface PhotoComparatorProps {
   earthSiteId?: string;
@@ -28,41 +30,10 @@ interface PhotoComparatorProps {
   earthTempMinC?: number;
   earthTempMaxC?: number;
   onOpenDatasetModal?: () => void;
+  earthLat?: number;
+  earthLng?: number;
+  visualGuide?: VisualGuide;
 }
-
-// 4 Primary Verified NASA Target Reference Photos (+ fallbacks)
-const TARGET_VERIFIED_PHOTOS: Record<string, { photo: string; caption: string }> = {
-  'MOON-SHK': {
-    photo:
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Aldrin_Apollo_11_original.jpg/1280px-Aldrin_Apollo_11_original.jpg',
-    caption: 'Luna: Polo Sur (Cráter Shackleton) · Superficie y regolito anortosítico polar (NASA Apollo / LRO)',
-  },
-  'MOON-COP': {
-    photo:
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Copernicus_crater_AS17-151-23260.jpg/1280px-Copernicus_crater_AS17-151-23260.jpg',
-    caption: 'Luna: Cráter Copernicus · Complejo de picos centrales y terrazas de impacto (NASA LRO / Apollo 17)',
-  },
-  'MOON-LAV': {
-    photo:
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Mare_Tranquillitatis_pit_crater.jpg/1024px-Mare_Tranquillitatis_pit_crater.jpg',
-    caption: 'Luna: Mare Tranquillitatis · Claraboya natural (skylight) a tubo de lava basáltico (NASA LRO)',
-  },
-  'MARS-JEZ': {
-    photo:
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/NASA_Mars_Rover.jpg/1280px-NASA_Mars_Rover.jpg',
-    caption: 'Marte: Cráter Jezero · Abanico deltaico fluvial explorado por Perseverance (NASA/JPL-Caltech)',
-  },
-  'MARS-ALB': {
-    photo:
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Alba_Patera_MGS.jpg/1024px-Alba_Patera_MGS.jpg',
-    caption: 'Marte: Alba Mons (Tharsis) · Llanuras volcánicas de baja pendiente cubiertas de polvo (NASA MGS MOLA)',
-  },
-  'MARS-ARC': {
-    photo:
-      'https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/OSIRIS_Mars_true_color.jpg/1280px-OSIRIS_Mars_true_color.jpg',
-    caption: 'Marte: Arcadia Planitia · Llanuras basálticas con hielo somero (ESA / NASA)',
-  },
-};
 
 // Procedural Fallback Canvas
 function drawProceduralSurface(canvas: HTMLCanvasElement, body: 'earth' | 'luna' | 'marte') {
@@ -152,15 +123,16 @@ export default function PhotoComparator({
   earthTempMinC,
   earthTempMaxC,
   onOpenDatasetModal,
+  earthLat,
+  earthLng,
+  visualGuide,
 }: PhotoComparatorProps) {
   const [position, setPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
-  const [earthImgError, setEarthImgError] = useState(false);
   const [spaceImgError, setSpaceImgError] = useState(false);
   const [hoverSvgX, setHoverSvgX] = useState<number | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const earthCanvasRef = useRef<HTMLCanvasElement>(null);
   const spaceCanvasRef = useRef<HTMLCanvasElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -177,35 +149,25 @@ export default function PhotoComparator({
   const activeTargetTopo =
     extractedPlanetaryPoints.length > 0 ? extractedPlanetaryPoints : targetTopo;
 
-  // Space photo & caption based on targetId
-  const wikiSpaceUrl = useWikipediaImage(targetId);
-  const wikiEarthUrl = useWikipediaImage(earthSiteId);
+  // Retrieve site data and coordinates for zenith satellite view & visual guide
+  const siteData = useMemo(() => SITES.find((s) => s.id === earthSiteId), [earthSiteId]);
+  const effectiveLat = earthLat ?? siteData?.lat ?? -24.088;
+  const effectiveLng = earthLng ?? siteData?.lng ?? -69.916;
+  const effectiveVisualGuide = visualGuide ?? siteData?.visualGuide;
 
-  const verifiedSpace = TARGET_VERIFIED_PHOTOS[targetId] || {
-    photo:
-      targetBody === 'Luna'
-        ? TARGET_VERIFIED_PHOTOS['MOON-SHK'].photo
-        : TARGET_VERIFIED_PHOTOS['MARS-JEZ'].photo,
-    caption: `${targetName} · Misión espacial NASA`,
-  };
+  // Orbital space capture from verified NASA orbital registry
+  const verifiedSpace =
+    TARGET_ORBITAL_PHOTOS[targetId] ||
+    (targetBody === 'Luna'
+      ? TARGET_ORBITAL_PHOTOS['MOON-SHK']
+      : TARGET_ORBITAL_PHOTOS['MARS-JEZ']);
 
-  const activeSpacePhoto = wikiSpaceUrl || verifiedSpace.photo;
+  const activeSpacePhoto = verifiedSpace.photo;
   const activeSpaceCaption = spaceCaption || verifiedSpace.caption;
-  const activeEarthPhoto = wikiEarthUrl || earthPhoto;
-
-  useEffect(() => {
-    setEarthImgError(false);
-  }, [activeEarthPhoto]);
 
   useEffect(() => {
     setSpaceImgError(false);
   }, [activeSpacePhoto]);
-
-  useEffect(() => {
-    if (earthImgError && earthCanvasRef.current) {
-      drawProceduralSurface(earthCanvasRef.current, 'earth');
-    }
-  }, [earthImgError]);
 
   useEffect(() => {
     if (spaceImgError && spaceCanvasRef.current) {
@@ -422,16 +384,65 @@ export default function PhotoComparator({
 
   return (
     <div className="w-full bg-[#0A0A0C] rounded-3xl overflow-hidden border border-white/[0.08] shadow-2xl">
+      {/* ── GUÍA DE LECTURA VISUAL (3 COLUMNAS EDITORIALES JUSTO ENCIMA DE LA CORTINA) ── */}
+      {effectiveVisualGuide && (
+        <div className="border-b border-white/[0.08] bg-[#0E1015]">
+          <div className="px-6 py-2.5 border-b border-white/[0.06] flex items-center justify-between">
+            <span className="font-mono text-[11px] font-bold text-[#F4F4F6] uppercase tracking-wider flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+              <span>Guía de Lectura Visual · Comparación Cenital Orbital (Tierra vs. {targetBody})</span>
+            </span>
+            <span className="font-mono text-[10px] text-[#8E9299]">
+              Escala Orbital Homogénea desde el Espacio
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-white/[0.08]">
+            {/* Columna 1: Tierra */}
+            <div className="p-4 md:p-5">
+              <div className="font-mono text-[10px] text-[#8E9299] uppercase tracking-wider mb-1.5 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-white inline-block" />
+                <span>Qué observar a la izquierda (Tierra — {earthSiteName})</span>
+              </div>
+              <p className="font-sans text-xs text-[#F4F4F6] leading-relaxed">
+                {effectiveVisualGuide.earthObservation}
+              </p>
+            </div>
+
+            {/* Columna 2: NASA Target */}
+            <div className="p-4 md:p-5">
+              <div className="font-mono text-[10px] text-[#8E9299] uppercase tracking-wider mb-1.5 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#A1A1AA] inline-block" />
+                <span>Qué observar a la derecha (NASA — {targetName})</span>
+              </div>
+              <p className="font-sans text-xs text-[#F4F4F6] leading-relaxed">
+                {effectiveVisualGuide.targetObservation}
+              </p>
+            </div>
+
+            {/* Columna 3: Clave Científica */}
+            <div className="p-4 md:p-5">
+              <div className="font-mono text-[10px] text-[#8E9299] uppercase tracking-wider mb-1.5 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-white inline-block" />
+                <span>Clave Científica de la Comparación (Misiones NASA)</span>
+              </div>
+              <p className="font-sans text-xs text-[#F4F4F6] leading-relaxed">
+                {effectiveVisualGuide.scientificKey}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── TOP SLIDING COMPARATOR STAGE ───────────────────────────── */}
       <div
         ref={containerRef}
         className="relative w-full overflow-hidden select-none cursor-ew-resize"
-        style={{ height: '50vh', minHeight: '380px' }}
+        style={{ height: '52vh', minHeight: '390px' }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
       >
-        {/* Right Layer: Space Destination Surface Photo */}
+        {/* Right Layer: Space Destination Zenith Orbital Photo */}
         <div className="absolute inset-0 bg-[#0C0E14]">
           {!spaceImgError ? (
             <img
@@ -443,25 +454,32 @@ export default function PhotoComparator({
           ) : (
             <canvas ref={spaceCanvasRef} className="w-full h-full object-cover" width={800} height={500} />
           )}
+
+          {/* Right Side Orbital Scale Badge */}
+          <div className="absolute bottom-4 right-4 z-10 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2.5 font-mono text-[10px] text-white pointer-events-none tabular-nums shadow-lg">
+            <span>{verifiedSpace.scaleLabel}</span>
+            <div className="w-14 h-1.5 bg-white border border-black/40 flex">
+              <div className="w-1/2 h-full bg-[#0A0A0C]" />
+              <div className="w-1/2 h-full bg-white" />
+            </div>
+          </div>
         </div>
 
-        {/* Left Layer: Earth Analog Site Photo */}
+        {/* Left Layer: Earth Analog Site Zenith Orbital View (Esri World Imagery) */}
         <div
           className="absolute inset-0 bg-[#140E0A] overflow-hidden"
           style={{
             clipPath: `inset(0 ${100 - position}% 0 0)`,
           }}
         >
-          {!earthImgError ? (
-            <img
-              src={activeEarthPhoto}
-              alt="Sitio Análogo Terrestre"
-              className="w-full h-full object-cover pointer-events-none"
-              onError={() => setEarthImgError(true)}
-            />
-          ) : (
-            <canvas ref={earthCanvasRef} className="w-full h-full object-cover" width={800} height={500} />
-          )}
+          <ZenithSatelliteView
+            lat={effectiveLat}
+            lng={effectiveLng}
+            zoom={11}
+            mode="imagery"
+            siteName={earthSiteName}
+            scaleKm={effectiveVisualGuide?.earthScaleKm ?? 5}
+          />
         </div>
 
         {/* Divider Slider Line with Monochrome Handle */}
@@ -482,8 +500,8 @@ export default function PhotoComparator({
 
         {/* Top Badges */}
         <div className="absolute top-4 left-4 z-10 flex items-center gap-2 pointer-events-none">
-          <span className="font-sans text-xs px-3.5 py-1.5 rounded-full font-semibold uppercase tracking-wider bg-black/75 backdrop-blur-md text-[#F4F4F6] border border-white/[0.08]">
-            Tierra (Análogo)
+          <span className="font-sans text-xs px-3.5 py-1.5 rounded-full font-semibold uppercase tracking-wider bg-black/80 backdrop-blur-md text-[#F4F4F6] border border-white/[0.1]">
+            Tierra · Vista Orbital Cenital
           </span>
           <span className="font-mono text-[10px] px-2.5 py-1 rounded-full bg-black/60 text-[#8E9299] border border-white/[0.08] hidden sm:inline tabular-nums">
             9.81 m/s² · 1 atm
@@ -494,20 +512,20 @@ export default function PhotoComparator({
           <span className="font-mono text-[10px] px-2.5 py-1 rounded-full bg-black/60 text-[#8E9299] border border-white/[0.08] hidden sm:inline tabular-nums">
             {targetBody === 'Luna' ? '1.62 m/s² (0.16g)' : '3.72 m/s² (0.38g)'}
           </span>
-          <span className="font-sans text-xs px-3.5 py-1.5 rounded-full font-semibold uppercase tracking-wider text-[#F4F4F6] border border-white/[0.08] bg-black/75 backdrop-blur-md">
-            {targetName} ({targetBody})
+          <span className="font-sans text-xs px-3.5 py-1.5 rounded-full font-semibold uppercase tracking-wider text-[#F4F4F6] border border-white/[0.1] bg-black/80 backdrop-blur-md">
+            {targetName} ({targetBody}) · Vista Orbital Cenital
           </span>
         </div>
 
-        {/* Bottom Captions */}
-        <div className="absolute bottom-4 left-4 z-10 font-sans text-xs text-[#F4F4F6] bg-black/75 backdrop-blur-md px-3.5 py-2 rounded-xl max-w-[44%] border border-white/[0.08] pointer-events-none">
-          <span className="text-[#8E9299] block text-[10px] uppercase font-medium">Terreno análogo:</span>
-          {earthCaption || earthTelemetry || 'Mapeo de campo geológico NASA'}
+        {/* Bottom Captions positioned above scale bars */}
+        <div className="absolute bottom-14 left-4 z-10 font-sans text-xs text-[#F4F4F6] bg-black/80 backdrop-blur-md px-3.5 py-2 rounded-xl max-w-[44%] border border-white/[0.08] pointer-events-none">
+          <span className="text-[#8E9299] block text-[10px] uppercase font-medium">Terreno análogo cenital:</span>
+          <span className="line-clamp-1">{earthSiteName} · Esri World Imagery ({effectiveLat.toFixed(3)}°, {effectiveLng.toFixed(3)}°)</span>
         </div>
 
-        <div className="absolute bottom-4 right-4 z-10 font-sans text-xs text-[#F4F4F6] bg-black/75 backdrop-blur-md px-3.5 py-2 rounded-xl text-right max-w-[44%] border border-white/[0.08] pointer-events-none">
-          <span className="text-[#8E9299] block text-[10px] uppercase font-medium">Superficie destino:</span>
-          {activeSpaceCaption}
+        <div className="absolute bottom-14 right-4 z-10 font-sans text-xs text-[#F4F4F6] bg-black/80 backdrop-blur-md px-3.5 py-2 rounded-xl text-right max-w-[44%] border border-white/[0.08] pointer-events-none">
+          <span className="text-[#8E9299] block text-[10px] uppercase font-medium">Destino orbital NASA:</span>
+          <span className="line-clamp-1">{activeSpaceCaption}</span>
         </div>
       </div>
 

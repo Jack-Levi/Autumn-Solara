@@ -92,7 +92,7 @@ export const WIKIPEDIA_TARGET_REGISTRY: Record<string, WikiEntry> = {
   },
   'MARS-JEZ': {
     slug: 'Jezero_(crater)',
-    staticBackup: 'https://upload.wikimedia.org/wikipedia/commons/d/d6/Perseverance%27s_First_Full-Color_Look_at_Mars.png',
+    staticBackup: 'https://photojournal.jpl.nasa.gov/jpeg/PIA23984.jpg',
   },
   'MARS-ALB': {
     slug: 'Alba_Mons',

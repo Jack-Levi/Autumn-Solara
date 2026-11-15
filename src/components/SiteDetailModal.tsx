@@ -4,6 +4,9 @@ import {
   fidelityColor,
   fidelityLabel,
   NASA_PFI_DIMENSIONS,
+  calculatePFI,
+  PFI_PRESETS,
+  TARGET_ORBITAL_PHOTOS,
 } from '../data';
 import {
   EARTH_PLANETARY_LIMITS,
@@ -13,7 +16,7 @@ import PhotoComparator from './PhotoComparator';
 import { GeologicalSiteImage } from './SiteGallery';
 import MissionReportModal from './MissionReportModal';
 import DatasetExtractionModal from './DatasetExtractionModal';
-import { useWikipediaImage } from '../services/wikipediaImages';
+import ZenithSatelliteView from './ZenithSatelliteView';
 
 interface SiteDetailModalProps {
   site: EarthSite | null;
@@ -35,191 +38,6 @@ const REFERENCE_TARGET_BUTTONS = [
   { id: 'MARS-JEZ', label: 'Cráter Jezero', body: 'Marte' },
   { id: 'MARS-ALB', label: 'Alba Mons Tharsis', body: 'Marte' },
 ];
-
-// ─── Procedural DEM Heatmap & Slope Canvas (Slide 2) ─────────────────────────
-function DemHeatmapCanvas({ site }: { site: EarthSite }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const w = 700;
-    const h = 420;
-    canvas.width = w;
-    canvas.height = h;
-
-    // Hypsometric tint base
-    const grad = ctx.createLinearGradient(0, h, 0, 0);
-    grad.addColorStop(0, '#0C1020');
-    grad.addColorStop(0.25, '#1E3A8A');
-    grad.addColorStop(0.5, '#059669');
-    grad.addColorStop(0.75, '#D97706');
-    grad.addColorStop(1, '#DC2626');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, w, h);
-
-    // Overlay 25m contour lines
-    const cx = w * 0.5;
-    const cy = h * 0.5;
-    for (let r = 25; r < 360; r += 25) {
-      ctx.beginPath();
-      ctx.strokeStyle = r % 100 === 0 ? 'rgba(255, 255, 255, 0.45)' : 'rgba(255, 255, 255, 0.2)';
-      ctx.lineWidth = r % 100 === 0 ? 1.4 : 0.8;
-      for (let a = 0; a <= Math.PI * 2 + 0.1; a += 0.06) {
-        const rad = r + Math.sin(a * 5 + r * 0.05) * 14 + Math.cos(a * 3) * 8;
-        const px = cx + Math.cos(a) * rad * 1.35;
-        const py = cy + Math.sin(a) * rad * 0.85;
-        if (a === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
-      }
-      ctx.stroke();
-    }
-
-    // Slope vectors (arrows pointing down-gradient)
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    for (let x = 60; x < w - 40; x += 90) {
-      for (let y = 60; y < h - 40; y += 80) {
-        const dx = (cx - x) * 0.08;
-        const dy = (cy - y) * 0.08;
-        ctx.beginPath();
-        ctx.moveTo(x, y);
-        ctx.lineTo(x + dx, y + dy);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(x + dx, y + dy, 2, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    // HUD Telemetry overlay
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
-    ctx.fillRect(0, h - 38, w, 38);
-    ctx.font = "600 11px 'JetBrains Mono', monospace";
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillText(`USGS SRTM 30m DEM · Elevación base: ${site.elevM}m`, 18, h - 16);
-    ctx.textAlign = 'right';
-    ctx.fillStyle = '#E4E4E7';
-    ctx.fillText(`Pendiente media: ${site.slopeDeg}° · Rugosidad RMS: ${site.roughnessRms}`, w - 18, h - 16);
-    ctx.textAlign = 'left';
-  }, [site]);
-
-  return <canvas ref={canvasRef} className="w-full h-full object-cover" />;
-}
-
-// ─── Procedural Mineralogical Spectral Signature Canvas (Slide 3) ────────────
-function SpectralSignatureCanvas({
-  site,
-  target,
-}: {
-  site: EarthSite;
-  target: ExtraTerrestrialTarget;
-}) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const w = 700;
-    const h = 420;
-    canvas.width = w;
-    canvas.height = h;
-
-    // Dark spectrometer backdrop
-    ctx.fillStyle = '#080A10';
-    ctx.fillRect(0, 0, w, h);
-
-    // Grid lines
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-    ctx.lineWidth = 1;
-    for (let x = 60; x < w - 30; x += 75) {
-      ctx.beginPath();
-      ctx.moveTo(x, 40);
-      ctx.lineTo(x, h - 50);
-      ctx.stroke();
-    }
-    for (let y = 60; y < h - 40; y += 45) {
-      ctx.beginPath();
-      ctx.moveTo(50, y);
-      ctx.lineTo(w - 30, y);
-      ctx.stroke();
-    }
-
-    // Synthetic Spectral Curves across wavelength (0.4 µm to 14.0 µm)
-    // 1. Target Curve (dashed silver)
-    const targetColor = '#A1A1AA';
-    ctx.strokeStyle = targetColor;
-    ctx.lineWidth = 2.4;
-    ctx.setLineDash([5, 4]);
-    ctx.beginPath();
-    for (let x = 60; x < w - 30; x += 4) {
-      const normX = (x - 60) / (w - 90);
-      const absFeature =
-        Math.sin(normX * 8) * 22 +
-        Math.sin(normX * 18) * 14 +
-        Math.cos(normX * 3) * 35;
-      const y = h * 0.45 - absFeature;
-      if (x === 60) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // 2. Earth Analog Curve (solid white)
-    ctx.strokeStyle = '#FFFFFF';
-    ctx.lineWidth = 2.8;
-    ctx.beginPath();
-    for (let x = 60; x < w - 30; x += 4) {
-      const normX = (x - 60) / (w - 90);
-      const absFeature =
-        Math.sin(normX * 8 + 0.3) * 20 +
-        Math.sin(normX * 18 + 0.1) * 12 +
-        Math.cos(normX * 3 + 0.2) * 32;
-      const y = h * 0.48 - absFeature;
-      if (x === 60) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-
-    // Absorption Band Markers
-    const bands = [
-      { x: 140, label: '0.95 µm (Fe²⁺)' },
-      { x: 280, label: '1.9 µm (H₂O/OH)' },
-      { x: 420, label: '2.2 µm (Al-OH)' },
-      { x: 560, label: '8.2 µm (TIR Silicatos)' },
-    ];
-
-    bands.forEach((b) => {
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([2, 3]);
-      ctx.beginPath();
-      ctx.moveTo(b.x, 45);
-      ctx.lineTo(b.x, h - 50);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      ctx.font = "500 9px 'JetBrains Mono', monospace";
-      ctx.fillStyle = '#8E929F';
-      ctx.fillText(b.label, b.x - 24, h - 35);
-    });
-
-    // Legend
-    ctx.font = "600 11px 'JetBrains Mono', monospace";
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillText(`— ${site.id} (TERRA/ASTER TIR)`, 60, 30);
-    ctx.fillStyle = '#A1A1AA';
-    ctx.fillText(`-- ${target.name} (${target.body === 'Luna' ? 'LRO Diviner' : 'MRO CRISM'})`, 280, 30);
-  }, [site, target]);
-
-  return <canvas ref={canvasRef} className="w-full h-full object-cover" />;
-}
 
 export default function SiteDetailModal({
   site,
@@ -351,7 +169,19 @@ export default function SiteDetailModal({
   const scoreLabel = fidelityLabel(pfi);
   const isMoon = target.body === 'Luna';
   const targetColor = '#A1A1AA';
-  const targetWikiPhoto = useWikipediaImage(target.id);
+
+  const optimalTarget =
+    allTargets.find((t) => t.id === site.optimalTargetId) ||
+    allTargets.find((t) => t.id === 'MOON-SHK') ||
+    allTargets[0];
+  const optimalPfi = calculatePFI(site, optimalTarget, weights || PFI_PRESETS[0].weights).pfi;
+  const isNonOptimal = Boolean(site.optimalTargetId && target.id !== site.optimalTargetId);
+
+  const orbitalTarget =
+    TARGET_ORBITAL_PHOTOS[target.id] ||
+    (target.body === 'Luna'
+      ? TARGET_ORBITAL_PHOTOS['MOON-SHK']
+      : TARGET_ORBITAL_PHOTOS['MARS-JEZ']);
 
   // Scientific data lookup
   const scientific = SITE_SCIENTIFIC_DATA[site.id] || {
@@ -471,6 +301,31 @@ export default function SiteDetailModal({
         </div>
       </header>
 
+      {/* ── INTELLIGENT CONTEXT BANNER (ÓPTIMO RECOMENDADO) ─────────── */}
+      {isNonOptimal && optimalTarget && (
+        <div className="shrink-0 bg-[#121316] border-b border-white/[0.1] px-6 md:px-10 py-3.5 flex flex-wrap items-center justify-between gap-4 font-sans text-xs z-40">
+          <div className="flex items-center gap-3 max-w-4xl">
+            <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse shrink-0" />
+            <p className="text-[#F4F4F6] leading-relaxed">
+              Estás comparando <strong className="text-white">{site.name}</strong> con{' '}
+              <strong className="text-white">{target.name}</strong> (
+              <span className="font-mono tabular-nums">{Math.round(pfi)}% PFI</span>). Sin embargo, el
+              homólogo principal de este sitio en la NASA es{' '}
+              <strong className="text-white">{optimalTarget.name}</strong> (
+              <span className="font-mono tabular-nums">{Math.round(optimalPfi)}% PFI</span> por{' '}
+              {site.optimalReason}).
+            </p>
+          </div>
+          <button
+            onClick={() => onSelectTarget(site.optimalTargetId!)}
+            className="px-4 py-2 rounded-full bg-white hover:bg-neutral-100 text-[#0A0A0C] font-semibold text-xs transition-all shadow-sm flex items-center gap-1.5 shrink-0"
+          >
+            <span>Cambiar a {optimalTarget.name}</span>
+            <span>→</span>
+          </button>
+        </div>
+      )}
+
       {/* ── CUERPO DESPLAZABLE (SCROLL CONTAINER) ────────────────────────── */}
       <div
         ref={scrollContainerRef}
@@ -557,6 +412,19 @@ export default function SiteDetailModal({
               </p>
             </div>
           </div>
+
+          {/* Human-Language Analogy Key Callout */}
+          {site.analogySummary && (
+            <div className="mb-8 p-5 rounded-2xl bg-white border border-[#E2E4EC] shadow-sm">
+              <div className="font-mono text-[10px] text-[#6B7280] uppercase tracking-wider mb-1.5 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#0A0A0C]" />
+                <span>Clave Científica de la Analogía (¿Qué tienen en común aunque a simple vista parezcan distintos?)</span>
+              </div>
+              <p className="text-sm text-[#0A0A0E] leading-relaxed font-sans font-medium">
+                {site.analogySummary}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* ── SECCIÓN 2 — GALERÍA MULTICAPA DE INSPECCIÓN GEOLÓGICA (4 LÁMINAS) ── */}
@@ -614,7 +482,7 @@ export default function SiteDetailModal({
               <div className="relative flex-1 overflow-hidden bg-[#181B20]">
                 <GeologicalSiteImage site={site} />
                 <div className="absolute top-4 left-4 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-full font-mono text-xs text-white font-bold">
-                  LÁMINA 01 · FOTOGRAFÍA GEOLÓGICA DE CAMPO
+                  LÁMINA 01 · FOTOGRAFÍA GEOLÓGICA DE CAMPO (SUPERFICIE)
                 </div>
               </div>
               <div className="p-4 bg-white border-t border-[#E2E4EC]">
@@ -623,54 +491,73 @@ export default function SiteDetailModal({
               </div>
             </div>
 
-            {/* Lámina 02 — Escaneo Orbital DEM / SRTM (Relieve y Pendientes) */}
+            {/* Lámina 02 — Escaneo Orbital Topográfico (Vista Cenital desde el Espacio) */}
             <div className="shrink-0 w-[84vw] md:w-[620px] rounded-3xl overflow-hidden bg-white border border-[#E2E4EC] shadow-xl flex flex-col justify-between" style={{ height: '54vh', minHeight: '390px' }}>
               <div className="relative flex-1 overflow-hidden bg-[#0A0C14]">
-                <DemHeatmapCanvas site={site} />
+                <ZenithSatelliteView
+                  lat={site.lat}
+                  lng={site.lng}
+                  zoom={11}
+                  mode="topo"
+                  siteName={site.name}
+                  elevM={site.elevM}
+                  slopeDeg={site.slopeDeg}
+                  roughnessRms={site.roughnessRms}
+                />
                 <div className="absolute top-4 left-4 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-full font-mono text-xs text-white font-bold">
-                  LÁMINA 02 · ESCANEO ORBITAL DEM & PENDIENTES
+                  LÁMINA 02 · ESCANEO ORBITAL TOPOGRÁFICO (VISTA CENITAL)
                 </div>
               </div>
               <div className="p-4 bg-white border-t border-[#E2E4EC]">
-                <h4 className="font-bold text-sm text-[#0A0A0E] mb-0.5">Mapa Hipsométrico y Vectores de Pendiente</h4>
-                <p className="font-mono text-xs text-[#686B75] line-clamp-1">Curvas cada 25m y análisis de relieve para transitabilidad de rovers</p>
+                <h4 className="font-bold text-sm text-[#0A0A0E] mb-0.5">Escaneo Orbital Topográfico y Pendientes · USGS SRTM 30m</h4>
+                <p className="font-mono text-xs text-[#686B75] line-clamp-1">Mosaico satelital de relieve y vectores de pendiente desde órbita sin cielo ni nubes</p>
               </div>
             </div>
 
-            {/* Lámina 03 — Firma Espectral Mineralógica */}
+            {/* Lámina 03 — Ortoimagen Espectral y Albedo Superficial */}
             <div className="shrink-0 w-[84vw] md:w-[620px] rounded-3xl overflow-hidden bg-white border border-[#E2E4EC] shadow-xl flex flex-col justify-between" style={{ height: '54vh', minHeight: '390px' }}>
               <div className="relative flex-1 overflow-hidden bg-[#080A10]">
-                <SpectralSignatureCanvas site={site} target={target} />
+                <ZenithSatelliteView
+                  lat={site.lat}
+                  lng={site.lng}
+                  zoom={12}
+                  mode="thermal"
+                  siteName={site.name}
+                  meanTempC={site.meanTempC}
+                />
                 <div className="absolute top-4 left-4 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-full font-mono text-xs text-white font-bold">
-                  LÁMINA 03 · ESPECTROMETRÍA TÉRMICA / ALBEDO (ASTER vs CRISM/DIVINER)
+                  LÁMINA 03 · ORTOIMAGEN SATELITAL Y ALBEDO (VISTA CENITAL)
                 </div>
               </div>
               <div className="p-4 bg-white border-t border-[#E2E4EC]">
-                <h4 className="font-bold text-sm text-[#0A0A0E] mb-0.5">Bandas de Absorción Mineralógica</h4>
-                <p className="font-mono text-xs text-[#686B75] line-clamp-1">Comparación de firmas de {site.mineralogy.split(',').slice(0, 3).join(', ')}</p>
+                <h4 className="font-bold text-sm text-[#0A0A0E] mb-0.5">Ortoimagen Espectral y Albedo Superficial · MODIS LST / ASTER</h4>
+                <p className="font-mono text-xs text-[#686B75] line-clamp-1">Retícula de coordenadas orbitales y distribución radiométrica en Kelvin</p>
               </div>
             </div>
 
-            {/* Lámina 04 — Terreno Homólogo en Luna / Marte */}
+            {/* Lámina 04 — Terreno Homólogo en Luna / Marte (Vista Orbital Cenital) */}
             <div className="shrink-0 w-[84vw] md:w-[620px] rounded-3xl overflow-hidden bg-white border border-[#E2E4EC] shadow-xl flex flex-col justify-between" style={{ height: '54vh', minHeight: '390px' }}>
-              <div className="relative flex-1 overflow-hidden bg-[#10121A]">
+              <div className="relative flex-1 overflow-hidden bg-[#0A0C14]">
                 <img
-                  src={
-                    targetWikiPhoto ||
-                    (isMoon
-                      ? 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Aldrin_Apollo_11_original.jpg/1280px-Aldrin_Apollo_11_original.jpg'
-                      : 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/NASA_Mars_Rover.jpg/1280px-NASA_Mars_Rover.jpg')
-                  }
-                  alt="Superficie espacial homóloga"
+                  src={orbitalTarget.photo}
+                  alt={target.name}
                   className="w-full h-full object-cover pointer-events-none"
                 />
                 <div className="absolute top-4 left-4 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-full font-mono text-xs text-white font-bold">
-                  LÁMINA 04 · TERRENO HOMÓLOGO EXTRATERRESTRE ({target.body.toUpperCase()})
+                  LÁMINA 04 · TERRENO HOMÓLOGO NASA (VISTA ORBITAL {target.body.toUpperCase()})
+                </div>
+                {/* Metric Scale Badge */}
+                <div className="absolute bottom-4 right-4 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2.5 font-mono text-[10px] text-white pointer-events-none tabular-nums shadow-lg">
+                  <span>{orbitalTarget.scaleLabel}</span>
+                  <div className="w-14 h-1.5 bg-white border border-black/40 flex">
+                    <div className="w-1/2 h-full bg-[#0A0A0C]" />
+                    <div className="w-1/2 h-full bg-white" />
+                  </div>
                 </div>
               </div>
               <div className="p-4 bg-white border-t border-[#E2E4EC]">
-                <h4 className="font-bold text-sm text-[#0A0A0E] mb-0.5">{target.name}</h4>
-                <p className="font-mono text-xs text-[#686B75] line-clamp-1">{target.subtitle}</p>
+                <h4 className="font-bold text-sm text-[#0A0A0E] mb-0.5">{target.name} ({target.body})</h4>
+                <p className="font-mono text-xs text-[#686B75] line-clamp-1">{orbitalTarget.caption}</p>
               </div>
             </div>
           </div>
@@ -702,6 +589,9 @@ export default function SiteDetailModal({
             earthMeanTempC={site.meanTempC}
             earthTempMinC={site.tempMinC}
             earthTempMaxC={site.tempMaxC}
+            earthLat={site.lat}
+            earthLng={site.lng}
+            visualGuide={site.visualGuide}
             onOpenDatasetModal={() => setIsDatasetModalOpen(true)}
           />
         </div>
