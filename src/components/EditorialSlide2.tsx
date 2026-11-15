@@ -157,6 +157,10 @@ function PlanetaryCanvas3D() {
         }
       }
 
+      if (!isVisible) {
+        rafRef.current = 0;
+        return;
+      }
       rafRef.current = requestAnimationFrame(draw);
     };
 
@@ -169,9 +173,27 @@ function PlanetaryCanvas3D() {
     resize();
     window.addEventListener('resize', resize);
 
+    // Performance Optimization: Pause crater flyover canvas when off-screen
+    let isVisible = true;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const wasVisible = isVisible;
+        isVisible = entry.isIntersecting;
+        if (isVisible && !wasVisible && !rafRef.current) {
+          rafRef.current = requestAnimationFrame(draw);
+        } else if (!isVisible && rafRef.current) {
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = 0;
+        }
+      },
+      { rootMargin: '150px' }
+    );
+    observer.observe(canvas);
+
     rafRef.current = requestAnimationFrame(draw);
     return () => {
-      cancelAnimationFrame(rafRef.current);
+      observer.disconnect();
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
       window.removeEventListener('resize', resize);
     };
   }, []);
