@@ -100,10 +100,10 @@ function DemHeatmapCanvas({ site }: { site: EarthSite }) {
     ctx.fillRect(0, h - 38, w, 38);
     ctx.font = "600 11px 'JetBrains Mono', monospace";
     ctx.fillStyle = '#FFFFFF';
-    ctx.fillText(`USGS SRTM 30m DEM · Elevación base: ${site.elevM}m`, 18, h - 16);
+    ctx.fillText(`USGS SRTM 30m DEM — Elevación base: ${site.elevM}m`, 18, h - 16);
     ctx.textAlign = 'right';
     ctx.fillStyle = '#E4E4E7';
-    ctx.fillText(`Pendiente media: ${site.slopeDeg}° · Rugosidad RMS: ${site.roughnessRms}`, w - 18, h - 16);
+    ctx.fillText(`Pendiente media: ${site.slopeDeg}°   Rugosidad RMS: ${site.roughnessRms}`, w - 18, h - 16);
     ctx.textAlign = 'left';
   }, [site]);
 
@@ -434,7 +434,7 @@ export default function SiteDetailModal({
               {site.id}
             </span>
             <span className="font-sans text-xs uppercase tracking-wider text-[#686B75]">
-              Caso de estudio geológico · NASA Space Apps
+              Caso de estudio geológico — NASA Space Apps
             </span>
             {site.isCandidate && (
               <span className="font-sans text-xs px-2.5 py-0.5 rounded-full font-medium bg-[#18181B] text-white">
@@ -476,7 +476,7 @@ export default function SiteDetailModal({
         </h1>
 
         <p className="font-mono text-sm text-[#686B75] max-w-4xl leading-relaxed mb-6">
-          {site.country} · {site.region} · Coordenadas: <strong className="text-[#0A0A0E]">{site.dms}</strong> ({site.lat}°, {site.lng}°) · Elevación: <strong className="text-[#0A0A0E]">{site.elevM.toLocaleString()} m s.n.m.</strong>
+          {site.country} — {site.region}   Coordenadas: <strong className="text-[#0A0A0E]">{site.dms}</strong> ({site.lat}°, {site.lng}°)   Elevación: <strong className="text-[#0A0A0E]">{site.elevM.toLocaleString()} m s.n.m.</strong>
         </p>
 
         {/* 2 Prominent Pills: Micro-Escala & Proceso Activo */}
@@ -619,7 +619,7 @@ export default function SiteDetailModal({
           targetBody={target.body}
           earthCaption={site.photoEarthCaption}
           spaceCaption={target.subtitle}
-          earthTelemetry={`${site.id} · Temp: ${site.meanTempC}°C · Presión: ${site.pressureHpa} hPa · Gravedad: 9.81 m/s²`}
+          earthTelemetry={`${site.id}   Temp: ${site.meanTempC}°C   Presión: ${site.pressureHpa} hPa   Gravedad: 9.81 m/s²`}
           earthTopo={site.topo}
           targetTopo={target.topo}
           earthSiteName={site.name}
@@ -633,7 +633,7 @@ export default function SiteDetailModal({
         <div className="max-w-[1400px] mx-auto">
           <div className="mb-10 text-center md:text-left">
             <span className="font-sans text-xs uppercase tracking-wider text-[#8E9299] block mb-2 font-medium">
-              Evaluación crítica de la analogía planetaria · NASA Space Apps
+              Evaluación crítica de la analogía planetaria — NASA Space Apps
             </span>
             <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
               ¿Por qué coincide y dónde se rompe la analogía?
@@ -713,7 +713,7 @@ export default function SiteDetailModal({
           <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
               <span className="font-sans text-xs uppercase tracking-wider text-[#8E9299] block mb-2 font-medium">
-                Matriz cuantitativa multi-dataset · 8 dimensiones oficiales NASA
+                Matriz cuantitativa multi-dataset — 8 dimensiones oficiales NASA
               </span>
               <h2 className="text-3xl font-semibold text-white tracking-tight">
                 Correlación paramétrica frente a {target.name}
@@ -843,7 +843,7 @@ export default function SiteDetailModal({
         <div className="max-w-[1400px] mx-auto">
           <div className="mb-10">
             <span className="font-sans text-xs uppercase tracking-wider text-[#8E9299] block mb-2 font-medium">
-              Aplicación técnica operacional · Preparación de misiones Artemis y Marte
+              Aplicación técnica operacional — Preparación de misiones Artemis y Marte
             </span>
             <h2 className="text-3xl font-semibold text-white tracking-tight">
               Ensayos Críticos e Instrumentación de Vuelo

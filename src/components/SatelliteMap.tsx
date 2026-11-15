@@ -633,6 +633,7 @@ export default function SatelliteMap({
       biome: currentScan.tempC < 0 ? 'Polar/Criogénico' : currentScan.humidityPct < 30 ? 'Hiperárido' : 'Volcánico/Basáltico',
       charLevel: 'Bajo',
       isCandidate: true,
+      isUserCandidate: true,
       meanTempC: currentScan.tempC,
       tempMinC: currentScan.tempC - 12,
       tempMaxC: currentScan.tempC + 14,
@@ -719,7 +720,7 @@ export default function SatelliteMap({
               className="font-mono uppercase tracking-widest block mb-3 text-[#6B6F7B]"
               style={{ fontSize: '11px', letterSpacing: '0.12em' }}
             >
-              03 — Explorador cartográfico · NASA GIBS y Esri multi-dataset
+              03 — Explorador cartográfico — NASA GIBS y Esri multi-dataset
             </span>
             <h2
               className="editorial-reveal-title"

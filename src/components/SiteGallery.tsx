@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { fidelityColor, fidelityLabel } from '../data';
 import type { RankedSite, EarthSite, BiomeType } from '../data';
 import { useWikipediaImage, WIKIPEDIA_TARGET_REGISTRY } from '../services/wikipediaImages';
@@ -202,12 +202,12 @@ export function GeologicalSiteImage({ site }: { site: EarthSite }) {
 
     ctx.font = "600 11px 'JetBrains Mono', monospace";
     ctx.fillStyle = pal.accent;
-    ctx.fillText(`NASA Earth Observatory · SRTM 30m DEM · ${site.id}`, 20, H - 24);
+    ctx.fillText(`NASA Earth Observatory   SRTM 30m DEM   ${site.id}`, 20, H - 24);
 
     ctx.font = "400 10px 'JetBrains Mono', monospace";
     ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
     ctx.textAlign = 'right';
-    ctx.fillText(`${site.dms} · ELEV: ${site.elevM}m · PEND: ${site.slopeDeg}°`, W - 20, H - 24);
+    ctx.fillText(`${site.dms}   ELEV: ${site.elevM}m   PEND: ${site.slopeDeg}°`, W - 20, H - 24);
     ctx.textAlign = 'left';
   }, [useFallback, site]);
 
@@ -324,13 +324,11 @@ const SiteCard = React.memo(function SiteCard({
     >
       {/* Top Metadata Strip in Clean Editorial Sans/Mono */}
       <div className="px-6 py-3.5 bg-[#FAFBFD] border-b border-[#EAEAED] flex items-center justify-between text-xs">
-        <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap">
+        <div className="flex items-center gap-3 overflow-hidden text-ellipsis whitespace-nowrap">
           <strong className="text-[#0A0A0E] font-bold font-mono">{site.id}</strong>
-          <span className="text-[#A0A4B0]">·</span>
           <span className="text-[#686B75] text-[11px] truncate font-sans">
             {site.nasaDatasets || 'NASA SRTM 30m / ASTER'}
           </span>
-          <span className="text-[#A0A4B0]">·</span>
           <span className="text-[#0A0A0E] font-medium text-[11px] font-sans">{site.biome}</span>
         </div>
 
@@ -356,7 +354,7 @@ const SiteCard = React.memo(function SiteCard({
         {/* Coordinates Pill on Image Bottom */}
         <div className="absolute bottom-3 left-4 right-4 flex items-center justify-between pointer-events-none z-10">
           <span className="font-mono text-[10px] text-white/90 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/15">
-            {site.dms} · {site.elevM} m s.n.m.
+            {site.dms}   {site.elevM} m s.n.m.
           </span>
           <span className="font-sans text-[10px] text-white/80 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/15 font-medium">
             {fidelityLabel(pfiDisplay)}
@@ -379,7 +377,7 @@ const SiteCard = React.memo(function SiteCard({
 
           {/* Location Line */}
           <p className="font-sans text-xs text-[#686B75] mb-4">
-            {site.country} · {site.region}
+            {site.country} — {site.region}
           </p>
 
           {/* Editorial Block: Micro-escala & Proceso activo with left label & right description */}
@@ -422,33 +420,55 @@ const SiteCard = React.memo(function SiteCard({
   );
 });
 
-// ─── Filter Bar Options ──────────────────────────────────────────────────────
-const GALLERY_FILTERS: { key: string; label: string }[] = [
-  { key: 'Todos', label: 'Todos (14)' },
-  { key: 'Candidatos', label: 'Nuevos candidatos (7)' },
-  { key: 'Hiperárido', label: 'Hiperárido' },
-  { key: 'Polar/Criogénico', label: 'Polar / Criogénico' },
-  { key: 'Volcánico', label: 'Volcánico' },
-  { key: 'Impacto/Cráter', label: 'Impacto / Cráter' },
-  { key: 'Subterráneo/Cueva', label: 'Subterráneo / Cueva' },
-];
-
 export default function SiteGallery({
   rankedSites,
   onSelectSite,
   scrollVelocity = 0,
 }: SiteGalleryProps) {
   const [activeFilter, setActiveFilter] = useState('Todos');
+  const [isPrinting, setIsPrinting] = useState(false);
 
-  // Filter ranked sites based on user-selected filter chip
-  const filteredRankedSites = rankedSites.filter((rs) => {
-    if (activeFilter === 'Todos') return true;
-    if (activeFilter === 'Candidatos') return rs.site.isCandidate === true;
-    if (activeFilter === 'Volcánico') {
-      return rs.site.biome === 'Volcánico/Basáltico';
-    }
-    return rs.site.biome === activeFilter;
-  });
+  useEffect(() => {
+    const handleBefore = () => setIsPrinting(true);
+    const handleAfter = () => setIsPrinting(false);
+    window.addEventListener('beforeprint', handleBefore);
+    window.addEventListener('afterprint', handleAfter);
+    return () => {
+      window.removeEventListener('beforeprint', handleBefore);
+      window.removeEventListener('afterprint', handleAfter);
+    };
+  }, []);
+
+  const candidateCount = useMemo(
+    () => rankedSites.filter((rs) => rs.site.isCandidate === true).length,
+    [rankedSites]
+  );
+
+  const galleryFilters: { key: string; label: string }[] = useMemo(
+    () => [
+      { key: 'Todos', label: `Todos (${rankedSites.length})` },
+      { key: 'Candidatos', label: `Nuevos candidatos (${candidateCount})` },
+      { key: 'Hiperárido', label: 'Hiperárido' },
+      { key: 'Polar/Criogénico', label: 'Polar / Criogénico' },
+      { key: 'Volcánico', label: 'Volcánico' },
+      { key: 'Impacto/Cráter', label: 'Impacto / Cráter' },
+      { key: 'Subterráneo/Cueva', label: 'Subterráneo / Cueva' },
+    ],
+    [rankedSites.length, candidateCount]
+  );
+
+  // Filter ranked sites based on user-selected filter chip (in print mode, render ALL 14 sites)
+  const filteredRankedSites = useMemo(() => {
+    if (isPrinting) return rankedSites;
+    return rankedSites.filter((rs) => {
+      if (activeFilter === 'Todos') return true;
+      if (activeFilter === 'Candidatos') return rs.site.isCandidate === true;
+      if (activeFilter === 'Volcánico') {
+        return rs.site.biome === 'Volcánico/Basáltico';
+      }
+      return rs.site.biome === activeFilter;
+    });
+  }, [isPrinting, rankedSites, activeFilter]);
 
   return (
     <section
@@ -468,7 +488,7 @@ export default function SiteGallery({
               className="font-sans uppercase tracking-wider block mb-3 text-[#686B75]"
               style={{ fontSize: '11px', letterSpacing: '0.12em' }}
             >
-              02 — Laboratorio de campo terrestre · 14 sitios análogos
+              02 — Laboratorio de campo terrestre — 14 sitios análogos
             </span>
             <h2
               className="editorial-reveal-title"
@@ -496,7 +516,7 @@ export default function SiteGallery({
 
         {/* Biome / Candidate Filter Bar */}
         <div className="flex flex-wrap items-center gap-2 mb-12 pb-2">
-          {GALLERY_FILTERS.map((f) => {
+          {galleryFilters.map((f) => {
             const isSelected = activeFilter === f.key;
             return (
               <button

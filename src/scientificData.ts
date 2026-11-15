@@ -26,7 +26,7 @@ export const EARTH_PLANETARY_LIMITS: PlanetaryLimit[] = [
     id: 'GRAVITY',
     title: 'Gravedad Reducida (Reduced Gravity Field)',
     earthCondition: '9.81 m/s² (1.00 g)',
-    spaceCondition: 'Luna: 1.62 m/s² (0.165 g) · Marte: 3.72 m/s² (0.38 g)',
+    spaceCondition: 'Luna: 1.62 m/s² (0.165 g) / Marte: 3.72 m/s² (0.38 g)',
     engineeringImpact:
       'Reduce drásticamente la fuerza normal de contacto. En la Luna y Marte, las ruedas de rovers sufren mayor deslizamiento y enterramiento en regolito suelto; los taludes de dunas tienen menores ángulos de reposo dinámico y las perforadoras no pueden aplicar el peso sobre broca (weight-on-bit) disponible en la Tierra.',
     mitigationStrategy:
@@ -36,7 +36,7 @@ export const EARTH_PLANETARY_LIMITS: PlanetaryLimit[] = [
     id: 'ATMOSPHERE',
     title: 'Vacío, Presión y Ausencia de Convección Térmica',
     earthCondition: '1013 hPa (1 atm), rica en N₂/O₂, disipación convectiva',
-    spaceCondition: 'Luna: 10⁻¹² Pa (vacío absoluto) · Marte: 6.1 hPa (95% CO₂)',
+    spaceCondition: 'Luna: 10⁻¹² Pa (vacío absoluto) / Marte: 6.1 hPa (95% CO₂)',
     engineeringImpact:
       'En la Tierra, el calor de los motores y baterías se disipa por convección de aire. En el vacío lunar o el aire tenue marciano, el enfriamiento es puramente radiativo y conductivo. Además, el hielo de agua subterráneo se sublima directamente sin fase líquida, y el polvo no tiene aire que amortigüe su dispersión.',
     mitigationStrategy:
@@ -46,7 +46,7 @@ export const EARTH_PLANETARY_LIMITS: PlanetaryLimit[] = [
     id: 'RADIATION',
     title: 'Entorno de Radiación Cósmica y Solar sin Magnetosfera',
     earthCondition: 'Blindaje magnético dipolo + atmósfera gruesa (0.3 mSv/año)',
-    spaceCondition: 'Luna: 380-450 mSv/año · Marte: 240-300 mSv/año (sin dipolo)',
+    spaceCondition: 'Luna: 380-450 mSv/año / Marte: 240-300 mSv/año (sin dipolo)',
     engineeringImpact:
       'La superficie lunar y marciana recibe impactos directos de Rayos Cósmicos Galácticos (GCR) de alta energía y Eventos de Partículas Solares (SPE). Causa eventos de un solo evento (SEU) en microchips, degradación fotoeléctrica y radiólisis de cualquier compuesto orgánico en los primeros 2 metros del suelo.',
     mitigationStrategy:

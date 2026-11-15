@@ -543,25 +543,139 @@ input[type="range"]::-moz-range-thumb:hover {
   }
 }
 
-/* ── Print Media Optimization for Technical Memorandum ── */
+/* ═══════════════════════════════════════════════════════════════
+   PRINT MEDIA OPTIMIZATION — EXPEDIENTE TÉCNICO EXCLUSIVO (A4)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Screen only: print dossier is hidden on screen */
+.print-dossier-root {
+  display: none;
+}
+
 @media print {
-  body {
-    background: #FFFFFF !important;
-    color: #000000 !important;
+  @page {
+    size: A4 portrait;
+    margin: 14mm 12mm;
   }
 
-  nav, footer, canvas, .tutorial-overlay, #missions-section, #gallery-section, #satellite-section, #gravity-section {
-    display: none !important;
-  }
-
-  .select-text {
+  /* 1. Neutralize viewport & forced heights on document tree */
+  html, body, #root, #root > div, main, .min-h-screen {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
     position: static !important;
-    background: transparent !important;
+    transform: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    background: #FFFFFF !important;
+    background-color: #FFFFFF !important;
+    color: #0B0B0B !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 2. HIDE ABSOLUTELY EVERYTHING ELSE ON THE PAGE */
+  nav,
+  .floating-nav,
+  header,
+  footer,
+  button,
+  input,
+  video,
+  iframe:not(#autumn-solara-print-iframe),
+  canvas,
+  .tutorial-overlay,
+  .custom-cursor,
+  .fluid-cursor,
+  .magnetic-cursor,
+  #hero-curtain-wrap,
+  #slide2-curtain-wrap,
+  #spacetunnel-curtain-wrap,
+  #missions-section,
+  #gallery-section,
+  #satellite-section,
+  #gravity-section,
+  .section-dark,
+  .calibration-dock,
+  .upload-dock,
+  .modal-backdrop,
+  [role="dialog"],
+  .fixed.inset-0,
+  .ambient-glow,
+  .noise-overlay,
+  .print-only-canvas-snapshot {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    margin: 0 !important;
     padding: 0 !important;
   }
 
-  button {
-    display: none !important;
+  /* 3. SHOW EXCLUSIVELY THE TECHNICAL DOSSIER ON PAGE 1 */
+  .print-dossier-root {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #FFFFFF !important;
+    color: #0B0B0B !important;
+    box-sizing: border-box !important;
+  }
+
+  .print-dossier-root * {
+    visibility: visible !important;
+    color: #0B0B0B !important;
+  }
+
+  /* Block boundaries and pagination safeguards */
+  .print-block {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    margin-bottom: 20px !important;
+  }
+
+  .print-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    font-size: 10px !important;
+    margin-top: 6px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .print-table th {
+    background-color: #F0F0F0 !important;
+    color: #0B0B0B !important;
+    font-weight: 700 !important;
+    text-align: left !important;
+    padding: 6px 8px !important;
+    border: 1px solid #D0D0D0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .print-table td {
+    padding: 5px 8px !important;
+    border: 1px solid #D0D0D0 !important;
+    color: #0B0B0B !important;
+    background-color: #FFFFFF !important;
+  }
+
+  .print-table tr:nth-child(even) td {
+    background-color: #FAFAFA !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }
 

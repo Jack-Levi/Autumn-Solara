@@ -1,14 +1,36 @@
-import React from 'react';
+import React, { useRef } from 'react';
 
 interface FloatingNavProps {
   onOpenTutorial: () => void;
   onOpenCalibration: () => void;
+  onUploadCsv?: (file: File) => void;
+  onScrollToGravity?: () => void;
 }
 
 export default function FloatingNav({
   onOpenTutorial,
   onOpenCalibration,
+  onUploadCsv,
+  onScrollToGravity,
 }: FloatingNavProps) {
+  const navFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleNavCsvClick = () => {
+    if (onScrollToGravity) {
+      onScrollToGravity();
+    }
+    navFileInputRef.current?.click();
+  };
+
+  const handleNavFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onUploadCsv) {
+      onUploadCsv(file);
+    }
+    // Reset so multiple files can be uploaded repeatedly
+    e.target.value = '';
+  };
+
   return (
     <nav className="fixed top-6 left-0 right-0 z-50 px-6 md:px-10 flex items-center justify-between pointer-events-none select-none">
       {/* Top Left: Clean Logo */}
@@ -28,8 +50,27 @@ export default function FloatingNav({
         </a>
       </div>
 
-      {/* Top Right: 2 Luxury Minimalist Pills */}
+      {/* Top Right: Minimalist Pills */}
       <div className="flex items-center gap-2.5 pointer-events-auto">
+        {/* Hidden File Input for Calibrar CSV */}
+        <input
+          ref={navFileInputRef}
+          type="file"
+          accept=".csv,.txt"
+          className="hidden"
+          onChange={handleNavFileChange}
+        />
+
+        {/* Global Calibrar CSV Pill */}
+        <button
+          onClick={handleNavCsvClick}
+          className="px-4 py-2 rounded-full text-xs font-medium text-white/90 bg-[#16171B]/90 hover:bg-[#202227] border border-white/15 transition-all shadow-sm font-sans flex items-center gap-1.5"
+          title="Subir datos altimétricos CSV (LOLA o MOLA)"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-white/70" />
+          <span>Calibrar CSV</span>
+        </button>
+
         {/* Calibration PFI Pill */}
         <button
           onClick={onOpenCalibration}

@@ -121,7 +121,7 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
               className="font-sans uppercase tracking-wider block mb-3 text-[#686B75]"
               style={{ fontSize: '11px', letterSpacing: '0.12em' }}
             >
-              01 — Selección de misión destino · 4 objetivos de referencia
+              01 — Selección de misión destino — 4 objetivos de referencia
             </span>
             <h2
               className="editorial-reveal-title"

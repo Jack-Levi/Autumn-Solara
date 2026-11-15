@@ -80,20 +80,26 @@ export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
     const resize = () => {
       const section = sectionRef.current;
       if (!section) return;
-      const rect = section.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      canvas.style.width = `${rect.width}px`;
-      canvas.style.height = `${rect.height}px`;
+      const w = section.clientWidth || window.innerWidth;
+      const h = section.clientHeight || window.innerHeight;
+
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       if (particlesRef.current.length === 0) {
-        initParticles(rect.width, rect.height);
+        initParticles(w, h);
       } else {
         particlesRef.current.forEach((p) => {
-          p.originX = Math.random() * rect.width;
-          p.originY = Math.random() * rect.height;
+          p.originX = Math.random() * w;
+          p.originY = Math.random() * h;
+          p.x = p.originX;
+          p.y = p.originY;
+          p.vx = 0;
+          p.vy = 0;
         });
       }
     };
@@ -107,7 +113,11 @@ export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
         y: e.clientY,
       };
     };
+    const handleMouseLeave = () => {
+      mousePosRef.current = { x: -5000, y: -5000 };
+    };
     window.addEventListener('mousemove', handleMove, { passive: true });
+    window.addEventListener('mouseleave', handleMouseLeave);
 
     let isVisible = true;
     let smoothScroll = window.scrollY;
@@ -121,9 +131,21 @@ export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
       const section = sectionRef.current;
       if (!canvas || !ctx || !section) return;
 
-      const rect = section.getBoundingClientRect();
-      const w = rect.width;
-      const h = rect.height;
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
+
+      // 100% Complete hardware buffer clear across all pixels
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
+
+      // Clamp drawing strictly within section viewport bounds
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, w, h);
+      ctx.clip();
 
       // Global 60fps LERP inertia engine
       const targetScroll = window.scrollY;
@@ -140,8 +162,6 @@ export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
         titleBlockRef.current.style.opacity = `${op}`;
       }
 
-      ctx.clearRect(0, 0, w, h);
-
       // 1. Vertical Zenith Lunar Light Beam
       const gradient = ctx.createRadialGradient(w / 2, -100, 50, w / 2, h * 0.5, w * 0.7);
       gradient.addColorStop(0, 'rgba(255, 255, 255, 0.08)');
@@ -150,32 +170,51 @@ export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, w, h);
 
+      const rect = section.getBoundingClientRect();
+      const scaleX = rect.width / (w || 1);
+      const scaleY = rect.height / (h || 1);
       const mp = mousePosRef.current;
-      const mx = mp.x - rect.left;
-      const my = mp.y - rect.top;
+      const mx = (mp.x - rect.left) / (scaleX || 1);
+      const my = (mp.y - rect.top) / (scaleY || 1);
 
       const particles = particlesRef.current;
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
 
-        // 0. Constant drift velocity + upward vertical acceleration during orbit descent
+        // Constant drift velocity + upward vertical acceleration during orbit descent
         p.originX += p.vxBase;
-        const upwardBoost = (Math.max(0, scrollVelocity) * 0.22 + smoothScroll * 0.003) * (p.depth / 2);
+        const upwardBoost = (Math.max(0, scrollVelocity) * 0.18 + smoothScroll * 0.002) * (p.depth / 2);
         p.originY += p.vyBase - upwardBoost;
-        // Seamless wraparound: shift both origin and position simultaneously so springs don't jerk
-        if (p.originX < -30) {
-          p.originX += w + 60;
-          p.x += w + 60;
-        } else if (p.originX > w + 30) {
-          p.originX -= w + 60;
-          p.x -= w + 60;
+
+        // Clean wraparound without edge sticking
+        if (p.originX < -20) {
+          p.originX += w + 40;
+          p.x = p.originX;
+          p.vx = 0;
+        } else if (p.originX > w + 20) {
+          p.originX -= w + 40;
+          p.x = p.originX;
+          p.vx = 0;
         }
-        if (p.originY < -30) {
-          p.originY += h + 60;
-          p.y += h + 60;
-        } else if (p.originY > h + 30) {
-          p.originY -= h + 60;
-          p.y -= h + 60;
+
+        if (p.originY < -20) {
+          p.originY += h + 40;
+          p.y = p.originY;
+          p.vy = 0;
+        } else if (p.originY > h + 20) {
+          p.originY -= h + 40;
+          p.y = p.originY;
+          p.vy = 0;
+        }
+
+        // Safety position bounds to prevent stray particles
+        if (p.x < -40 || p.x > w + 40) {
+          p.x = p.originX;
+          p.vx = 0;
+        }
+        if (p.y < -40 || p.y > h + 40) {
+          p.y = p.originY;
+          p.vy = 0;
         }
 
         // Spring return to origin with depth factor
@@ -194,7 +233,6 @@ export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
         if (dist < REPULSION_RADIUS && dist > 0) {
           const force = ((REPULSION_RADIUS - dist) / REPULSION_RADIUS) * (2.8 * p.depth);
           const angle = Math.atan2(pdy, pdx);
-          // Add subtle fluid swirl
           const swirl = 0.3;
           p.vx += Math.cos(angle + swirl) * force;
           p.vy += Math.sin(angle + swirl) * force;
@@ -205,14 +243,17 @@ export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
         p.x += p.vx;
         p.y += p.vy;
 
-        // Draw particle
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
-        ctx.globalAlpha = p.opacity;
-        ctx.fill();
-        ctx.globalAlpha = 1;
+        // Draw particle only within visible area
+        if (p.x >= -2 && p.x <= w + 2 && p.y >= -2 && p.y <= h + 2) {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = p.opacity;
+          ctx.fill();
+        }
       }
+
+      ctx.restore(); // Restore clip region
 
       animFrameRef.current = requestAnimationFrame(animate);
     };
@@ -234,14 +275,11 @@ export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
     return () => {
       window.removeEventListener('resize', resize);
       window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseleave', handleMouseLeave);
       observer.disconnect();
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
   }, [initParticles]);
-
-  // Path length for 48px thick signature spline
-  const pathLength = 2600;
-  const dashOffset = Math.max(0, pathLength - scrollProgress * pathLength * 2.5);
 
   return (
     <section
@@ -270,36 +308,7 @@ export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
         style={{ zIndex: 1 }}
       />
 
-      {/* 2. Signature Minimalist Architectural Spline (Monochrome curve behind title) */}
-      <svg
-        className="absolute inset-0 w-full h-full pointer-events-none"
-        viewBox="0 0 1600 1000"
-        preserveAspectRatio="xMidYMid slice"
-        style={{ zIndex: 2 }}
-      >
-        <defs>
-          <linearGradient id="splineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.14" />
-            <stop offset="50%" stopColor="#E4E4E7" stopOpacity="0.22" />
-            <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.1" />
-          </linearGradient>
-        </defs>
-        <path
-          d="M -100,200 C 400,100 300,750 800,600 C 1300,450 1200,900 1750,850"
-          stroke="url(#splineGradient)"
-          strokeWidth="42"
-          strokeLinecap="round"
-          fill="none"
-          strokeDasharray={pathLength}
-          strokeDashoffset={dashOffset}
-          style={{
-            filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.6))',
-            transition: 'stroke-dashoffset 0.12s ease-out',
-          }}
-        />
-      </svg>
-
-      {/* 3. Hero Content Overlaid on Lower-Left Third with Line-by-Line Masked Reveal */}
+      {/* 2. Hero Content Overlaid on Lower-Left Third with Line-by-Line Masked Reveal */}
       <div
         ref={titleBlockRef}
         className="relative z-10 w-full flex flex-col"

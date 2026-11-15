@@ -360,7 +360,7 @@ export default function PhotoComparator({
             Tierra (Análogo)
           </span>
           <span className="font-mono text-[10px] px-2.5 py-1 rounded-full bg-black/60 text-white/80 border border-white/15 hidden sm:inline">
-            9.81 m/s² · 1 atm
+            9.81 m/s²   1 atm
           </span>
         </div>
 
@@ -431,7 +431,7 @@ export default function PhotoComparator({
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-sans text-xs font-bold text-white uppercase tracking-wider block">
-                  Perfil topográfico cruzado · {datasetSummary.instrumentBadge}
+                  Perfil topográfico cruzado — {datasetSummary.instrumentBadge}
                 </span>
               </div>
               <span className="font-sans text-[11px] text-[#8E9299]">
