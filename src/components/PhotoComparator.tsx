@@ -538,7 +538,7 @@ export default function PhotoComparator({
           <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
             <div>
               <span className="font-sans text-xs font-bold text-[#F4F4F6] uppercase tracking-wider block">
-                Perfil Topográfico Morfológico de Doble Escala Normalizada · {datasetSummary.instrumentBadge}
+                Sección 3 — Perfil Topográfico Morfológico Normalizado y Panel de Inercia Térmica · {datasetSummary.instrumentBadge}
               </span>
               <span className="font-sans text-[11px] text-[#8E9299]">
                 Transecto morfológico real (100 puntos): USGS SRTM 30m vs. {datasetSummary.demCsvName}

@@ -252,7 +252,7 @@ export default function DiurnalThermal24hSimulator({
       <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
         <div>
           <h4 className="font-sans text-sm font-bold text-[#F4F4F6] tracking-tight">
-            Ciclo Térmico Diurno de 24 Horas
+            Sección 4 — Simulador Interactivo del Ciclo Térmico Diurno de 24 Horas
           </h4>
           <p className="font-sans text-xs text-[#8E9299]">
             Comparativa radiométrica horaria entre telemetría orbital NASA (LRO Diviner / TES-THEMIS) y superficie terrestre (MODIS LST).
