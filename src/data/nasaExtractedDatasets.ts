@@ -3853,3 +3853,239 @@ export function getTargetDatasetSummary(targetId: string): TargetDatasetSummary 
       };
   }
 }
+
+// ─── Real Thermal Inertia & Radiometric Temperature Profiles ────────────────
+// Direct from official repository CSV files: TES/THEMIS & LRO Diviner
+
+export interface TargetThermalProfile {
+  targetId: string;
+  targetName: string;
+  targetBody: 'Luna' | 'Marte';
+  instrumentBadge: string;
+  csvFileName: string;
+  csvDownloadUrl: string;
+  thermalInertiaTIU: number;
+  thermalInertiaRegime: string;
+  tempMinK: number;
+  tempMaxK: number;
+  tempMeanK: number;
+  tempMinC: number;
+  tempMaxC: number;
+  tempMeanC: number;
+  deltaTK: number;
+  deltaTC: number;
+  implicationsText: string;
+}
+
+export function getTargetThermalProfile(targetId: string): TargetThermalProfile {
+  switch (targetId) {
+    case 'MOON-SHK':
+      return {
+        targetId: 'MOON-SHK',
+        targetName: 'Cráter Shackleton (Polo Sur)',
+        targetBody: 'Luna',
+        instrumentBadge: 'LRO Diviner Lunar Radiometer (DLRE)',
+        csvFileName: 'Shackleton_Crater_temperatura_diviner.csv',
+        csvDownloadUrl: '/DATASETS_EXTRAIDOS_NUEVOS/LUNA/temperatura/Shackleton_Crater_temperatura_diviner.csv',
+        thermalInertiaTIU: 38.0,
+        thermalInertiaRegime: '0 – 100 TIU: Polvo fino suelto / regolito altamente poroso',
+        tempMinK: 38.4,
+        tempMaxK: 245.0,
+        tempMeanK: 165.0,
+        tempMinC: -234.8,
+        tempMaxC: -28.2,
+        tempMeanC: -108.2,
+        deltaTK: 206.6,
+        deltaTC: 206.6,
+        implicationsText:
+          'En las trampas frías de sombra permanente (38 K), el regolito criogénico cementado por hielo actúa como roca de alta resistencia mecánica. Las herramientas de perforación ISRU requieren brocas de percusión de alto torque.',
+      };
+    case 'MOON-COP':
+      return {
+        targetId: 'MOON-COP',
+        targetName: 'Cráter Copernicus',
+        targetBody: 'Luna',
+        instrumentBadge: 'LRO Diviner Lunar Radiometer (DLRE)',
+        csvFileName: 'Copernicus_Crater_temperatura_diviner.csv',
+        csvDownloadUrl: '/DATASETS_EXTRAIDOS_NUEVOS/LUNA/temperatura/Copernicus_Crater_temperatura_diviner.csv',
+        thermalInertiaTIU: 55.0,
+        thermalInertiaRegime: '0 – 100 TIU: Polvo fino suelto / regolito altamente poroso',
+        tempMinK: 95.0,
+        tempMaxK: 385.0,
+        tempMeanK: 217.4,
+        tempMinC: -178.1,
+        tempMaxC: 111.9,
+        tempMeanC: -55.7,
+        deltaTK: 290.0,
+        deltaTC: 290.0,
+        implicationsText:
+          'El ultra-alto vacío lunar suprime la conducción gaseosa, confinando el flujo térmico al contacto intergranular vítreo. La resistencia al corte aumenta bruscamente con la profundidad, dificultando la perforación ISRU.',
+      };
+    case 'MARS-JEZ':
+      return {
+        targetId: 'MARS-JEZ',
+        targetName: 'Cráter Jezero (Perseverance)',
+        targetBody: 'Marte',
+        instrumentBadge: 'MGS TES / Mars Odyssey THEMIS',
+        csvFileName: 'Jezero_Crater_temperatura_inercia_TES_THEMIS.csv',
+        csvDownloadUrl: '/DATASETS_EXTRAIDOS_NUEVOS/MARTE/temperatura/Jezero_Crater_temperatura_inercia_TES_THEMIS.csv',
+        thermalInertiaTIU: 320.0,
+        thermalInertiaRegime: '100 – 350 TIU: Arena eólica / ceniza volcánica consolidada',
+        tempMinK: 192.0,
+        tempMaxK: 274.0,
+        tempMeanK: 222.8,
+        tempMinC: -81.2,
+        tempMaxC: 0.9,
+        tempMeanC: -50.4,
+        deltaTK: 82.0,
+        deltaTC: 82.0,
+        implicationsText:
+          'La inercia moderada (320 TIU) refleja mantos de arena eólica fina sobre duricrust en tenue atmósfera de CO₂ (6 hPa). El deslizamiento de ruedas en taludes arenosos y la compresión mecánica alteran la tracción nominal de rovers.',
+      };
+    case 'MARS-ALB':
+      return {
+        targetId: 'MARS-ALB',
+        targetName: 'Alba Mons (Tharsis)',
+        targetBody: 'Marte',
+        instrumentBadge: 'MGS TES / Mars Odyssey THEMIS',
+        csvFileName: 'Alba_Mons_temperatura_inercia_TES_THEMIS.csv',
+        csvDownloadUrl: '/DATASETS_EXTRAIDOS_NUEVOS/MARTE/temperatura/Alba_Mons_temperatura_inercia_TES_THEMIS.csv',
+        thermalInertiaTIU: 145.0,
+        thermalInertiaRegime: '100 – 350 TIU: Arena eólica / ceniza volcánica consolidada',
+        tempMinK: 175.0,
+        tempMaxK: 260.0,
+        tempMeanK: 206.5,
+        tempMinC: -98.2,
+        tempMaxC: -13.2,
+        tempMeanC: -66.7,
+        deltaTK: 85.0,
+        deltaTC: 85.0,
+        implicationsText:
+          'Inercia ultra-baja (145 TIU) por gruesos depósitos de polvo eólico no consolidado sobre el escudo basáltico. Riesgo crítico de atrapamiento por hundimiento de ruedas y escasa disipación térmica conductiva en superficie.',
+      };
+    default:
+      if (targetId.startsWith('MOON')) {
+        return getTargetThermalProfile('MOON-SHK');
+      }
+      return getTargetThermalProfile('MARS-JEZ');
+  }
+}
+
+export function getEarthSiteThermalInertia(siteId: string): {
+  tiu: number;
+  regime: string;
+  description: string;
+} {
+  switch (siteId) {
+    case 'ATC-01':
+      return {
+        tiu: 780,
+        regime: '350 – 1,200 TIU: Duricrust cementado / brecha fracturada',
+        description: 'Duricrust de halita, nitratos y arcillas compactadas hiperáridas',
+      };
+    case 'RIO-02':
+      return {
+        tiu: 1250,
+        regime: '> 1,200 TIU: Roca madre expuesta / basalto masivo',
+        description: 'Gossan oxidado masivo y areniscas ferruginosas',
+      };
+    case 'MCM-03':
+      return {
+        tiu: 1080,
+        regime: '350 – 1,200 TIU: Duricrust cementado / brecha fracturada',
+        description: 'Permafrost seco consolidado y pavimento desértico de ventifactos',
+      };
+    case 'MJV-04':
+      return {
+        tiu: 560,
+        regime: '350 – 1,200 TIU: Duricrust cementado / brecha fracturada',
+        description: 'Arenas eólicas compactadas y abanico aluvial cuaternario',
+      };
+    case 'HAW-05':
+      return {
+        tiu: 1650,
+        regime: '> 1,200 TIU: Roca madre expuesta / basalto masivo',
+        description: 'Coladas basálticas pahoehoe y aa de alta densidad',
+      };
+    case 'ICE-06':
+      return {
+        tiu: 1420,
+        regime: '> 1,200 TIU: Roca madre expuesta / basalto masivo',
+        description: 'Basalto vesicular fisural y campos de tefra basáltica',
+      };
+    case 'TEI-07':
+      return {
+        tiu: 820,
+        regime: '350 – 1,200 TIU: Duricrust cementado / brecha fracturada',
+        description: 'Pómez fonolítica, lavas de obsidiana y cenizas',
+      };
+    case 'PLB-08':
+      return {
+        tiu: 1850,
+        regime: '> 1,200 TIU: Roca madre expuesta / basalto masivo',
+        description: 'Formaciones de hierro bandeado (BIF) y cherts arqueanos masivos',
+      };
+    case 'SVL-09':
+      return {
+        tiu: 1180,
+        regime: '350 – 1,200 TIU: Duricrust cementado / brecha fracturada',
+        description: 'Suelos poligonales con permafrost continuo y pizarras',
+      };
+    case 'HGT-10':
+      return {
+        tiu: 1320,
+        regime: '> 1,200 TIU: Roca madre expuesta / basalto masivo',
+        description: 'Brecha alóctona de impacto y dolomías paleozoicas',
+      };
+    case 'DNK-11':
+      return {
+        tiu: 920,
+        regime: '350 – 1,200 TIU: Duricrust cementado / brecha fracturada',
+        description: 'Costras salinas evaporíticas masivas sobre basaltos distensivos',
+      };
+    case 'LNZ-12':
+      return {
+        tiu: 1100,
+        regime: '350 – 1,200 TIU: Duricrust cementado / brecha fracturada',
+        description: 'Lapilli basáltico (picón) y lavas basálticas recientes',
+      };
+    case 'NMB-13':
+      return {
+        tiu: 540,
+        regime: '350 – 1,200 TIU: Duricrust cementado / brecha fracturada',
+        description: 'Arenas cuarzosas eólicas hiperáridas de alta madurez',
+      };
+    case 'LNR-14':
+      return {
+        tiu: 1720,
+        regime: '> 1,200 TIU: Roca madre expuesta / basalto masivo',
+        description: 'Basaltos de inundación del Decán en cráter de impacto simple',
+      };
+    default:
+      return {
+        tiu: 850,
+        regime: '350 – 1,200 TIU: Duricrust cementado / brecha fracturada',
+        description: 'Suelo análogo consolidado en atmósfera terrestre (1 atm)',
+      };
+  }
+}
+
+export function getThermalInertiaPositionPct(tiu: number): number {
+  if (tiu <= 100) {
+    return Math.max(3, (tiu / 100) * 25);
+  } else if (tiu <= 350) {
+    return 25 + ((tiu - 100) / (350 - 100)) * 25;
+  } else if (tiu <= 1200) {
+    return 50 + ((tiu - 350) / (1200 - 350)) * 25;
+  } else {
+    return 75 + Math.min(22, ((tiu - 1200) / (2200 - 1200)) * 25);
+  }
+}
+
+export function getTemperaturePositionPct(tempC: number): number {
+  const minC = -240;
+  const maxC = 125;
+  const clamped = Math.max(minC, Math.min(maxC, tempC));
+  return ((clamped - minC) / (maxC - minC)) * 100;
+}
+

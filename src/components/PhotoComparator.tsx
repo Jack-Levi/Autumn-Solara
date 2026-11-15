@@ -1,12 +1,16 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   getPlanetaryTopo,
   getTopoStats,
   getTargetDatasetSummary,
+  getTargetThermalProfile,
+  getEarthSiteThermalInertia,
+  getThermalInertiaPositionPct,
+  getTemperaturePositionPct,
 } from '../data/nasaExtractedDatasets';
 import type { PlanetaryTopoTransect } from '../data/nasaExtractedDatasets';
 import PlanetaryThermalSimulator from './PlanetaryThermalSimulator';
-import { useWikipediaImage, WIKIPEDIA_TARGET_REGISTRY } from '../services/wikipediaImages';
+import { useWikipediaImage } from '../services/wikipediaImages';
 
 interface PhotoComparatorProps {
   earthSiteId?: string;
@@ -21,38 +25,46 @@ interface PhotoComparatorProps {
   targetTopo?: { distKm: number; elevM: number }[];
   earthSiteName?: string;
   earthMeanTempC?: number;
+  earthTempMinC?: number;
+  earthTempMaxC?: number;
   onOpenDatasetModal?: () => void;
 }
 
 // 4 Primary Verified NASA Target Reference Photos (+ fallbacks)
 const TARGET_VERIFIED_PHOTOS: Record<string, { photo: string; caption: string }> = {
   'MOON-SHK': {
-    photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Aldrin_Apollo_11_original.jpg/1280px-Aldrin_Apollo_11_original.jpg',
-    caption: 'Luna: Polo Sur (Cráter Shackleton) — Superficie y regolito anortosítico polar (NASA Apollo / LRO)',
+    photo:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Aldrin_Apollo_11_original.jpg/1280px-Aldrin_Apollo_11_original.jpg',
+    caption: 'Luna: Polo Sur (Cráter Shackleton) · Superficie y regolito anortosítico polar (NASA Apollo / LRO)',
   },
   'MOON-COP': {
-    photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Copernicus_crater_AS17-151-23260.jpg/1280px-Copernicus_crater_AS17-151-23260.jpg',
-    caption: 'Luna: Cráter Copernicus — Complejo de picos centrales y terrazas de impacto (NASA LRO / Apollo 17)',
+    photo:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Copernicus_crater_AS17-151-23260.jpg/1280px-Copernicus_crater_AS17-151-23260.jpg',
+    caption: 'Luna: Cráter Copernicus · Complejo de picos centrales y terrazas de impacto (NASA LRO / Apollo 17)',
   },
   'MOON-LAV': {
-    photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Mare_Tranquillitatis_pit_crater.jpg/1024px-Mare_Tranquillitatis_pit_crater.jpg',
-    caption: 'Luna: Mare Tranquillitatis — Claraboya natural (skylight) a tubo de lava basáltico (NASA LRO)',
+    photo:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Mare_Tranquillitatis_pit_crater.jpg/1024px-Mare_Tranquillitatis_pit_crater.jpg',
+    caption: 'Luna: Mare Tranquillitatis · Claraboya natural (skylight) a tubo de lava basáltico (NASA LRO)',
   },
   'MARS-JEZ': {
-    photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/NASA_Mars_Rover.jpg/1280px-NASA_Mars_Rover.jpg',
-    caption: 'Marte: Cráter Jezero — Abanico deltaico fluvial explorado por Perseverance (NASA/JPL-Caltech)',
+    photo:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/NASA_Mars_Rover.jpg/1280px-NASA_Mars_Rover.jpg',
+    caption: 'Marte: Cráter Jezero · Abanico deltaico fluvial explorado por Perseverance (NASA/JPL-Caltech)',
   },
   'MARS-ALB': {
-    photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Alba_Patera_MGS.jpg/1024px-Alba_Patera_MGS.jpg',
-    caption: 'Marte: Alba Mons (Tharsis) — Llanuras volcánicas de baja pendiente cubiertas de polvo (NASA MGS MOLA)',
+    photo:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Alba_Patera_MGS.jpg/1024px-Alba_Patera_MGS.jpg',
+    caption: 'Marte: Alba Mons (Tharsis) · Llanuras volcánicas de baja pendiente cubiertas de polvo (NASA MGS MOLA)',
   },
   'MARS-ARC': {
-    photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/OSIRIS_Mars_true_color.jpg/1280px-OSIRIS_Mars_true_color.jpg',
-    caption: 'Marte: Arcadia Planitia — Llanuras basálticas con hielo somero (ESA / NASA)',
+    photo:
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/OSIRIS_Mars_true_color.jpg/1280px-OSIRIS_Mars_true_color.jpg',
+    caption: 'Marte: Arcadia Planitia · Llanuras basálticas con hielo somero (ESA / NASA)',
   },
 };
 
-// High-Fidelity Procedural Fallback Canvas (Never a blank box)
+// Procedural Fallback Canvas
 function drawProceduralSurface(canvas: HTMLCanvasElement, body: 'earth' | 'luna' | 'marte') {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -125,7 +137,7 @@ function drawProceduralSurface(canvas: HTMLCanvasElement, body: 'earth' | 'luna'
 }
 
 export default function PhotoComparator({
-  earthSiteId,
+  earthSiteId = 'ATC-01',
   earthPhoto,
   targetId,
   targetName,
@@ -137,45 +149,51 @@ export default function PhotoComparator({
   targetTopo = [],
   earthSiteName = 'Sitio Análogo Terrestre',
   earthMeanTempC = 18,
+  earthTempMinC,
+  earthTempMaxC,
   onOpenDatasetModal,
 }: PhotoComparatorProps) {
   const [position, setPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
   const [earthImgError, setEarthImgError] = useState(false);
   const [spaceImgError, setSpaceImgError] = useState(false);
-  const [activeTab, setActiveTab] = useState<'topo' | 'thermal'>('topo');
-  const [hoveredPointIdx, setHoveredPointIdx] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<'topo' | 'simulator'>('topo');
+  const [hoverSvgX, setHoverSvgX] = useState<number | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const earthCanvasRef = useRef<HTMLCanvasElement>(null);
   const spaceCanvasRef = useRef<HTMLCanvasElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
 
   // Ingest real 100-point planetary DEM transect
   const extractedPlanetaryPoints: PlanetaryTopoTransect[] = getPlanetaryTopo(targetId);
   const planetaryStats = getTopoStats(extractedPlanetaryPoints);
   const datasetSummary = getTargetDatasetSummary(targetId);
 
-  // Active target topo array (prefer real extracted points if available)
+  // Real thermal profile from official CSV datasets (TES/THEMIS & Diviner)
+  const targetThermal = getTargetThermalProfile(targetId);
+  const earthInertia = getEarthSiteThermalInertia(earthSiteId);
+
+  // Active target topo array (prefer real extracted 100 points)
   const activeTargetTopo =
     extractedPlanetaryPoints.length > 0 ? extractedPlanetaryPoints : targetTopo;
 
   // Space photo & caption based on targetId
   const wikiSpaceUrl = useWikipediaImage(targetId);
-  const wikiEarthUrl = useWikipediaImage(earthSiteId || '');
+  const wikiEarthUrl = useWikipediaImage(earthSiteId);
 
   const verifiedSpace = TARGET_VERIFIED_PHOTOS[targetId] || {
     photo:
       targetBody === 'Luna'
         ? TARGET_VERIFIED_PHOTOS['MOON-SHK'].photo
         : TARGET_VERIFIED_PHOTOS['MARS-JEZ'].photo,
-    caption: `${targetName} — Misión espacial NASA`,
+    caption: `${targetName} · Misión espacial NASA`,
   };
 
   const activeSpacePhoto = wikiSpaceUrl || verifiedSpace.photo;
   const activeSpaceCaption = spaceCaption || verifiedSpace.caption;
   const activeEarthPhoto = wikiEarthUrl || earthPhoto;
 
-  // Reset img error if URLs change
   useEffect(() => {
     setEarthImgError(false);
   }, [activeEarthPhoto]);
@@ -184,7 +202,6 @@ export default function PhotoComparator({
     setSpaceImgError(false);
   }, [activeSpacePhoto]);
 
-  // Canvas fallbacks
   useEffect(() => {
     if (earthImgError && earthCanvasRef.current) {
       drawProceduralSurface(earthCanvasRef.current, 'earth');
@@ -230,7 +247,6 @@ export default function PhotoComparator({
     setIsDragging(false);
   }, []);
 
-  // Keyboard support (left/right arrows)
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft') setPosition((p) => Math.max(0, p - 3));
@@ -240,13 +256,16 @@ export default function PhotoComparator({
     return () => window.removeEventListener('keydown', handleKey);
   }, []);
 
-  // Topographic cross-section calculations (Dual Y-Axis normalized for direct morphological comparison)
-  const maxDist =
-    Math.max(
-      ...earthTopo.map((p) => p.distKm),
-      ...activeTargetTopo.map((p) => p.distKm),
-      1
-    ) || 10;
+  // ─── Topographic Morphological Dual-Scale Normalization (Δm) ─────────────
+  // SVG ViewBox: 0 0 900 240
+  // Left: 75, Right: 825, Width: 750
+  // Height: 240 -> Top Margin: 24 (10%), Bottom Margin: 24 (10%), Active Plot: 192 (80%)
+  // Baseline y = 216, Top y = 24
+  const PLOT_LEFT = 75;
+  const PLOT_RIGHT = 825;
+  const PLOT_WIDTH = 750;
+  const PLOT_BASELINE = 216;
+  const PLOT_ACTIVE_H = 192;
 
   const earthElevs = earthTopo.map((p) => p.elevM);
   const targetElevs = activeTargetTopo.map((p) => p.elevM);
@@ -259,42 +278,151 @@ export default function PhotoComparator({
   const targetMaxElev = targetElevs.length ? Math.max(...targetElevs) : 1000;
   const targetRangeElev = Math.max(1, targetMaxElev - targetMinElev);
 
-  // Map Earth curve to y: 135 (bottom) to 30 (top) using Earth's relative relief
-  const earthTopoPath =
-    earthTopo.length > 0
-      ? 'M ' +
-        earthTopo
-          .map((p) => {
-            const x = 55 + (p.distKm / maxDist) * 580;
-            const y = 135 - ((p.elevM - earthMinElev) / earthRangeElev) * 105;
-            return `${x.toFixed(1)},${y.toFixed(1)}`;
-          })
-          .join(' L ')
-      : '';
-
-  // Map Target planetary curve to y: 135 (bottom) to 30 (top) using Target's relative relief
-  const targetTopoPath =
+  const targetMaxDist =
     activeTargetTopo.length > 0
-      ? 'M ' +
-        activeTargetTopo
-          .map((p) => {
-            const x = 55 + (p.distKm / maxDist) * 580;
-            const y = 135 - ((p.elevM - targetMinElev) / targetRangeElev) * 105;
-            return `${x.toFixed(1)},${y.toFixed(1)}`;
-          })
-          .join(' L ')
-      : '';
+      ? activeTargetTopo[activeTargetTopo.length - 1].distKm
+      : 10;
 
-  const targetColor = '#A1A1AA';
+  // Normalized Earth SVG Path (100% across plot width, 80% height)
+  const { earthPath, earthAreaPath } = useMemo(() => {
+    if (earthTopo.length === 0) return { earthPath: '', earthAreaPath: '' };
+    const points = earthTopo.map((p, idx) => {
+      const frac = idx / Math.max(1, earthTopo.length - 1);
+      const x = PLOT_LEFT + frac * PLOT_WIDTH;
+      const y = PLOT_BASELINE - ((p.elevM - earthMinElev) / earthRangeElev) * PLOT_ACTIVE_H;
+      return { x, y };
+    });
 
-  // Hovered point details
-  const hoveredPoint =
-    hoveredPointIdx !== null && activeTargetTopo[hoveredPointIdx]
-      ? activeTargetTopo[hoveredPointIdx]
-      : null;
+    const dStroke = 'M ' + points.map((pt) => `${pt.x.toFixed(1)},${pt.y.toFixed(1)}`).join(' L ');
+    const dArea =
+      `M ${PLOT_LEFT},${PLOT_BASELINE} ` +
+      points.map((pt) => `L ${pt.x.toFixed(1)},${pt.y.toFixed(1)}`).join(' ') +
+      ` L ${PLOT_RIGHT},${PLOT_BASELINE} Z`;
+
+    return { earthPath: dStroke, earthAreaPath: dArea };
+  }, [earthTopo, earthMinElev, earthRangeElev]);
+
+  // Normalized Target DEM SVG Path (100% across plot width, 80% height)
+  const targetPath = useMemo(() => {
+    if (activeTargetTopo.length === 0) return '';
+    return (
+      'M ' +
+      activeTargetTopo
+        .map((p, idx) => {
+          const frac = idx / Math.max(1, activeTargetTopo.length - 1);
+          const x = PLOT_LEFT + frac * PLOT_WIDTH;
+          const y = PLOT_BASELINE - ((p.elevM - targetMinElev) / targetRangeElev) * PLOT_ACTIVE_H;
+          return `${x.toFixed(1)},${y.toFixed(1)}`;
+        })
+        .join(' L ')
+    );
+  }, [activeTargetTopo, targetMinElev, targetRangeElev]);
+
+  // Handle interactive pointer crosshair
+  const handleSvgPointerMove = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
+    if (!svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const rawX = ((e.clientX - rect.left) / rect.width) * 900;
+    const clampedX = Math.max(PLOT_LEFT, Math.min(PLOT_RIGHT, rawX));
+    setHoverSvgX(clampedX);
+  }, []);
+
+  const handleSvgPointerLeave = useCallback(() => {
+    setHoverSvgX(null);
+  }, []);
+
+  // Compute live interpolated telemetry at hovered cursor position
+  const liveTelemetry = useMemo(() => {
+    const frac = hoverSvgX !== null ? (hoverSvgX - PLOT_LEFT) / PLOT_WIDTH : 0.5;
+    const distKm = frac * targetMaxDist;
+
+    // Target DEM interpolation & slope
+    let targetElev = targetMinElev;
+    let targetSlope = 0;
+    if (activeTargetTopo.length > 1) {
+      const rawIdx = frac * (activeTargetTopo.length - 1);
+      const idx = Math.min(activeTargetTopo.length - 2, Math.floor(rawIdx));
+      const p0 = activeTargetTopo[idx];
+      const p1 = activeTargetTopo[idx + 1];
+      const subFrac = rawIdx - idx;
+      targetElev = p0.elevM + subFrac * (p1.elevM - p0.elevM);
+      const dz = p1.elevM - p0.elevM;
+      const dx = (p1.distKm - p0.distKm) * 1000;
+      targetSlope = Math.abs(Math.round((Math.atan2(Math.abs(dz), Math.max(0.1, dx)) * 180) / Math.PI * 10) / 10);
+    }
+
+    // Earth SRTM interpolation & slope
+    let earthElev = earthMinElev;
+    let earthSlope = 0;
+    if (earthTopo.length > 1) {
+      const rawIdx = frac * (earthTopo.length - 1);
+      const idx = Math.min(earthTopo.length - 2, Math.floor(rawIdx));
+      const p0 = earthTopo[idx];
+      const p1 = earthTopo[idx + 1];
+      const subFrac = rawIdx - idx;
+      earthElev = p0.elevM + subFrac * (p1.elevM - p0.elevM);
+      const dz = p1.elevM - p0.elevM;
+      const dx = (p1.distKm - p0.distKm) * 1000;
+      earthSlope = Math.abs(Math.round((Math.atan2(Math.abs(dz), Math.max(0.1, dx)) * 180) / Math.PI * 10) / 10);
+    }
+
+    const localReliefDelta = Math.round(Math.abs(targetElev - targetMinElev));
+
+    const yEarth = PLOT_BASELINE - ((earthElev - earthMinElev) / earthRangeElev) * PLOT_ACTIVE_H;
+    const yTarget = PLOT_BASELINE - ((targetElev - targetMinElev) / targetRangeElev) * PLOT_ACTIVE_H;
+
+    return {
+      distKm,
+      targetElev: Math.round(targetElev),
+      targetSlope,
+      earthElev: Math.round(earthElev),
+      earthSlope,
+      localReliefDelta,
+      yEarth,
+      yTarget,
+    };
+  }, [
+    hoverSvgX,
+    targetMaxDist,
+    activeTargetTopo,
+    earthTopo,
+    earthMinElev,
+    earthRangeElev,
+    targetMinElev,
+    targetRangeElev,
+  ]);
+
+  // Thermal comparison data setup
+  const earthMinC = earthTempMinC !== undefined ? earthTempMinC : earthMeanTempC - 10;
+  const earthMaxC = earthTempMaxC !== undefined ? earthTempMaxC : earthMeanTempC + 10;
+  const earthMeanC = earthMeanTempC;
+  const earthDeltaT = Math.max(1, Math.round(earthMaxC - earthMinC));
+
+  const targetMinK = targetThermal.tempMinK;
+  const targetMaxK = targetThermal.tempMaxK;
+  const targetMeanK = targetThermal.tempMeanK;
+  const targetMinC = targetThermal.tempMinC;
+  const targetMaxC = targetThermal.tempMaxC;
+  const targetMeanC = targetThermal.tempMeanC;
+  const targetDeltaT = targetThermal.deltaTK;
+
+  // Ruler markers position %
+  const earthInertiaPct = getThermalInertiaPositionPct(earthInertia.tiu);
+  const targetInertiaPct = getThermalInertiaPositionPct(targetThermal.thermalInertiaTIU);
+
+  // Thermal range bar position %
+  const targetLeftPct = getTemperaturePositionPct(targetMinC);
+  const targetRightPct = getTemperaturePositionPct(targetMaxC);
+  const targetWidthPct = Math.max(1, targetRightPct - targetLeftPct);
+  const targetMeanPct = getTemperaturePositionPct(targetMeanC);
+
+  const earthLeftPct = getTemperaturePositionPct(earthMinC);
+  const earthRightPct = getTemperaturePositionPct(earthMaxC);
+  const earthWidthPct = Math.max(1, earthRightPct - earthLeftPct);
+  const earthMeanPct = getTemperaturePositionPct(earthMeanC);
 
   return (
-    <div className="w-full bg-[#08090C] rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
+    <div className="w-full bg-[#0A0A0C] rounded-3xl overflow-hidden border border-white/[0.08] shadow-2xl">
       {/* ── TOP SLIDING COMPARATOR STAGE ───────────────────────────── */}
       <div
         ref={containerRef}
@@ -318,7 +446,7 @@ export default function PhotoComparator({
           )}
         </div>
 
-        {/* Left Layer: Earth Analog Site Photo (Clipped by position %) */}
+        {/* Left Layer: Earth Analog Site Photo */}
         <div
           className="absolute inset-0 bg-[#140E0A] overflow-hidden"
           style={{
@@ -342,9 +470,8 @@ export default function PhotoComparator({
           className="absolute top-0 bottom-0 w-[3px] bg-white z-20 shadow-[0_0_20px_rgba(0,0,0,0.8)] pointer-events-none"
           style={{ left: `${position}%`, transform: 'translateX(-50%)' }}
         >
-          {/* Draggable Circle Handle */}
           <div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white text-[#0A0A0E] flex items-center justify-center font-bold text-xs shadow-xl z-30 pointer-events-auto cursor-grab active:cursor-grabbing border border-black/15"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white text-[#0A0A0C] flex items-center justify-center font-bold text-xs shadow-xl z-30 pointer-events-auto cursor-grab active:cursor-grabbing border border-black/15"
             onPointerDown={handlePointerDown}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0A0A0C" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
@@ -356,241 +483,493 @@ export default function PhotoComparator({
 
         {/* Top Badges */}
         <div className="absolute top-4 left-4 z-10 flex items-center gap-2 pointer-events-none">
-          <span className="font-sans text-xs px-3.5 py-1.5 rounded-full font-semibold uppercase tracking-wider bg-black/75 backdrop-blur-md text-white border border-white/15">
+          <span className="font-sans text-xs px-3.5 py-1.5 rounded-full font-semibold uppercase tracking-wider bg-black/75 backdrop-blur-md text-[#F4F4F6] border border-white/[0.08]">
             Tierra (Análogo)
           </span>
-          <span className="font-mono text-[10px] px-2.5 py-1 rounded-full bg-black/60 text-white/80 border border-white/15 hidden sm:inline">
+          <span className="font-mono text-[10px] px-2.5 py-1 rounded-full bg-black/60 text-[#8E9299] border border-white/[0.08] hidden sm:inline tabular-nums">
             9.81 m/s² · 1 atm
           </span>
         </div>
 
         <div className="absolute top-4 right-4 z-10 flex items-center gap-2 pointer-events-none">
-          <span className="font-mono text-[10px] px-2.5 py-1 rounded-full bg-black/60 text-white/80 border border-white/15 hidden sm:inline">
+          <span className="font-mono text-[10px] px-2.5 py-1 rounded-full bg-black/60 text-[#8E9299] border border-white/[0.08] hidden sm:inline tabular-nums">
             {targetBody === 'Luna' ? '1.62 m/s² (0.16g)' : '3.72 m/s² (0.38g)'}
           </span>
-          <span
-            className="font-sans text-xs px-3.5 py-1.5 rounded-full font-semibold uppercase tracking-wider text-white border border-white/20 bg-black/75 backdrop-blur-md"
-          >
+          <span className="font-sans text-xs px-3.5 py-1.5 rounded-full font-semibold uppercase tracking-wider text-[#F4F4F6] border border-white/[0.08] bg-black/75 backdrop-blur-md">
             {targetName} ({targetBody})
           </span>
         </div>
 
         {/* Bottom Captions */}
-        <div className="absolute bottom-4 left-4 z-10 font-sans text-xs text-white/90 bg-black/75 backdrop-blur-md px-3.5 py-2 rounded-xl max-w-[44%] border border-white/10 pointer-events-none">
+        <div className="absolute bottom-4 left-4 z-10 font-sans text-xs text-[#F4F4F6] bg-black/75 backdrop-blur-md px-3.5 py-2 rounded-xl max-w-[44%] border border-white/[0.08] pointer-events-none">
           <span className="text-[#8E9299] block text-[10px] uppercase font-medium">Terreno análogo:</span>
           {earthCaption || earthTelemetry || 'Mapeo de campo geológico NASA'}
         </div>
 
-        <div className="absolute bottom-4 right-4 z-10 font-sans text-xs text-white/90 bg-black/75 backdrop-blur-md px-3.5 py-2 rounded-xl text-right max-w-[44%] border border-white/10 pointer-events-none">
+        <div className="absolute bottom-4 right-4 z-10 font-sans text-xs text-[#F4F4F6] bg-black/75 backdrop-blur-md px-3.5 py-2 rounded-xl text-right max-w-[44%] border border-white/[0.08] pointer-events-none">
           <span className="text-[#8E9299] block text-[10px] uppercase font-medium">Superficie destino:</span>
           {activeSpaceCaption}
         </div>
       </div>
 
-      {/* ── TAB BAR: TOPOGRAPHY vs. THERMAL SIMULATOR ─────────────── */}
-      <div className="px-6 py-3 bg-[#0F121C] border-t border-b border-white/10 flex flex-wrap items-center justify-between gap-3">
+      {/* ── TAB BAR: ALTIMETRY & GEOPHYSICS vs. 24H SIMULATOR ─────── */}
+      <div className="px-6 py-3 bg-[#121316] border-t border-b border-white/[0.08] flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 font-sans text-xs">
           <button
             onClick={() => setActiveTab('topo')}
             className={`px-4 py-2 rounded-full font-semibold transition-all ${
               activeTab === 'topo'
                 ? 'bg-white text-[#0A0A0C] shadow-sm'
-                : 'text-[#8E9299] hover:text-white bg-white/[0.05]'
+                : 'text-[#8E9299] hover:text-[#F4F4F6] bg-white/[0.05]'
             }`}
           >
-            Topografía DEM LOLA / MOLA
+            Altimetría Morfológica y Geofísica (LOLA/MOLA & Diviner/TES)
           </button>
           <button
-            onClick={() => setActiveTab('thermal')}
+            onClick={() => setActiveTab('simulator')}
             className={`px-4 py-2 rounded-full font-semibold transition-all ${
-              activeTab === 'thermal'
+              activeTab === 'simulator'
                 ? 'bg-white text-[#0A0A0C] shadow-sm'
-                : 'text-[#8E9299] hover:text-white bg-white/[0.05]'
+                : 'text-[#8E9299] hover:text-[#F4F4F6] bg-white/[0.05]'
             }`}
           >
-            {targetBody === 'Luna'
-              ? 'Ciclo térmico diurno (Diviner)'
-              : 'Inercia térmica y mecánica (TES / THEMIS)'}
+            Simulador Horario 24h
           </button>
         </div>
 
         {onOpenDatasetModal && (
           <button
             onClick={onOpenDatasetModal}
-            className="font-sans text-xs px-3.5 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-white border border-white/15 transition-all font-medium"
+            className="font-sans text-xs px-3.5 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-[#F4F4F6] border border-white/[0.08] transition-all font-medium"
           >
-            Descargar datos CSV (8)
+            Descargar datos CSV
           </button>
         )}
       </div>
 
-      {/* ── TAB CONTENT 1: SUPERIMPOSED TOPOGRAPHIC CROSS-SECTION SVG ── */}
+      {/* ── TAB CONTENT 1: NORMALIZED TOPOGRAPHY & THERMAL PANEL ────── */}
       {activeTab === 'topo' && (
-        <div className="px-6 py-5 bg-[#0A0C12]">
+        <div className="px-6 py-6 bg-[#0A0A0C]">
+          {/* Header */}
           <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
             <div>
-              <div className="flex items-center gap-2">
-                <span className="font-sans text-xs font-bold text-white uppercase tracking-wider block">
-                  Perfil topográfico cruzado · {datasetSummary.instrumentBadge}
-                </span>
-              </div>
+              <span className="font-sans text-xs font-bold text-[#F4F4F6] uppercase tracking-wider block">
+                Perfil Topográfico Morfológico de Doble Escala Normalizada · {datasetSummary.instrumentBadge}
+              </span>
               <span className="font-sans text-[11px] text-[#8E9299]">
-                Curvas de elevación reales (100 puntos extraídos): USGS SRTM 30m vs. {datasetSummary.demCsvName}
+                Transecto morfológico real (100 puntos): USGS SRTM 30m vs. {datasetSummary.demCsvName}
               </span>
             </div>
 
             <div className="flex items-center gap-5 text-xs font-sans">
-              <span className="flex items-center gap-2 text-white">
+              <span className="flex items-center gap-2 text-[#F4F4F6]">
                 <span className="w-4 h-0.5 bg-white inline-block" />
-                {earthSiteName} (Línea sólida)
+                {earthSiteName} (SRTM 30m)
               </span>
               <span className="flex items-center gap-2 text-[#A1A1AA]">
-                <span
-                  className="w-4 h-0.5 border-t-2 border-dashed border-[#A1A1AA] inline-block"
-                />
-                {targetName} (100 Puntos DEM)
+                <span className="w-4 h-0.5 border-t border-dashed border-[#A1A1AA] inline-block" />
+                {targetName} (DEM NASA)
               </span>
             </div>
           </div>
 
-          {/* Telemetry Metrics Strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2 mb-4 p-3 rounded-2xl bg-[#0F1322] border border-white/5 font-mono text-xs">
+          {/* Real-Time Telemetry Readout Bar */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4 p-3.5 rounded-xl bg-[#121316] border border-white/[0.08] font-mono text-xs tabular-nums text-[#8E9299]">
             <div>
-              <span className="text-[9px] text-[#8E929F] uppercase block">TRANSECTO:</span>
-              <strong className="text-white">{planetaryStats.totalDistKm} km</strong>
+              <span className="text-[10px] text-[#8E9299] uppercase tracking-wider block mb-0.5">Distancia</span>
+              <span className="text-[#F4F4F6] font-bold">
+                {hoverSvgX !== null ? `${liveTelemetry.distKm.toFixed(2)} km` : `0.00 — ${targetMaxDist.toFixed(1)} km`}
+              </span>
             </div>
             <div>
-              <span className="text-[9px] text-[#8E929F] uppercase block">DESNIVEL (DELTA):</span>
-              <strong className="text-white">{planetaryStats.elevDelta} m</strong>
+              <span className="text-[10px] text-[#8E9299] uppercase tracking-wider block mb-0.5">Tierra (SRTM 30m)</span>
+              <span className="text-[#F4F4F6] font-bold">
+                {hoverSvgX !== null
+                  ? `${liveTelemetry.earthElev} m · ${liveTelemetry.earthSlope.toFixed(1)}°`
+                  : `${Math.round(earthMinElev)} a ${Math.round(earthMaxElev)} m`}
+              </span>
             </div>
             <div>
-              <span className="text-[9px] text-[#8E929F] uppercase block">PENDIENTE MÁXIMA:</span>
-              <strong style={{ color: targetColor }}>{planetaryStats.maxSlopeDeg}°</strong>
+              <span className="text-[10px] text-[#8E9299] uppercase tracking-wider block mb-0.5">Destino NASA DEM</span>
+              <span className="text-[#A1A1AA] font-bold">
+                {hoverSvgX !== null
+                  ? `${liveTelemetry.targetElev} m · ${liveTelemetry.targetSlope.toFixed(1)}°`
+                  : `${Math.round(targetMinElev)} a ${Math.round(targetMaxElev)} m`}
+              </span>
             </div>
             <div>
-              <span className="text-[9px] text-[#8E929F] uppercase block">PENDIENTE MEDIA:</span>
-              <strong className="text-white">{planetaryStats.avgSlopeDeg}°</strong>
-            </div>
-            <div>
-              <span className="text-[9px] text-[#8E929F] uppercase block">MUESTRAS DEM:</span>
-              <strong className="text-white font-mono">{planetaryStats.pointsCount} pts</strong>
-            </div>
-            <div>
-              <span className="text-[9px] text-[#8E929F] uppercase block">DATASET CSV:</span>
-              <a
-                href={datasetSummary.demDownloadUrl}
-                download={datasetSummary.demCsvName}
-                className="text-[#38BDF8] underline text-[11px] truncate block"
-              >
-                DESCARGAR CSV
-              </a>
+              <span className="text-[10px] text-[#8E9299] uppercase tracking-wider block mb-0.5">Relieve Local Δh</span>
+              <span className="text-[#F4F4F6] font-bold">
+                {hoverSvgX !== null ? `${liveTelemetry.localReliefDelta} m` : `Δh máx: ${planetaryStats.elevDelta} m`}
+              </span>
             </div>
           </div>
 
-          {/* SVG Plot with Dual Y-Axis */}
+          {/* Topographic SVG with Dual Normalized Y-Axis */}
           <div className="w-full overflow-x-auto">
             <svg
-              viewBox="0 0 720 165"
-              className="w-full h-44 select-none cursor-crosshair min-w-[620px]"
-              onMouseLeave={() => setHoveredPointIdx(null)}
+              ref={svgRef}
+              viewBox="0 0 900 240"
+              className="w-full h-56 select-none cursor-crosshair min-w-[720px]"
+              onPointerMove={handleSvgPointerMove}
+              onPointerLeave={handleSvgPointerLeave}
             >
-              {/* Grid lines */}
-              <line x1="55" y1="30" x2="635" y2="30" stroke="rgba(255,255,255,0.06)" strokeDasharray="3,3" />
-              <line x1="55" y1="82" x2="635" y2="82" stroke="rgba(255,255,255,0.06)" strokeDasharray="3,3" />
-              <line x1="55" y1="135" x2="635" y2="135" stroke="rgba(255,255,255,0.12)" />
+              <defs>
+                <linearGradient id="earthAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.07" />
+                  <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.0" />
+                </linearGradient>
+              </defs>
 
-              {/* Target Real 100-point Curve (Dual Y: Right Axis) */}
-              {targetTopoPath && (
+              {/* Grid Lines */}
+              <line x1={PLOT_LEFT} y1={24} x2={PLOT_RIGHT} y2={24} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />
+              <line x1={PLOT_LEFT} y1={120} x2={PLOT_RIGHT} y2={120} stroke="rgba(255,255,255,0.06)" strokeDasharray="3 3" />
+              <line x1={PLOT_LEFT} y1={PLOT_BASELINE} x2={PLOT_RIGHT} y2={PLOT_BASELINE} stroke="rgba(255,255,255,0.12)" />
+
+              {/* Earth Fill Area Gradient */}
+              {earthAreaPath && <path d={earthAreaPath} fill="url(#earthAreaGrad)" />}
+
+              {/* NASA Target DEM Curve (Dashed Silver) */}
+              {targetPath && (
                 <path
-                  d={targetTopoPath}
+                  d={targetPath}
                   fill="none"
-                  stroke={targetColor}
-                  strokeWidth="2.4"
-                  strokeDasharray="4,3"
+                  stroke="#A1A1AA"
+                  strokeWidth="1.75"
+                  strokeDasharray="5 4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 />
               )}
 
-              {/* Earth SRTM Curve (Dual Y: Left Axis) */}
-              {earthTopoPath && (
+              {/* Earth SRTM Curve (Solid White) */}
+              {earthPath && (
                 <path
-                  d={earthTopoPath}
+                  d={earthPath}
                   fill="none"
                   stroke="#FFFFFF"
-                  strokeWidth="2.5"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 />
               )}
 
-              {/* Interactive Point Markers on Target DEM */}
-              {activeTargetTopo.map((p, idx) => {
-                if (idx % 4 !== 0 && idx !== hoveredPointIdx) return null;
-                const cx = 55 + (p.distKm / maxDist) * 580;
-                const cy = 135 - ((p.elevM - targetMinElev) / targetRangeElev) * 105;
-                const isHovered = idx === hoveredPointIdx;
+              {/* Left Y-Axis (Earth SRTM 30m - White) */}
+              <text x={PLOT_LEFT - 8} y={15} fill="#F4F4F6" fontSize="10" fontFamily="monospace" fontWeight="bold" textAnchor="end">
+                TIERRA (SRTM 30m)
+              </text>
+              <text x={PLOT_LEFT - 8} y={28} fill="#F4F4F6" fontSize="11" fontFamily="monospace" textAnchor="end" className="tabular-nums">
+                {Math.round(earthMaxElev)} m
+              </text>
+              <text x={PLOT_LEFT - 8} y={124} fill="#8E9299" fontSize="10" fontFamily="monospace" textAnchor="end" className="tabular-nums">
+                {Math.round((earthMaxElev + earthMinElev) / 2)} m
+              </text>
+              <text x={PLOT_LEFT - 8} y={PLOT_BASELINE} fill="#F4F4F6" fontSize="11" fontFamily="monospace" textAnchor="end" className="tabular-nums">
+                {Math.round(earthMinElev)} m
+              </text>
 
-                return (
-                  <circle
-                    key={idx}
-                    cx={cx}
-                    cy={cy}
-                    r={isHovered ? 5 : 2}
-                    fill={isHovered ? '#FFFFFF' : targetColor}
-                    stroke={targetColor}
-                    strokeWidth={isHovered ? 2 : 1}
-                    onMouseEnter={() => setHoveredPointIdx(idx)}
+              {/* Right Y-Axis (NASA Target DEM - Silver) */}
+              <text x={PLOT_RIGHT + 8} y={15} fill="#8E9299" fontSize="10" fontFamily="monospace" fontWeight="bold" textAnchor="start">
+                {targetBody.toUpperCase()} ({datasetSummary.demCsvName.includes('LOLA') ? 'LOLA DEM' : 'MOLA DEM'})
+              </text>
+              <text x={PLOT_RIGHT + 8} y={28} fill="#8E9299" fontSize="11" fontFamily="monospace" textAnchor="start" className="tabular-nums">
+                {Math.round(targetMaxElev)} m
+              </text>
+              <text x={PLOT_RIGHT + 8} y={124} fill="#8E9299" fontSize="10" fontFamily="monospace" textAnchor="start" className="tabular-nums">
+                {Math.round((targetMaxElev + targetMinElev) / 2)} m
+              </text>
+              <text x={PLOT_RIGHT + 8} y={PLOT_BASELINE} fill="#8E9299" fontSize="11" fontFamily="monospace" textAnchor="start" className="tabular-nums">
+                {Math.round(targetMinElev)} m
+              </text>
+
+              {/* Bottom X-Axis (Distance) */}
+              <text x={PLOT_LEFT} y={232} fill="#8E9299" fontSize="10" fontFamily="monospace" textAnchor="middle" className="tabular-nums">
+                0 km
+              </text>
+              <text x={PLOT_LEFT + PLOT_WIDTH * 0.25} y={232} fill="#8E9299" fontSize="10" fontFamily="monospace" textAnchor="middle" className="tabular-nums">
+                {(targetMaxDist * 0.25).toFixed(1)} km
+              </text>
+              <text x={PLOT_LEFT + PLOT_WIDTH * 0.5} y={232} fill="#8E9299" fontSize="10" fontFamily="monospace" textAnchor="middle" className="tabular-nums">
+                {(targetMaxDist * 0.5).toFixed(1)} km
+              </text>
+              <text x={PLOT_LEFT + PLOT_WIDTH * 0.75} y={232} fill="#8E9299" fontSize="10" fontFamily="monospace" textAnchor="middle" className="tabular-nums">
+                {(targetMaxDist * 0.75).toFixed(1)} km
+              </text>
+              <text x={PLOT_RIGHT} y={232} fill="#8E9299" fontSize="10" fontFamily="monospace" textAnchor="middle" className="tabular-nums">
+                {targetMaxDist.toFixed(1)} km
+              </text>
+
+              {/* Interactive Crosshair Guideline & Dual Dots */}
+              {hoverSvgX !== null && (
+                <g pointerEvents="none">
+                  <line
+                    x1={hoverSvgX}
+                    y1={24}
+                    x2={hoverSvgX}
+                    y2={PLOT_BASELINE}
+                    stroke="rgba(255, 255, 255, 0.25)"
+                    strokeWidth="1"
+                    strokeDasharray="2 2"
                   />
-                );
-              })}
-
-              {/* Dual Y-Axis: Left Labels (Earth SRTM - White) */}
-              <text x="50" y="18" fill="#FFFFFF" fontSize="8.5" fontFamily="JetBrains Mono" fontWeight="bold" textAnchor="end">
-                TIERRA (SRTM)
-              </text>
-              <text x="50" y="33" fill="#FFFFFF" fontSize="9" fontFamily="JetBrains Mono" textAnchor="end">
-                {Math.round(earthMaxElev)}m
-              </text>
-              <text x="50" y="138" fill="#FFFFFF" fontSize="9" fontFamily="JetBrains Mono" textAnchor="end">
-                {Math.round(earthMinElev)}m
-              </text>
-
-              {/* Dual Y-Axis: Right Labels (Moon/Mars DEM - Target Color) */}
-              <text x="640" y="18" fill={targetColor} fontSize="8.5" fontFamily="JetBrains Mono" fontWeight="bold" textAnchor="start">
-                {targetBody.toUpperCase()} ({datasetSummary.instrumentBadge})
-              </text>
-              <text x="640" y="33" fill={targetColor} fontSize="9" fontFamily="JetBrains Mono" textAnchor="start">
-                {Math.round(targetMaxElev)}m
-              </text>
-              <text x="640" y="138" fill={targetColor} fontSize="9" fontFamily="JetBrains Mono" textAnchor="start">
-                {Math.round(targetMinElev)}m
-              </text>
-
-              {/* Distance Axis Label */}
-              <text x="345" y="154" fill="#6B6F7B" fontSize="9" fontFamily="JetBrains Mono" textAnchor="middle">
-                TRANSECTO COMPARATIVO DE RELIEVE: 0 — {maxDist} km
-              </text>
+                  <circle
+                    cx={hoverSvgX}
+                    cy={liveTelemetry.yEarth}
+                    r={4.5}
+                    fill="#FFFFFF"
+                    stroke="#0A0A0C"
+                    strokeWidth="1.5"
+                  />
+                  <circle
+                    cx={hoverSvgX}
+                    cy={liveTelemetry.yTarget}
+                    r={4.5}
+                    fill="#0A0A0C"
+                    stroke="#A1A1AA"
+                    strokeWidth="2"
+                  />
+                </g>
+              )}
             </svg>
+          </div>
 
-            {/* Hovered Point Tooltip Strip */}
-            {hoveredPoint && (
-              <div className="mt-2 p-2 rounded-lg bg-[#141829] border border-white/10 flex items-center justify-between font-mono text-[11px] text-[#CBD5E1]">
-                <span>
-                  DISTANCIA: <strong className="text-white">{hoveredPoint.distKm} km</strong>
-                </span>
-                <span>
-                  ELEVACIÓN DEM: <strong style={{ color: targetColor }}>{hoveredPoint.elevM} m</strong>
-                </span>
-                {'lat' in hoveredPoint && typeof (hoveredPoint as PlanetaryTopoTransect).lat === 'number' && (
-                  <span>
-                    COORDENADAS: <strong className="text-white">{(hoveredPoint as PlanetaryTopoTransect).lat.toFixed(3)}°, {(hoveredPoint as PlanetaryTopoTransect).lng.toFixed(3)}°</strong>
+          {/* ── SECTION 2: OPEN THERMAL INERTIA & DIURNAL RANGE PANEL ── */}
+          <div className="mt-8 pt-7 border-t border-white/[0.08]" style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '28px' }}>
+            {/* Instrument 1: Comparador Físico de Inercia Térmica del Regolito */}
+            <div className="mb-8">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                <div>
+                  <h4 className="font-sans text-sm font-bold text-[#F4F4F6] tracking-tight">
+                    Comparador Físico de Inercia Térmica del Regolito (J·m⁻²·K⁻¹·s⁻¹/² / TIU)
+                  </h4>
+                  <p className="font-sans text-xs text-[#8E9299]">
+                    Telemetría directa de MGS TES / Mars Odyssey THEMIS y LRO Diviner (DLRE)
+                  </p>
+                </div>
+                <div className="flex items-center gap-4 text-xs font-mono">
+                  <span className="flex items-center gap-2 text-[#F4F4F6]">
+                    <span className="w-2.5 h-2.5 rounded-full bg-white inline-block shadow-sm" />
+                    Tierra ({earthSiteName}): {earthInertia.tiu} TIU
                   </span>
-                )}
+                  <span className="flex items-center gap-2 text-[#A1A1AA]">
+                    <span className="w-2.5 h-2.5 rounded-full border-2 border-[#A1A1AA] bg-[#0A0A0C] inline-block" />
+                    {targetName}: {targetThermal.thermalInertiaTIU} TIU
+                  </span>
+                </div>
               </div>
-            )}
+
+              {/* Horizontal Ruler Track with 4 Planetary Regimes */}
+              <div className="p-4 rounded-xl bg-[#121316] border border-white/[0.08]">
+                {/* 4 Regime Headers */}
+                <div className="grid grid-cols-4 gap-2 mb-3 text-[11px] font-sans border-b border-white/[0.06] pb-2.5">
+                  <div className="border-r border-white/[0.06] pr-2">
+                    <span className="font-mono text-[#F4F4F6] font-bold block tabular-nums">0 – 100 TIU</span>
+                    <span className="text-[#8E9299] text-[10px] leading-tight block">Polvo fino suelto / regolito altamente poroso</span>
+                  </div>
+                  <div className="border-r border-white/[0.06] pr-2">
+                    <span className="font-mono text-[#F4F4F6] font-bold block tabular-nums">100 – 350 TIU</span>
+                    <span className="text-[#8E9299] text-[10px] leading-tight block">Arena eólica / ceniza volcánica consolidada</span>
+                  </div>
+                  <div className="border-r border-white/[0.06] pr-2">
+                    <span className="font-mono text-[#F4F4F6] font-bold block tabular-nums">350 – 1,200 TIU</span>
+                    <span className="text-[#8E9299] text-[10px] leading-tight block">Duricrust cementado / brecha fracturada</span>
+                  </div>
+                  <div>
+                    <span className="font-mono text-[#F4F4F6] font-bold block tabular-nums">&gt; 1,200 TIU</span>
+                    <span className="text-[#8E9299] text-[10px] leading-tight block">Roca madre expuesta / basalto masivo</span>
+                  </div>
+                </div>
+
+                {/* Ruler Track Bar with Dual Markers */}
+                <div className="relative w-full h-8 flex items-center select-none my-1">
+                  {/* Background Track Line with 4 colored zones */}
+                  <div className="absolute inset-x-0 h-[4px] rounded-full bg-white/[0.08] overflow-hidden flex">
+                    <div className="w-1/4 h-full bg-white/[0.06] border-r border-white/[0.1]" />
+                    <div className="w-1/4 h-full bg-white/[0.1] border-r border-white/[0.1]" />
+                    <div className="w-1/4 h-full bg-white/[0.14] border-r border-white/[0.1]" />
+                    <div className="w-1/4 h-full bg-white/[0.18]" />
+                  </div>
+
+                  {/* Marker 1: Earth Solid White Marker */}
+                  <div
+                    className="absolute -translate-x-1/2 flex flex-col items-center z-10 transition-all duration-300"
+                    style={{ left: `${earthInertiaPct}%` }}
+                  >
+                    <div className="w-3.5 h-3.5 rounded-full bg-white border border-[#0A0A0C] shadow-[0_0_8px_rgba(255,255,255,0.4)]" />
+                    <span className="mt-1 font-mono text-[10px] text-[#F4F4F6] whitespace-nowrap tabular-nums">
+                      {earthInertia.tiu} TIU
+                    </span>
+                  </div>
+
+                  {/* Marker 2: NASA Target Light-Gray Ring Marker */}
+                  <div
+                    className="absolute -translate-x-1/2 flex flex-col items-center z-10 transition-all duration-300"
+                    style={{ left: `${targetInertiaPct}%` }}
+                  >
+                    <div className="w-3.5 h-3.5 rounded-full border-2 border-[#A1A1AA] bg-[#0A0A0C]" />
+                    <span className="mt-1 font-mono text-[10px] text-[#A1A1AA] whitespace-nowrap tabular-nums">
+                      {targetThermal.thermalInertiaTIU} TIU
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2-Line Technical Note */}
+                <div className="mt-4 pt-3 border-t border-white/[0.06] font-sans text-xs text-[#8E9299] leading-relaxed">
+                  <p>
+                    La baja inercia térmica lunar y marciana evidencia regolito desgasificado de extrema porosidad en ausencia de presión atmosférica normal.
+                  </p>
+                  <p className="text-[#F4F4F6] mt-0.5">
+                    En pruebas terrestres, el aire intersticial compacta el suelo, enmascarando el riesgo de hundimiento de ruedas y sobreestimando la energía de corte requerida para excavación ISRU.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Instrument 2: Rango Térmico Diurno Real */}
+            <div>
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+                <div>
+                  <h4 className="font-sans text-sm font-bold text-[#F4F4F6] tracking-tight">
+                    Rango Térmico Diurno Real (Diviner / TES-THEMIS vs. Tierra)
+                  </h4>
+                  <p className="font-sans text-xs text-[#8E9299]">
+                    Intervalo térmico real (Mínima, Media y Máxima en K y °C) frente a la oscilación diaria terrestre
+                  </p>
+                </div>
+                <div className="font-mono text-xs text-[#8E9299] tabular-nums">
+                  Eje térmico: 33 K (-240 °C) a 398 K (+125 °C)
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#121316] border border-white/[0.08] space-y-4">
+                {/* Row 1: NASA Target Real Temperature Span */}
+                <div>
+                  <div className="flex items-center justify-between text-xs font-mono mb-1.5">
+                    <span className="text-[#A1A1AA] font-semibold">
+                      {targetName} ({targetBody} · {targetThermal.instrumentBadge})
+                    </span>
+                    <span className="text-[#F4F4F6] font-bold tabular-nums">
+                      ΔT = {targetDeltaT.toFixed(1)} K ({targetThermal.deltaTC.toFixed(1)} °C)
+                    </span>
+                  </div>
+
+                  <div className="relative w-full h-11 flex items-center select-none my-1">
+                    {/* Baseline hairline */}
+                    <div className="absolute inset-x-0 h-[1px] bg-white/[0.08]" />
+
+                    {/* Active 2px Bar */}
+                    <div
+                      className="absolute h-[2px] bg-[#A1A1AA] rounded-full"
+                      style={{ left: `${targetLeftPct}%`, width: `${targetWidthPct}%` }}
+                    />
+
+                    {/* Min Dot (Label above) */}
+                    <div
+                      className="absolute -translate-x-1/2 flex flex-col items-center"
+                      style={{ left: `${targetLeftPct}%` }}
+                    >
+                      <span className="mb-1 font-mono text-[9px] text-[#A1A1AA] whitespace-nowrap tabular-nums">
+                        Mín {targetMinK} K ({targetMinC.toFixed(1)} °C)
+                      </span>
+                      <div className="w-2 h-2 rounded-full bg-[#A1A1AA]" />
+                    </div>
+
+                    {/* Mean Dot (Label below) */}
+                    <div
+                      className="absolute -translate-x-1/2 flex flex-col items-center"
+                      style={{ left: `${targetMeanPct}%` }}
+                    >
+                      <div className="w-1.5 h-1.5 rotate-45 bg-[#8E9299]" />
+                      <span className="mt-1 font-mono text-[9px] text-[#8E9299] whitespace-nowrap tabular-nums">
+                        Media {targetMeanK} K ({targetMeanC.toFixed(1)} °C)
+                      </span>
+                    </div>
+
+                    {/* Max Dot (Label above) */}
+                    <div
+                      className="absolute -translate-x-1/2 flex flex-col items-center"
+                      style={{ left: `${targetRightPct}%` }}
+                    >
+                      <span className="mb-1 font-mono text-[9px] text-[#A1A1AA] whitespace-nowrap tabular-nums">
+                        Máx {targetMaxK} K ({targetMaxC.toFixed(1)} °C)
+                      </span>
+                      <div className="w-2 h-2 rounded-full bg-[#A1A1AA]" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Row 2: Earth Analog Real Temperature Span */}
+                <div className="pt-3 border-t border-white/[0.06]">
+                  <div className="flex items-center justify-between text-xs font-mono mb-1.5">
+                    <span className="text-[#F4F4F6] font-semibold">
+                      {earthSiteName} (Tierra · Estación SRTM / Clima)
+                    </span>
+                    <span className="text-[#F4F4F6] font-bold tabular-nums">
+                      ΔT = {earthDeltaT.toFixed(1)} K ({earthDeltaT.toFixed(1)} °C)
+                    </span>
+                  </div>
+
+                  <div className="relative w-full h-11 flex items-center select-none my-1">
+                    {/* Baseline hairline */}
+                    <div className="absolute inset-x-0 h-[1px] bg-white/[0.08]" />
+
+                    {/* Active 2px Bar */}
+                    <div
+                      className="absolute h-[2px] bg-white rounded-full"
+                      style={{ left: `${earthLeftPct}%`, width: `${earthWidthPct}%` }}
+                    />
+
+                    {/* Min Dot (Label above) */}
+                    <div
+                      className="absolute -translate-x-1/2 flex flex-col items-center"
+                      style={{ left: `${earthLeftPct}%` }}
+                    >
+                      <span className="mb-1 font-mono text-[9px] text-[#F4F4F6] whitespace-nowrap tabular-nums">
+                        Mín {(earthMinC + 273.15).toFixed(1)} K ({earthMinC.toFixed(1)} °C)
+                      </span>
+                      <div className="w-2 h-2 rounded-full bg-white" />
+                    </div>
+
+                    {/* Mean Dot (Label below) */}
+                    <div
+                      className="absolute -translate-x-1/2 flex flex-col items-center"
+                      style={{ left: `${earthMeanPct}%` }}
+                    >
+                      <div className="w-1.5 h-1.5 rotate-45 bg-[#8E9299]" />
+                      <span className="mt-1 font-mono text-[9px] text-[#8E9299] whitespace-nowrap tabular-nums">
+                        Media {(earthMeanC + 273.15).toFixed(1)} K ({earthMeanC.toFixed(1)} °C)
+                      </span>
+                    </div>
+
+                    {/* Max Dot (Label above) */}
+                    <div
+                      className="absolute -translate-x-1/2 flex flex-col items-center"
+                      style={{ left: `${earthRightPct}%` }}
+                    >
+                      <span className="mb-1 font-mono text-[9px] text-[#F4F4F6] whitespace-nowrap tabular-nums">
+                        Máx {(earthMaxC + 273.15).toFixed(1)} K ({earthMaxC.toFixed(1)} °C)
+                      </span>
+                      <div className="w-2 h-2 rounded-full bg-white" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Analytical Callout */}
+                <div className="mt-3 pt-3 border-t border-white/[0.06] flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+                  <span className="text-[#8E9299]">
+                    Amplitud térmica extrema: <strong className="text-[#F4F4F6]">ΔT {targetDeltaT.toFixed(1)} K</strong> en {targetName} frente a <strong className="text-[#F4F4F6]">ΔT {earthDeltaT.toFixed(1)} K</strong> en {earthSiteName}
+                  </span>
+                  <span className="text-[#A1A1AA] font-bold tabular-nums">
+                    {(targetDeltaT / Math.max(earthDeltaT, 1)).toFixed(1)}× de oscilación diurna
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* ── TAB CONTENT 2: THERMAL WAVEFRONT & INERTIA SIMULATOR ── */}
-      {activeTab === 'thermal' && (
+      {/* ── TAB CONTENT 2: 24H INTERACTIVE THERMAL WAVEFRONT SIMULATOR ── */}
+      {activeTab === 'simulator' && (
         <PlanetaryThermalSimulator
           targetId={targetId}
           targetName={targetName}

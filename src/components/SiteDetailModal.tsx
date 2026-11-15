@@ -589,7 +589,7 @@ export default function SiteDetailModal({
                 className="w-full h-full object-cover pointer-events-none"
               />
               <div className="absolute top-4 left-4 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-full font-mono text-xs text-white font-bold">
-                LÁMINA 04 // SUPERFICIE HOMÓLOGA ({target.body.toUpperCase()})
+                LÁMINA 04 · SUPERFICIE HOMÓLOGA ({target.body.toUpperCase()})
               </div>
             </div>
             <div className="p-4 bg-white border-t border-[#E2E4EC]">
@@ -624,6 +624,8 @@ export default function SiteDetailModal({
           targetTopo={target.topo}
           earthSiteName={site.name}
           earthMeanTempC={site.meanTempC}
+          earthTempMinC={site.tempMinC}
+          earthTempMaxC={site.tempMaxC}
           onOpenDatasetModal={() => setIsDatasetModalOpen(true)}
         />
       </div>
