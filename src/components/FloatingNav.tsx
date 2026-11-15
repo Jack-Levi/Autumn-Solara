@@ -3,14 +3,22 @@ import React from 'react';
 interface FloatingNavProps {
   onOpenTutorial: () => void;
   onOpenCalibration: () => void;
+  hidden?: boolean;
 }
 
 export default function FloatingNav({
   onOpenTutorial,
   onOpenCalibration,
+  hidden = false,
 }: FloatingNavProps) {
   return (
-    <nav className="fixed top-6 left-0 right-0 z-50 px-6 md:px-10 flex items-center justify-between pointer-events-none select-none">
+    <nav
+      className={`fixed top-6 left-0 right-0 z-50 px-6 md:px-10 flex items-center justify-between select-none transition-all duration-500 ${
+        hidden
+          ? 'opacity-0 -translate-y-4 pointer-events-none'
+          : 'opacity-100 translate-y-0 pointer-events-none'
+      }`}
+    >
       {/* Top Left: Clean Logo */}
       <div className="flex items-center gap-4 pointer-events-auto">
         <a

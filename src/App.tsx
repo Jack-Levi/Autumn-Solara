@@ -61,6 +61,9 @@ export function App() {
   // Scroll progress (0 to 1) throttled with RAF
   const [scrollProgress, setScrollProgress] = useState<number>(0);
 
+  // Space Tunnel active state (hides FloatingNav during the transition)
+  const [isTunnelActive, setIsTunnelActive] = useState<boolean>(false);
+
   // Locomotive Smooth Scroll Engine (Lenis + GSAP ScrollTrigger)
   useEffect(() => {
     const LenisClass = (window as any).Lenis;
@@ -132,6 +135,17 @@ export function App() {
           },
         });
 
+        // Hide navbar during Space Tunnel transition
+        const tunnelNavTrigger = ScrollTrigger.create({
+          trigger: '#spacetunnel-curtain-wrap',
+          start: 'top 35%',
+          end: 'bottom 65%',
+          onEnter: () => setIsTunnelActive(true),
+          onLeave: () => setIsTunnelActive(false),
+          onEnterBack: () => setIsTunnelActive(true),
+          onLeaveBack: () => setIsTunnelActive(false),
+        });
+
         // Trigger editorial reveal titles with luxury clip-path mask
         ScrollTrigger.batch('.editorial-reveal-title', {
           start: 'top 88%',
@@ -148,6 +162,7 @@ export function App() {
           slide2Tween.kill();
           if (spaceTween.scrollTrigger) spaceTween.scrollTrigger.kill();
           spaceTween.kill();
+          if (tunnelNavTrigger) tunnelNavTrigger.kill();
           if (lenis) {
             lenis.destroy();
             delete (window as any).__lenis;
@@ -328,10 +343,11 @@ export function App() {
   return (
     <div className="relative min-h-screen bg-[#050508] text-[#E8E8EC] selection:bg-white selection:text-black m-0 p-0 overflow-x-clip">
       {/* 1. WebGL Fluid Surface & Thin-Film Iridescence Shader */}
-      <LiquidFluidCursor />
+      <LiquidFluidCursor theme="dark" />
 
       {/* 2. Top Floating Pill Navigation (Logo + CALIBRAR PFI + TUTORIAL) */}
       <FloatingNav
+        hidden={isTunnelActive}
         onOpenTutorial={() => setIsTutorialOpen(true)}
         onOpenCalibration={() => setCalibrationOpen(true)}
       />
@@ -342,12 +358,12 @@ export function App() {
       </div>
 
       {/* 4. Editorial Slide 2 (Sticky Curtain Overlayer 1) */}
-      <div id="slide2-curtain-wrap" className="sticky-curtain-layer">
+      <div id="slide2-curtain-wrap" className="sticky-curtain-layer" style={{ willChange: 'transform', contain: 'paint' }}>
         <EditorialSlide2 />
       </div>
 
       {/* 5. Scroll-Linked 3D Space Tunnel (Sticky Curtain Overlayer 2) */}
-      <div id="spacetunnel-curtain-wrap" className="sticky-curtain-layer">
+      <div id="spacetunnel-curtain-wrap" className="sticky-curtain-layer" style={{ willChange: 'transform', contain: 'paint' }}>
         <SpaceTunnel />
       </div>
 

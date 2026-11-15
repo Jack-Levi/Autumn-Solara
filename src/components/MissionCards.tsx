@@ -106,7 +106,7 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
   return (
     <section
       ref={sectionRef}
-      className="section-light py-28 px-6 relative select-none"
+      className="section-light pt-8 pb-24 md:pt-10 md:pb-28 px-6 relative select-none"
       style={{
         background: '#F4F4F6',
         backgroundImage: 'radial-gradient(circle, rgba(0, 0, 0, 0.05) 1px, transparent 1px)',
@@ -115,7 +115,7 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
     >
       <div className="max-w-[1400px] mx-auto">
         {/* Section Header */}
-        <div className="mb-14 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="mb-8 md:mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <span
               className="font-sans uppercase tracking-wider block mb-3 text-[#686B75]"
