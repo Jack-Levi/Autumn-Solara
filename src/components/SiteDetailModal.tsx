@@ -1,19 +1,224 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import type { EarthSite, ExtraTerrestrialTarget, VectorScores } from '../data';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import type { EarthSite, ExtraTerrestrialTarget, VectorScores, PFIWeights } from '../data';
 import {
   fidelityColor,
   fidelityLabel,
-  getTargetThermalCurve,
-  getSiteThermalCurve,
+  NASA_PFI_DIMENSIONS,
 } from '../data';
+import {
+  EARTH_PLANETARY_LIMITS,
+  SITE_SCIENTIFIC_DATA,
+} from '../scientificData';
 import PhotoComparator from './PhotoComparator';
+import { GeologicalSiteImage } from './SiteGallery';
+import MissionReportModal from './MissionReportModal';
+import DatasetExtractionModal from './DatasetExtractionModal';
+import { useWikipediaImage } from '../services/wikipediaImages';
 
 interface SiteDetailModalProps {
   site: EarthSite | null;
   target: ExtraTerrestrialTarget;
   pfi: number;
   breakdown: VectorScores;
+  allSites: EarthSite[];
+  allTargets: ExtraTerrestrialTarget[];
+  onSelectSite: (siteId: string) => void;
+  onSelectTarget: (targetId: string) => void;
   onClose: () => void;
+  weights?: PFIWeights;
+}
+
+// 4 Primary Destination Tabs for the Quick Switcher
+const REFERENCE_TARGET_BUTTONS = [
+  { id: 'MOON-SHK', label: 'Polo Sur Shackleton', body: 'Luna' },
+  { id: 'MOON-COP', label: 'Cráter Copernicus', body: 'Luna' },
+  { id: 'MARS-JEZ', label: 'Cráter Jezero', body: 'Marte' },
+  { id: 'MARS-ALB', label: 'Alba Mons Tharsis', body: 'Marte' },
+];
+
+// ─── Procedural DEM Heatmap & Slope Canvas (Slide 2) ─────────────────────────
+function DemHeatmapCanvas({ site }: { site: EarthSite }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const w = 700;
+    const h = 420;
+    canvas.width = w;
+    canvas.height = h;
+
+    // Hypsometric tint base
+    const grad = ctx.createLinearGradient(0, h, 0, 0);
+    grad.addColorStop(0, '#0C1020');
+    grad.addColorStop(0.25, '#1E3A8A');
+    grad.addColorStop(0.5, '#059669');
+    grad.addColorStop(0.75, '#D97706');
+    grad.addColorStop(1, '#DC2626');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+
+    // Overlay 25m contour lines
+    const cx = w * 0.5;
+    const cy = h * 0.5;
+    for (let r = 25; r < 360; r += 25) {
+      ctx.beginPath();
+      ctx.strokeStyle = r % 100 === 0 ? 'rgba(255, 255, 255, 0.45)' : 'rgba(255, 255, 255, 0.2)';
+      ctx.lineWidth = r % 100 === 0 ? 1.4 : 0.8;
+      for (let a = 0; a <= Math.PI * 2 + 0.1; a += 0.06) {
+        const rad = r + Math.sin(a * 5 + r * 0.05) * 14 + Math.cos(a * 3) * 8;
+        const px = cx + Math.cos(a) * rad * 1.35;
+        const py = cy + Math.sin(a) * rad * 0.85;
+        if (a === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+
+    // Slope vectors (arrows pointing down-gradient)
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    for (let x = 60; x < w - 40; x += 90) {
+      for (let y = 60; y < h - 40; y += 80) {
+        const dx = (cx - x) * 0.08;
+        const dy = (cy - y) * 0.08;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + dx, y + dy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x + dx, y + dy, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // HUD Telemetry overlay
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+    ctx.fillRect(0, h - 38, w, 38);
+    ctx.font = "600 11px 'JetBrains Mono', monospace";
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText(`USGS SRTM 30m DEM · Elevación base: ${site.elevM}m`, 18, h - 16);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = '#E4E4E7';
+    ctx.fillText(`Pendiente media: ${site.slopeDeg}° · Rugosidad RMS: ${site.roughnessRms}`, w - 18, h - 16);
+    ctx.textAlign = 'left';
+  }, [site]);
+
+  return <canvas ref={canvasRef} className="w-full h-full object-cover" />;
+}
+
+// ─── Procedural Mineralogical Spectral Signature Canvas (Slide 3) ────────────
+function SpectralSignatureCanvas({
+  site,
+  target,
+}: {
+  site: EarthSite;
+  target: ExtraTerrestrialTarget;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const w = 700;
+    const h = 420;
+    canvas.width = w;
+    canvas.height = h;
+
+    // Dark spectrometer backdrop
+    ctx.fillStyle = '#080A10';
+    ctx.fillRect(0, 0, w, h);
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.lineWidth = 1;
+    for (let x = 60; x < w - 30; x += 75) {
+      ctx.beginPath();
+      ctx.moveTo(x, 40);
+      ctx.lineTo(x, h - 50);
+      ctx.stroke();
+    }
+    for (let y = 60; y < h - 40; y += 45) {
+      ctx.beginPath();
+      ctx.moveTo(50, y);
+      ctx.lineTo(w - 30, y);
+      ctx.stroke();
+    }
+
+    // Synthetic Spectral Curves across wavelength (0.4 µm to 14.0 µm)
+    // 1. Target Curve (dashed silver)
+    const targetColor = '#A1A1AA';
+    ctx.strokeStyle = targetColor;
+    ctx.lineWidth = 2.4;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    for (let x = 60; x < w - 30; x += 4) {
+      const normX = (x - 60) / (w - 90);
+      const absFeature =
+        Math.sin(normX * 8) * 22 +
+        Math.sin(normX * 18) * 14 +
+        Math.cos(normX * 3) * 35;
+      const y = h * 0.45 - absFeature;
+      if (x === 60) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 2. Earth Analog Curve (solid white)
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 2.8;
+    ctx.beginPath();
+    for (let x = 60; x < w - 30; x += 4) {
+      const normX = (x - 60) / (w - 90);
+      const absFeature =
+        Math.sin(normX * 8 + 0.3) * 20 +
+        Math.sin(normX * 18 + 0.1) * 12 +
+        Math.cos(normX * 3 + 0.2) * 32;
+      const y = h * 0.48 - absFeature;
+      if (x === 60) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Absorption Band Markers
+    const bands = [
+      { x: 140, label: '0.95 µm (Fe²⁺)' },
+      { x: 280, label: '1.9 µm (H₂O/OH)' },
+      { x: 420, label: '2.2 µm (Al-OH)' },
+      { x: 560, label: '8.2 µm (TIR Silicatos)' },
+    ];
+
+    bands.forEach((b) => {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([2, 3]);
+      ctx.beginPath();
+      ctx.moveTo(b.x, 45);
+      ctx.lineTo(b.x, h - 50);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.font = "500 9px 'JetBrains Mono', monospace";
+      ctx.fillStyle = '#8E929F';
+      ctx.fillText(b.label, b.x - 24, h - 35);
+    });
+
+    // Legend
+    ctx.font = "600 11px 'JetBrains Mono', monospace";
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText(`— ${site.id} (TERRA/ASTER TIR)`, 60, 30);
+    ctx.fillStyle = '#A1A1AA';
+    ctx.fillText(`-- ${target.name} (${target.body === 'Luna' ? 'LRO Diviner' : 'MRO CRISM'})`, 280, 30);
+  }, [site, target]);
+
+  return <canvas ref={canvasRef} className="w-full h-full object-cover" />;
 }
 
 export default function SiteDetailModal({
@@ -21,9 +226,19 @@ export default function SiteDetailModal({
   target,
   pfi,
   breakdown,
+  allSites,
+  allTargets,
+  onSelectSite,
+  onSelectTarget,
   onClose,
+  weights,
 }: SiteDetailModalProps) {
-  // Horizontal Carousel Drag & Motion Blur State
+  // Written Scientific Report Modal State
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  // Real NASA Datasets Extraction Modal State
+  const [isDatasetModalOpen, setIsDatasetModalOpen] = useState(false);
+
+  // Horizontal Carousel Drag & Velocity Motion Blur
   const carouselRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -33,9 +248,7 @@ export default function SiteDetailModal({
   const lastTimeRef = useRef(performance.now());
   const velocityAnimRef = useRef<number>(0);
 
-  // Tab state for Topo DEM vs Thermal Radiometry
-  const [activeChartTab, setActiveChartTab] = useState<'topo' | 'thermal'>('topo');
-
+  // Close on Escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -44,12 +257,12 @@ export default function SiteDetailModal({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  // Inertial smooth decay for carousel velocity blur
+  // Inertial smooth return to 0 for carousel velocity
   useEffect(() => {
     const decayLoop = () => {
       setCarouselVelocity((v) => {
         if (Math.abs(v) < 0.05) return 0;
-        return v * 0.88; // rapid smooth return to 0
+        return v * 0.85; // smooth rapid lerp back to 0
       });
       velocityAnimRef.current = requestAnimationFrame(decayLoop);
     };
@@ -77,9 +290,20 @@ export default function SiteDetailModal({
     const dt = now - lastTimeRef.current || 16;
     const dx = e.pageX - lastXRef.current;
     const v = dx / dt;
-    setCarouselVelocity(v * 40);
+    setCarouselVelocity(v * 36);
     lastXRef.current = e.pageX;
     lastTimeRef.current = now;
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (!carouselRef.current) return;
+    // Allow horizontal scroll with mouse wheel
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+      setCarouselVelocity(e.deltaX * 0.4);
+    } else {
+      carouselRef.current.scrollLeft += e.deltaY;
+      setCarouselVelocity(e.deltaY * 0.3);
+    }
   };
 
   const handleMouseUp = () => {
@@ -88,520 +312,609 @@ export default function SiteDetailModal({
 
   if (!site) return null;
 
+  // Site index navigation
+  const currentIndex = allSites.findIndex((s) => s.id === site.id);
+  const prevSiteId = allSites[(currentIndex - 1 + allSites.length) % allSites.length]?.id;
+  const nextSiteId = allSites[(currentIndex + 1) % allSites.length]?.id;
+
   const scoreColor = fidelityColor(pfi);
   const scoreLabel = fidelityLabel(pfi);
   const isMoon = target.body === 'Luna';
-  const targetColor = isMoon ? '#94A3B8' : '#FF4D24';
+  const targetColor = '#A1A1AA';
+  const targetWikiPhoto = useWikipediaImage(target.id);
 
-  // 6-Axis Radar Points
+  // Scientific data lookup
+  const scientific = SITE_SCIENTIFIC_DATA[site.id] || {
+    strongAnalogy: [site.summary],
+    breaksDown: [site.grayZone || 'Diferencias atmosféricas y gravitacionales normales'],
+    explorationCases: [],
+  };
+
+  // 8-Axis Radar Geometry
   const radarAxes = [
-    { key: 'morphology', label: 'MORFOLOGÍA' },
-    { key: 'mineralogy', label: 'MINERALOGÍA' },
-    { key: 'temperature', label: 'TEMPERATURA' },
-    { key: 'aridity', label: 'HIPERARIDEZ' },
-    { key: 'radiation', label: 'RADIACIÓN' },
-    { key: 'isru', label: 'ISRU' },
+    { key: 'geology', label: '1. GEOLOGÍA' },
+    { key: 'terrain', label: '2. TERRENO' },
+    { key: 'temperature', label: '3. TEMPERATURA' },
+    { key: 'iceWater', label: '4. AGUA/HIELO' },
+    { key: 'atmosphere', label: '5. POLVO/ATM' },
+    { key: 'biosphere', label: '6. BIOLOGÍA' },
+    { key: 'subsurface', label: '7. CUEVAS/SUBS' },
+    { key: 'robotics', label: '8. OPERACIONES' },
   ] as const;
 
-  const center = 130;
-  const radius = 90;
-  const angleStep = (Math.PI * 2) / 6;
+  const center = 150;
+  const radius = 105;
+  const angleStep = (Math.PI * 2) / 8;
 
-  const getPoints = (axesObj: any) => {
+  const getPoints = (vectorObj: any) => {
     return radarAxes
       .map((axis, i) => {
-        const val = Math.max(0, Math.min(100, axesObj[axis.key] || 50));
+        const val = Math.max(0, Math.min(100, vectorObj[axis.key] ?? 50));
         const r = (val / 100) * radius;
         const angle = i * angleStep - Math.PI / 2;
         const x = center + r * Math.cos(angle);
         const y = center + r * Math.sin(angle);
-        return `${x},${y}`;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
       })
       .join(' ');
   };
 
-  const earthPoints = getPoints(site.radar);
-  const targetPoints = getPoints(target.radar);
+  const earthPoints = getPoints(site.vector);
+  const targetPoints = getPoints(target.vector);
 
-  // Topo path
-  const maxDist = Math.max(...site.topo.map((p) => p.distKm), ...target.topo.map((p) => p.distKm)) || 1;
-  const minElev = Math.min(...site.topo.map((p) => p.elevM), ...target.topo.map((p) => p.elevM));
-  const maxElev = Math.max(...site.topo.map((p) => p.elevM), ...target.topo.map((p) => p.elevM));
-  const rangeElev = maxElev - minElev || 1;
-
-  const getTopoPath = (pts: { distKm: number; elevM: number }[]) => {
-    const coords = pts.map((p) => {
-      const x = 50 + (p.distKm / maxDist) * 580;
-      const y = 140 - ((p.elevM - minElev) / rangeElev) * 100;
-      return `${x},${y}`;
-    });
-    return 'M ' + coords.join(' L ');
-  };
-
-  const earthTopoPath = getTopoPath(site.topo);
-  const targetTopoPath = getTopoPath(target.topo);
-
-  // Thermal Radiometry curves (Diviner / THEMIS & Earth Analog)
-  const targetThermal = getTargetThermalCurve(target);
-  const siteThermal = getSiteThermalCurve(site);
-
-  const allTemps = [
-    ...targetThermal.points.map((p) => p.tempC),
-    ...siteThermal.map((p) => p.tempC),
-  ];
-  const rawMinT = Math.min(...allTemps);
-  const rawMaxT = Math.max(...allTemps);
-  const padT = Math.max((rawMaxT - rawMinT) * 0.12, 6);
-  const chartMinT = Math.floor((rawMinT - padT) / 10) * 10;
-  const chartMaxT = Math.ceil((rawMaxT + padT) / 10) * 10;
-  const rangeT = chartMaxT - chartMinT || 1;
-
-  const getThermalPath = (pts: { tempC: number }[]) => {
-    const total = pts.length;
-    const coords = pts.map((p, i) => {
-      const x = 55 + (i / Math.max(1, total - 1)) * 580;
-      const y = 135 - ((p.tempC - chartMinT) / rangeT) * 95;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    });
-    return 'M ' + coords.join(' L ');
-  };
-
-  const targetThermalPath = getThermalPath(targetThermal.points);
-  const siteThermalPath = getThermalPath(siteThermal);
-
-  const zeroY =
-    chartMinT <= 0 && chartMaxT >= 0
-      ? 135 - ((0 - chartMinT) / rangeT) * 95
-      : null;
-
-  // Carousel motion blur & stretch calculation
-  const carouselBlur = Math.min(Math.abs(carouselVelocity) * 0.18, 7);
-  const carouselStretch = 1 + Math.min(Math.abs(carouselVelocity) * 0.005, 0.08);
+  // Velocity motion blur values
+  const velocityMagnitude = Math.abs(carouselVelocity);
+  const blurPx = Math.min(velocityMagnitude * 0.18, 7);
+  const stretchX = 1 + Math.min(velocityMagnitude * 0.0025, 0.06);
+  const skewX = Math.min(Math.max(carouselVelocity * -0.12, -5), 5);
 
   return (
-    <div className="fixed inset-0 z-[150] bg-[#050508] text-[#E8E8EC] overflow-y-auto select-none">
-      {/* 1. Top Fixed Navigation Bar */}
-      <div className="sticky top-0 z-50 bg-[#0F1015]/90 backdrop-blur-xl border-b border-[rgba(255,255,255,0.08)] px-6 md:px-12 py-4 flex items-center justify-between">
+    <div className="fixed inset-0 z-[60] bg-[#F4F4F6] text-[#0A0A0E] overflow-y-auto select-none">
+      {/* ── 1. TOP STICKY NAVIGATION BAR ───────────────────────────── */}
+      <div className="sticky top-0 z-50 bg-[#0C0E14]/95 backdrop-blur-xl border-b border-[rgba(255,255,255,0.1)] px-6 md:px-10 py-3.5 flex flex-wrap items-center justify-between gap-4">
+        {/* Left: Back Button */}
         <button
           onClick={onClose}
-          className="pill-btn pill-btn-dark hover:border-[#2544FF] text-white flex items-center gap-2 text-xs font-mono py-2.5 px-5 shadow-lg"
+          className="bg-white/10 hover:bg-white/20 text-white hover:text-white px-4 py-2 rounded-lg font-sans text-xs font-semibold transition-all flex items-center gap-2 border border-white/15"
         >
-          <span className="text-[#2544FF] font-bold text-sm">←</span>
-          <span>VOLVER AL LABORATORIO (BACK)</span>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M7.5 1.5L3 6l4.5 4.5" />
+          </svg>
+          <span>Volver a la galería (Esc)</span>
         </button>
 
-        <div className="flex items-center gap-4">
-          <div
-            className="flex items-baseline gap-2 px-4 py-1.5 rounded-full border font-mono"
-            style={{
-              borderColor: `${scoreColor}50`,
-              backgroundColor: `${scoreColor}15`,
-              color: scoreColor,
-            }}
+        {/* Center: Previous / Next Site Quick Switcher */}
+        <div className="flex items-center gap-2 font-mono text-xs text-white">
+          <button
+            onClick={() => onSelectSite(prevSiteId)}
+            className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-[#8E929F] hover:text-white transition-colors"
           >
-            <span className="text-xl font-bold">{Math.round(pfi)}% PFI</span>
-            <span className="text-[10px] font-semibold uppercase">{scoreLabel}</span>
-          </div>
-
-          <span className="font-mono text-xs text-[#6B6F7B] hidden sm:inline">
-            OBJETIVO: <strong className="text-white">{target.name}</strong>
+            ← Anterior
+          </button>
+          <span className="text-white font-mono font-bold px-2">
+            {site.id} ({currentIndex + 1} de {allSites.length})
           </span>
+          <button
+            onClick={() => onSelectSite(nextSiteId)}
+            className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-[#8E929F] hover:text-white transition-colors"
+          >
+            Siguiente →
+          </button>
+        </div>
+
+        {/* Right: Space Destination Switcher (4 Flagship Targets) */}
+        <div className="flex items-center gap-1.5 bg-[#121316] p-1 rounded-full border border-white/10">
+          <span className="font-sans text-[11px] text-[#8E9299] px-2.5 font-medium hidden lg:inline">
+            Destino:
+          </span>
+          {REFERENCE_TARGET_BUTTONS.map((tBtn) => {
+            const isActive = target.id === tBtn.id;
+            return (
+              <button
+                key={tBtn.id}
+                onClick={() => onSelectTarget(tBtn.id)}
+                className={`font-sans text-xs px-3.5 py-1 rounded-full transition-all ${
+                  isActive
+                    ? 'bg-white text-[#0A0A0C] font-semibold shadow-sm'
+                    : 'text-[#8E9299] hover:text-white'
+                }`}
+              >
+                {tBtn.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* 2. Hero Editorial Case Study Header */}
-      <div className="max-w-[1300px] mx-auto px-6 md:px-12 pt-12 pb-8">
-        <div className="flex flex-wrap items-center gap-3 mb-4">
-          <span className="font-mono text-xs px-3 py-1 rounded-full font-bold bg-[#2544FF] text-white">
-            {site.id}
-          </span>
-          <span className="font-mono text-xs text-[#6B6F7B] uppercase tracking-wider">
-            CASO DE ESTUDIO GEOCIENTÍFICO // NASA EARTH SCIENCE
-          </span>
-          {target.demSource && (
-            <span className="font-mono text-[10px] px-2.5 py-0.5 rounded-full bg-white/5 border border-white/10 text-[#8E929F] hidden sm:inline">
-              DATOS: {target.demSource}
+      {/* ── 2. MONUMENTAL EDITORIAL SITE HEADER ─────────────────────── */}
+      <div className="max-w-[1400px] mx-auto px-6 md:px-12 pt-10 pb-8">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-xs px-3.5 py-1 rounded-full font-bold bg-[#0A0A0C] text-white">
+              {site.id}
             </span>
-          )}
+            <span className="font-sans text-xs uppercase tracking-wider text-[#686B75]">
+              Caso de estudio geológico · NASA Space Apps
+            </span>
+            {site.isCandidate && (
+              <span className="font-sans text-xs px-2.5 py-0.5 rounded-full font-medium bg-[#18181B] text-white">
+                Candidato
+              </span>
+            )}
+          </div>
+
+          {/* Dynamic PFI Score Badge + Actions */}
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setIsDatasetModalOpen(true)}
+              className="py-2 px-4 rounded-full font-sans text-xs font-semibold bg-[#121316] hover:bg-[#202227] text-white transition-all shadow-sm flex items-center gap-1.5 border border-white/12"
+            >
+              <span>Datasets NASA (8 archivos CSV)</span>
+            </button>
+
+            <button
+              onClick={() => setIsReportOpen(true)}
+              className="py-2 px-4 rounded-full font-sans text-xs font-semibold bg-white hover:bg-[#E4E4E7] text-[#0A0A0C] transition-all shadow-md flex items-center gap-2 border border-white"
+            >
+              <span>Generar reporte científico</span>
+            </button>
+
+            <div
+              className="flex items-baseline gap-2.5 px-4 py-1.5 rounded-full border border-black/10 font-mono shadow-sm bg-white text-[#0A0A0C]"
+            >
+              <span className="text-xl font-bold">{Math.round(pfi)}% PFI</span>
+              <span className="text-[10px] font-semibold uppercase text-[#686B75]">{scoreLabel}</span>
+            </div>
+          </div>
         </div>
 
         <h1
-          className="text-4xl md:text-6xl font-extrabold text-white tracking-tight uppercase leading-[1.05] mb-4"
+          className="text-4xl md:text-6xl font-extrabold text-[#0A0A0E] tracking-tight uppercase leading-[1.05] mb-4"
           style={{ fontFamily: "'Inter', sans-serif" }}
         >
           {site.name}
         </h1>
 
-        <p className="font-mono text-sm text-[#8E929F] max-w-3xl leading-relaxed mb-10">
-          {site.country} · {site.region} · Coordenadas: <span className="text-white">{site.dms}</span> · Elevación: <span className="text-white">{site.elevM.toLocaleString()} m</span>
+        <p className="font-mono text-sm text-[#686B75] max-w-4xl leading-relaxed mb-6">
+          {site.country} · {site.region} · Coordenadas: <strong className="text-[#0A0A0E]">{site.dms}</strong> ({site.lat}°, {site.lng}°) · Elevación: <strong className="text-[#0A0A0E]">{site.elevM.toLocaleString()} m s.n.m.</strong>
         </p>
 
-        {/* 3. Photo Comparator with Real Imagery */}
-        <div className="rounded-3xl overflow-hidden border border-[rgba(255,255,255,0.12)] shadow-2xl mb-14">
-          <div className="bg-[#0F1015] px-6 py-3 border-b border-[rgba(255,255,255,0.08)] flex items-center justify-between font-mono text-xs text-[#8E929F]">
-            <span>COMPARADOR DE CORTINA FOTOGRÁFICA // FOTOS REALES DE ALTA RESOLUCIÓN</span>
-            <span className="text-[#2544FF] font-semibold">ARRASTRA EL DIVISOR CENTRAL</span>
+        {/* 2 Prominent Pills: Micro-Escala & Proceso Activo */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <div className="bg-white p-4 rounded-2xl border border-[#E2E4EC] shadow-sm">
+            <div className="font-sans text-xs font-semibold text-[#6B7280] uppercase tracking-wider mb-1">
+              Micro-escala exacta:
+            </div>
+            <p className="text-sm text-[#0A0A0E] leading-relaxed">
+              {site.microScale}
+            </p>
           </div>
-          <PhotoComparator
-            earthPhoto={site.photoEarth}
-            spacePhoto={site.photoSpace}
-            earthCaption={site.photoEarthCaption}
-            spaceCaption={site.photoSpaceCaption}
-            targetBody={target.body}
-          />
+
+          <div className="bg-white p-4 rounded-2xl border border-[#E2E4EC] shadow-sm">
+            <div className="font-sans text-xs font-semibold text-[#6B7280] uppercase tracking-wider mb-1">
+              Proceso geofísico activo:
+            </div>
+            <p className="text-sm text-[#0A0A0E] leading-relaxed">
+              {site.activeProcess}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 3. HORIZONTAL INSPECTION CAROUSEL (VELOCITY BLUR) ─── */}
+      <div className="max-w-[1400px] mx-auto px-6 md:px-12 mb-16">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <span className="font-mono text-xs uppercase tracking-widest text-[#686B75] block">
+              GALERÍA HORIZONTAL DE INSPECCIÓN GEOLÓGICA (4 LÁMINAS)
+            </span>
+            <h3 className="text-2xl font-bold text-[#0A0A0E] tracking-tight">
+              Muestreo Espectral, Topografía y Terreno Homólogo
+            </h3>
+          </div>
+          <span className="font-mono text-xs text-[#686B75] hidden sm:inline">
+            ARRASTRA O RUEDA DEL RATÓN (VELOCITY MOTION BLUR)
+          </span>
         </div>
 
-        {/* 4. Horizontal Geological Inspection Carousel (Lusion Style Drag & Velocity Blur) */}
-        <div className="mb-14">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <span className="font-mono text-[11px] uppercase tracking-widest text-[#6B6F7B] block">
-                GALERÍA HORIZONTAL DE INSPECCIÓN GEOLÓGICA
-              </span>
-              <h3 className="text-2xl font-bold text-white tracking-tight">
-                Muestreo Espectral y Textura de Superficie
-              </h3>
+        {/* 4 Large-Format Slides with Physics-based Velocity Blur */}
+        <div
+          ref={carouselRef}
+          className="flex gap-6 overflow-x-auto pb-6 scrollbar-none cursor-grab active:cursor-grabbing select-none"
+          style={{
+            filter: `blur(${blurPx}px)`,
+            transform: `scaleX(${stretchX}) skewX(${skewX}deg)`,
+            transition: isDragging ? 'none' : 'filter 0.25s ease-out, transform 0.25s ease-out',
+            willChange: 'filter, transform',
+          }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onWheel={handleWheel}
+        >
+          {/* Lámina 01 — Fotografía Geológica de Campo */}
+          <div className="shrink-0 w-[84vw] md:w-[620px] rounded-3xl overflow-hidden bg-white border border-[#E2E4EC] shadow-xl flex flex-col justify-between" style={{ height: '54vh', minHeight: '390px' }}>
+            <div className="relative flex-1 overflow-hidden bg-[#181B20]">
+              <GeologicalSiteImage site={site} />
+              <div className="absolute top-4 left-4 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-full font-mono text-xs text-white font-bold">
+                LÁMINA 01 // FOTOGRAFÍA GEOLÓGICA DE CAMPO
+              </div>
             </div>
-            <span className="font-mono text-xs text-[#6B6F7B] hidden sm:inline">
-              ARRASTRA HORIZONTALMENTE (VELOCITY BLUR)
-            </span>
+            <div className="p-4 bg-white border-t border-[#E2E4EC]">
+              <h4 className="font-bold text-sm text-[#0A0A0E] mb-0.5">{site.name}</h4>
+              <p className="font-mono text-xs text-[#686B75] line-clamp-1">{site.photoEarthCaption}</p>
+            </div>
           </div>
 
-          <div
-            ref={carouselRef}
-            className="flex gap-6 overflow-x-auto pb-4 scrollbar-none cursor-grab active:cursor-grabbing select-none"
-            style={{
-              filter: `blur(${carouselBlur}px)`,
-              transform: `scaleX(${carouselStretch})`,
-              transition: isDragging ? 'none' : 'filter 0.25s ease-out, transform 0.25s ease-out',
-              willChange: 'filter, transform',
-            }}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-          >
-            {site.inspectionGallery.map((photo, idx) => (
-              <div
-                key={idx}
-                className="carousel-card shrink-0 w-[340px] md:w-[420px] rounded-2xl overflow-hidden bg-[#0F1015] border border-[rgba(255,255,255,0.08)] shadow-lg"
-              >
-                <div className="relative h-64 overflow-hidden bg-[#181B20]">
-                  <img
-                    src={photo.url}
-                    alt={photo.title}
-                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-105 pointer-events-none"
-                    crossOrigin="anonymous"
-                    loading="lazy"
-                  />
-                  <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-md px-3 py-1 rounded-full font-mono text-[10px] text-white font-semibold">
-                    {photo.category}
+          {/* Lámina 02 — Escaneo Orbital DEM / SRTM (Relieve y Pendientes) */}
+          <div className="shrink-0 w-[84vw] md:w-[620px] rounded-3xl overflow-hidden bg-white border border-[#E2E4EC] shadow-xl flex flex-col justify-between" style={{ height: '54vh', minHeight: '390px' }}>
+            <div className="relative flex-1 overflow-hidden bg-[#0A0C14]">
+              <DemHeatmapCanvas site={site} />
+              <div className="absolute top-4 left-4 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-full font-mono text-xs text-white font-bold">
+                LÁMINA 02 // ESCANEO ORBITAL DEM & PENDIENTES
+              </div>
+            </div>
+            <div className="p-4 bg-white border-t border-[#E2E4EC]">
+              <h4 className="font-bold text-sm text-[#0A0A0E] mb-0.5">Mapa Hipsométrico y Vectores de Pendiente</h4>
+              <p className="font-mono text-xs text-[#686B75] line-clamp-1">Curvas cada 25m y análisis de relieve para transitabilidad de rovers</p>
+            </div>
+          </div>
+
+          {/* Lámina 03 — Firma Espectral Mineralógica */}
+          <div className="shrink-0 w-[84vw] md:w-[620px] rounded-3xl overflow-hidden bg-white border border-[#E2E4EC] shadow-xl flex flex-col justify-between" style={{ height: '54vh', minHeight: '390px' }}>
+            <div className="relative flex-1 overflow-hidden bg-[#080A10]">
+              <SpectralSignatureCanvas site={site} target={target} />
+              <div className="absolute top-4 left-4 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-full font-mono text-xs text-white font-bold">
+                LÁMINA 03 // FIRMA ESPECTRAL (ASTER TIR vs CRISM/DIVINER)
+              </div>
+            </div>
+            <div className="p-4 bg-white border-t border-[#E2E4EC]">
+              <h4 className="font-bold text-sm text-[#0A0A0E] mb-0.5">Bandas de Absorción Mineralógica</h4>
+              <p className="font-mono text-xs text-[#686B75] line-clamp-1">Comparación de firmas de {site.mineralogy.split(',').slice(0, 3).join(', ')}</p>
+            </div>
+          </div>
+
+          {/* Lámina 04 — Terreno Homólogo en Luna / Marte */}
+          <div className="shrink-0 w-[84vw] md:w-[620px] rounded-3xl overflow-hidden bg-white border border-[#E2E4EC] shadow-xl flex flex-col justify-between" style={{ height: '54vh', minHeight: '390px' }}>
+            <div className="relative flex-1 overflow-hidden bg-[#10121A]">
+              <img
+                src={
+                  targetWikiPhoto ||
+                  (isMoon
+                    ? 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Aldrin_Apollo_11_original.jpg/1280px-Aldrin_Apollo_11_original.jpg'
+                    : 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/NASA_Mars_Rover.jpg/1280px-NASA_Mars_Rover.jpg')
+                }
+                alt="Superficie espacial homóloga"
+                className="w-full h-full object-cover pointer-events-none"
+              />
+              <div className="absolute top-4 left-4 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-full font-mono text-xs text-white font-bold">
+                LÁMINA 04 // SUPERFICIE HOMÓLOGA ({target.body.toUpperCase()})
+              </div>
+            </div>
+            <div className="p-4 bg-white border-t border-[#E2E4EC]">
+              <h4 className="font-bold text-sm text-[#0A0A0E] mb-0.5">{target.name}</h4>
+              <p className="font-mono text-xs text-[#686B75] line-clamp-1">{target.subtitle}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 4. COMPARADOR DE CORTINA Y PERFIL CRUZADO ───────────────── */}
+      <div className="max-w-[1400px] mx-auto px-6 md:px-12 mb-16">
+        <div className="mb-4">
+          <span className="font-mono text-xs uppercase tracking-widest text-[#686B75] block">
+            COMPARADOR VISUAL INTERACTIVO TIERRA VS. LUNA / MARTE
+          </span>
+          <h3 className="text-2xl font-bold text-[#0A0A0E] tracking-tight">
+            Inspección Fotográfica y Altimetría Cruzada
+          </h3>
+        </div>
+
+        <PhotoComparator
+          earthSiteId={site.id}
+          earthPhoto={site.photoEarth}
+          targetId={target.id}
+          targetName={target.name}
+          targetBody={target.body}
+          earthCaption={site.photoEarthCaption}
+          spaceCaption={target.subtitle}
+          earthTelemetry={`${site.id} · Temp: ${site.meanTempC}°C · Presión: ${site.pressureHpa} hPa · Gravedad: 9.81 m/s²`}
+          earthTopo={site.topo}
+          targetTopo={target.topo}
+          earthSiteName={site.name}
+          earthMeanTempC={site.meanTempC}
+          onOpenDatasetModal={() => setIsDatasetModalOpen(true)}
+        />
+      </div>
+
+      {/* ── 5. SCIENTIFIC 3-COLUMN MATRIX: WHERE IT BREAKS DOWN ─────── */}
+      <div className="bg-[#0A0C14] text-[#E8E8EC] py-20 px-6 md:px-12 border-t border-[rgba(255,255,255,0.08)]">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="mb-10 text-center md:text-left">
+            <span className="font-sans text-xs uppercase tracking-wider text-[#8E9299] block mb-2 font-medium">
+              Evaluación crítica de la analogía planetaria · NASA Space Apps
+            </span>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
+              ¿Por qué coincide y dónde se rompe la analogía?
+            </h2>
+            <p className="text-sm text-[#8E9299] mt-2 max-w-2xl font-light leading-relaxed">
+              Análisis geocientífico riguroso: fortalezas de fidelidad, factores donde la física terrestre diverge y las 4 barreras planetarias insuperables.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 border-t border-white/[0.08] pt-8">
+            {/* Columna 1 — PUNTOS DE ALTA FIDELIDAD */}
+            <div className="space-y-4">
+              <span className="font-sans text-xs uppercase tracking-wider text-white font-medium block">
+                Puntos de alta fidelidad analógica
+              </span>
+              <div className="space-y-4 pt-2">
+                {scientific.strongAnalogy.map((point, i) => (
+                  <div key={i} className="flex items-baseline gap-3">
+                    <span className="font-mono text-xs text-[#52525B] tabular-nums shrink-0 font-medium">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <p className="text-sm text-[#D4D4D8] leading-relaxed font-sans font-light">
+                      {point}
+                    </p>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Columna 2 — LÍMITES Y RUPTURA (con fine vertical divider) */}
+            <div className="space-y-4 md:border-l md:border-white/10 md:pl-7">
+              <span className="font-sans text-xs uppercase tracking-wider text-white font-medium block">
+                Límites y ruptura de la analogía local
+              </span>
+              <div className="space-y-4 pt-2">
+                {scientific.breaksDown.map((point, i) => (
+                  <div key={i} className="flex items-baseline gap-3">
+                    <span className="font-mono text-xs text-[#52525B] tabular-nums shrink-0 font-medium">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <p className="text-sm text-[#D4D4D8] leading-relaxed font-sans font-light">
+                      {point}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Columna 3 — BARRERAS FÍSICAS DE LA TIERRA (con fine vertical divider) */}
+            <div className="space-y-4 md:border-l md:border-white/10 md:pl-7">
+              <span className="font-sans text-xs uppercase tracking-wider text-white font-medium block">
+                Barreras físicas universales de la Tierra
+              </span>
+              <div className="space-y-3 pt-2">
+                {EARTH_PLANETARY_LIMITS.map((lim, idx) => (
+                  <div key={lim.id} className="pt-2.5 border-t first:border-t-0 border-white/[0.06]">
+                    <div className="flex items-baseline justify-between gap-2 mb-0.5">
+                      <strong className="text-white text-xs font-sans font-medium">
+                        {lim.title}
+                      </strong>
+                      <span className="font-mono text-[10px] text-[#52525B]">0{idx + 1}</span>
+                    </div>
+                    <p className="text-[11px] text-[#A1A1AA] leading-relaxed font-light">
+                      {lim.engineeringImpact}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 6. 8-AXIS RADAR & MULTI-DATASET QUANTITATIVE TABLE ─────── */}
+      <div className="bg-[#0A0A0C] text-[#E8E8EC] py-20 px-6 md:px-12 border-t border-white/10">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <span className="font-sans text-xs uppercase tracking-wider text-[#8E9299] block mb-2 font-medium">
+                Matriz cuantitativa multi-dataset · 8 dimensiones oficiales NASA
+              </span>
+              <h2 className="text-3xl font-semibold text-white tracking-tight">
+                Correlación paramétrica frente a {target.name}
+              </h2>
+            </div>
+            <div className="font-sans text-xs text-[#8E9299]">
+              PFI global: <strong className="text-white text-base font-mono">{Math.round(pfi)}%</strong>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* 8-Axis Radar Chart */}
+            <div className="lg:col-span-5 bg-[#121316] p-6 rounded-3xl border border-white/10 flex flex-col items-center justify-center">
+              <span className="font-sans text-xs text-[#8E9299] uppercase mb-4 tracking-wider font-medium">
+                Polígono de similitud (8 ejes)
+              </span>
+
+              <svg width="300" height="300" viewBox="0 0 300 300" className="select-none">
+                {[20, 40, 60, 80, 100].map((lvl) => {
+                  const r = (lvl / 100) * radius;
+                  const pts = Array.from({ length: 8 }, (_, i) => {
+                    const a = i * angleStep - Math.PI / 2;
+                    return `${center + r * Math.cos(a)},${center + r * Math.sin(a)}`;
+                  }).join(' ');
+                  return <polygon key={lvl} points={pts} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />;
+                })}
+
+                {radarAxes.map((_, i) => {
+                  const a = i * angleStep - Math.PI / 2;
+                  return (
+                    <line
+                      key={i}
+                      x1={center}
+                      y1={center}
+                      x2={center + radius * Math.cos(a)}
+                      y2={center + radius * Math.sin(a)}
+                      stroke="rgba(255,255,255,0.1)"
+                      strokeWidth="1"
+                    />
+                  );
+                })}
+
+                {/* Target Polygon */}
+                <polygon points={targetPoints} fill="none" stroke="#A1A1AA" strokeWidth="1.8" strokeDasharray="4,3" />
+
+                {/* Earth Site Polygon (Clean White Accent) */}
+                <polygon points={earthPoints} fill="rgba(255,255,255,0.12)" stroke="#FFFFFF" strokeWidth="2" />
+
+                {radarAxes.map((axis, i) => {
+                  const a = i * angleStep - Math.PI / 2;
+                  const x = center + (radius + 22) * Math.cos(a);
+                  const y = center + (radius + 22) * Math.sin(a);
+                  return (
+                    <text key={axis.key} x={x} y={y + 3} fill="#8E929F" fontSize="8" fontFamily="JetBrains Mono" textAnchor="middle" fontWeight="600">
+                      {axis.label}
+                    </text>
+                  );
+                })}
+              </svg>
+
+              <div className="flex items-center gap-6 text-xs font-sans mt-4">
+                <span className="flex items-center gap-2 text-white">
+                  <span className="w-3 h-0.5 bg-white inline-block" />
+                  {site.id} (Tierra)
+                </span>
+                <span className="flex items-center gap-2 text-[#A1A1AA]">
+                  <span className="w-3 h-0.5 border-t-2 border-dashed border-[#A1A1AA] inline-block" />
+                  {target.name} ({target.body})
+                </span>
+              </div>
+            </div>
+
+            {/* Multi-Dataset Table */}
+            <div className="lg:col-span-7 bg-[#121316] p-6 rounded-3xl border border-white/10 overflow-x-auto">
+              <span className="font-sans text-xs text-[#8E9299] uppercase mb-4 block tracking-wider font-medium">
+                Tabla cuantitativa multi-dataset
+              </span>
+
+              <table className="w-full text-left font-sans text-xs">
+                <thead>
+                  <tr className="border-b border-white/10 text-[#8E9299] text-[10px] uppercase">
+                    <th className="py-2.5 pr-2">Dimensión</th>
+                    <th className="py-2.5 px-2">Dataset Tierra</th>
+                    <th className="py-2.5 px-2">Lectura</th>
+                    <th className="py-2.5 px-2">Dataset Espacial</th>
+                    <th className="py-2.5 px-2">Lectura</th>
+                    <th className="py-2.5 pl-2 text-right">% Similitud</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5 text-[11px]">
+                  {NASA_PFI_DIMENSIONS.map((dim) => {
+                    const sVal = site.vector[dim.key] ?? 50;
+                    const tVal = target.vector[dim.key] ?? 50;
+                    const sim = Math.max(0, 100 - Math.abs(sVal - tVal));
+                    return (
+                      <tr key={dim.key} className="hover:bg-white/[0.02]">
+                        <td className="py-2.5 pr-2 font-medium text-white">{dim.title.split(',')[0]}</td>
+                        <td className="py-2.5 px-2 text-[#A1A1AA]">{dim.datasets.split('vs.')[0]?.trim()}</td>
+                        <td className="py-2.5 px-2 text-white font-mono">{sVal}%</td>
+                        <td className="py-2.5 px-2 text-[#A1A1AA]">{dim.datasets.split('vs.')[1]?.trim() || 'NASA MRO/LRO'}</td>
+                        <td className="py-2.5 px-2 text-white font-mono">{tVal}%</td>
+                        <td className="py-2.5 pl-2 text-right">
+                          <div className="flex items-center justify-end gap-2.5">
+                            <span className="font-mono text-sm text-[#F4F4F6] tabular-nums font-medium">
+                              {Math.round(sim)}%
+                            </span>
+                            <div className="w-8 h-[2px] bg-white/10 rounded-full overflow-hidden shrink-0">
+                              <div
+                                className="h-full bg-white transition-all"
+                                style={{ width: `${Math.round(sim)}%` }}
+                              />
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 7. CONEXIÓN CON LA EXPLORACIÓN (HOW THIS PREPARES MISSIONS) ── */}
+      <div className="bg-[#0A0A0C] text-[#E8E8EC] py-20 px-6 md:px-12 border-t border-white/10">
+        <div className="max-w-[1400px] mx-auto">
+          <div className="mb-10">
+            <span className="font-sans text-xs uppercase tracking-wider text-[#8E9299] block mb-2 font-medium">
+              Aplicación técnica operacional · Preparación de misiones Artemis y Marte
+            </span>
+            <h2 className="text-3xl font-semibold text-white tracking-tight">
+              Ensayos Críticos e Instrumentación de Vuelo
+            </h2>
+            <p className="text-sm text-[#8E9299] mt-2 max-w-2xl font-light">
+              Protocolos específicos requeridos para mitigar riesgos antes del despliegue en la Luna (Artemis) y Marte.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            {scientific.explorationCases.map((c, i) => (
+              <div key={i} className="bg-[#121316] p-6 rounded-2xl border border-white/10 flex flex-col justify-between">
+                <div>
+                  <span className="font-sans text-[11px] text-[#8E9299] font-medium block mb-2">
+                    Caso de prueba 0{i + 1}
+                  </span>
+                  <h4 className="font-bold text-base text-white mb-2">{c.title}</h4>
+                  <div className="p-2.5 rounded-lg bg-black/40 border border-white/5 font-sans text-xs text-white/90 mb-3">
+                    Instrumento: {c.instrumentOrSystem}
+                  </div>
+                  <p className="text-xs text-[#A1A1AA] leading-relaxed">{c.objective}</p>
                 </div>
-                <div className="p-4">
-                  <h4 className="font-bold text-base text-white mb-1">{photo.title}</h4>
-                  <p className="font-mono text-xs text-[#8E929F]">{photo.caption}</p>
+                <div className="mt-5 pt-3 border-t border-white/5 font-sans text-[11px] text-[#71717A]">
+                  Validación TRL-6 a TRL-8
                 </div>
               </div>
             ))}
           </div>
-        </div>
 
-        {/* 5. Scientific 6-Axis Radar & Topographic Profile Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-14">
-          {/* Radar Chart */}
-          <div className="bg-[#0F1015] p-8 rounded-3xl border border-[rgba(255,255,255,0.08)] flex flex-col items-center">
-            <span className="font-mono text-xs uppercase tracking-widest text-[#6B6F7B] mb-4">
-              RADAR MULTIVARIABLE (6 EJES) // NORMALIZADO
-            </span>
-            <svg width="260" height="260" viewBox="0 0 260 260" className="select-none">
-              {[20, 40, 60, 80, 100].map((lvl) => {
-                const r = (lvl / 100) * radius;
-                const pts = Array.from({ length: 6 }, (_, i) => {
-                  const a = i * angleStep - Math.PI / 2;
-                  return `${center + r * Math.cos(a)},${center + r * Math.sin(a)}`;
-                }).join(' ');
-                return <polygon key={lvl} points={pts} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />;
-              })}
-
-              {radarAxes.map((_, i) => {
-                const a = i * angleStep - Math.PI / 2;
-                return (
-                  <line
-                    key={i}
-                    x1={center}
-                    y1={center}
-                    x2={center + radius * Math.cos(a)}
-                    y2={center + radius * Math.sin(a)}
-                    stroke="rgba(255,255,255,0.08)"
-                    strokeWidth="1"
-                  />
-                );
-              })}
-
-              <polygon points={targetPoints} fill="none" stroke={targetColor} strokeWidth="1.8" strokeDasharray="4,3" />
-              <polygon points={earthPoints} fill="rgba(37,68,255,0.22)" stroke="#2544FF" strokeWidth="2.2" />
-
-              {radarAxes.map((axis, i) => {
-                const a = i * angleStep - Math.PI / 2;
-                const x = center + (radius + 20) * Math.cos(a);
-                const y = center + (radius + 20) * Math.sin(a);
-                return (
-                  <text key={axis.key} x={x} y={y + 3} fill="#8E929F" fontSize="8.5" fontFamily="JetBrains Mono" textAnchor="middle" fontWeight="600">
-                    {axis.label}
-                  </text>
-                );
-              })}
-            </svg>
-
-            <div className="flex items-center gap-6 text-xs font-mono mt-4">
-              <span className="flex items-center gap-2 text-white">
-                <span className="w-3 h-3 rounded-xs bg-[#2544FF]" />
-                {site.id} (Tierra)
-              </span>
-              <span className="flex items-center gap-2" style={{ color: targetColor }}>
-                <span className="w-3 h-0.5 border-t-2 border-dashed" style={{ borderColor: targetColor }} />
-                {target.id} ({target.body})
-              </span>
-            </div>
-          </div>
-
-          {/* Interactive Scientific Profiles: DEM Topography vs Thermal Radiometry */}
-          <div className="bg-[#0F1015] p-8 rounded-3xl border border-[rgba(255,255,255,0.08)] flex flex-col justify-between">
-            <div>
-              {/* Tab Selector Controls */}
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[rgba(255,255,255,0.08)] pb-4 mb-4">
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setActiveChartTab('topo')}
-                    className={`px-3.5 py-1.5 rounded-full font-mono text-xs font-semibold transition-all ${
-                      activeChartTab === 'topo'
-                        ? 'bg-[#2544FF] text-white shadow-lg shadow-[#2544FF]/25'
-                        : 'bg-white/5 text-[#8E929F] hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    TOPOGRAFÍA DEM
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveChartTab('thermal')}
-                    className={`px-3.5 py-1.5 rounded-full font-mono text-xs font-semibold transition-all ${
-                      activeChartTab === 'thermal'
-                        ? 'bg-[#2544FF] text-white shadow-lg shadow-[#2544FF]/25'
-                        : 'bg-white/5 text-[#8E929F] hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    FÍSICA TÉRMICA & INERCIA
-                  </button>
-                </div>
-
-                <span className="font-mono text-[10px] text-[#6B6F7B] hidden sm:inline uppercase">
-                  {activeChartTab === 'topo' ? 'SRTM 30m vs LOLA/MOLA' : targetThermal.instrument}
-                </span>
-              </div>
-
-              {activeChartTab === 'topo' ? (
-                <>
-                  <div className="flex flex-wrap items-center justify-between font-mono text-xs mb-3 gap-2">
-                    <span className="text-[#6B6F7B] uppercase tracking-wider text-[11px]">
-                      TRANSECTO CRUZADO ({maxDist} km)
-                    </span>
-                    <div className="flex items-center gap-4">
-                      <span className="text-[#2544FF] font-bold">
-                        — {site.id} (Δz: {Math.round(maxElev - minElev)}m)
-                      </span>
-                      <span style={{ color: targetColor }} className="font-bold">
-                        -- {target.id} ({target.body})
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="w-full overflow-x-auto">
-                    <svg viewBox="0 0 680 160" className="w-full h-44 select-none">
-                      <line x1="50" y1="40" x2="630" y2="40" stroke="rgba(255,255,255,0.06)" strokeDasharray="3,3" />
-                      <line x1="50" y1="90" x2="630" y2="90" stroke="rgba(255,255,255,0.06)" strokeDasharray="3,3" />
-                      <line x1="50" y1="140" x2="630" y2="140" stroke="rgba(255,255,255,0.12)" />
-
-                      <path d={targetTopoPath} fill="none" stroke={targetColor} strokeWidth="1.8" strokeDasharray="4,3" />
-                      <path d={earthTopoPath} fill="none" stroke="#2544FF" strokeWidth="2.4" />
-
-                      <text x="42" y="44" fill="#6B6F7B" fontSize="9" fontFamily="JetBrains Mono" textAnchor="end">
-                        {Math.round(maxElev)}m
-                      </text>
-                      <text x="42" y="142" fill="#6B6F7B" fontSize="9" fontFamily="JetBrains Mono" textAnchor="end">
-                        {Math.round(minElev)}m
-                      </text>
-                      <text x="630" y="154" fill="#6B6F7B" fontSize="9" fontFamily="JetBrains Mono" textAnchor="end">
-                        {maxDist} km
-                      </text>
-                    </svg>
-                  </div>
-
-                  <div className="flex justify-between items-center text-[10px] font-mono text-[#6B6F7B] mt-2">
-                    <span>Fuente: USGS SRTM 1-arcsec vs NASA Solar System Treks (LOLA/MOLA DEM).</span>
-                    <span className="text-[#8E929F]">Elevación normalizada sobre datum medio</span>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex flex-wrap items-center justify-between font-mono text-xs mb-3 gap-2">
-                    <span className="text-[#6B6F7B] uppercase tracking-wider text-[11px]">
-                      CICLO DIURNO Y TERMORRADIOMETRÍA (°C)
-                    </span>
-                    <div className="flex items-center gap-4">
-                      <span className="text-[#2544FF] font-bold">
-                        — {site.id} ({site.tempMinC}°C a {site.tempMaxC}°C)
-                      </span>
-                      <span style={{ color: targetColor }} className="font-bold">
-                        -- {target.id} ({targetThermal.minTempC}°C a {targetThermal.maxTempC}°C)
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="w-full overflow-x-auto">
-                    <svg viewBox="0 0 680 160" className="w-full h-44 select-none">
-                      <line x1="50" y1="35" x2="635" y2="35" stroke="rgba(255,255,255,0.06)" strokeDasharray="3,3" />
-                      <line x1="50" y1="85" x2="635" y2="85" stroke="rgba(255,255,255,0.06)" strokeDasharray="3,3" />
-                      <line x1="50" y1="135" x2="635" y2="135" stroke="rgba(255,255,255,0.12)" />
-
-                      {/* 0°C Water Freezing Baseline */}
-                      {zeroY !== null && (
-                        <>
-                          <line
-                            x1="50"
-                            y1={zeroY}
-                            x2="635"
-                            y2={zeroY}
-                            stroke="#38BDF8"
-                            strokeWidth="1"
-                            strokeDasharray="2,2"
-                            opacity="0.5"
-                          />
-                          <text
-                            x="632"
-                            y={zeroY - 4}
-                            fill="#38BDF8"
-                            fontSize="8"
-                            fontFamily="JetBrains Mono"
-                            textAnchor="end"
-                            opacity="0.8"
-                          >
-                            0°C (CONGELACIÓN / AGUA LÍQUIDA)
-                          </text>
-                        </>
-                      )}
-
-                      {/* Curves */}
-                      <path d={targetThermalPath} fill="none" stroke={targetColor} strokeWidth="2" strokeDasharray="4,3" />
-                      <path d={siteThermalPath} fill="none" stroke="#2544FF" strokeWidth="2.4" />
-
-                      {/* Y Axis Labels */}
-                      <text x="44" y="38" fill="#6B6F7B" fontSize="9" fontFamily="JetBrains Mono" textAnchor="end">
-                        {chartMaxT}°C
-                      </text>
-                      <text x="44" y="138" fill="#6B6F7B" fontSize="9" fontFamily="JetBrains Mono" textAnchor="end">
-                        {chartMinT}°C
-                      </text>
-
-                      {/* X Axis Time Labels */}
-                      <text x="55" y="152" fill="#6B6F7B" fontSize="8.5" fontFamily="JetBrains Mono" textAnchor="start">
-                        00:00 (Noche)
-                      </text>
-                      <text x="345" y="152" fill="#6B6F7B" fontSize="8.5" fontFamily="JetBrains Mono" textAnchor="middle">
-                        12:00 (Cénit Solar)
-                      </text>
-                      <text x="635" y="152" fill="#6B6F7B" fontSize="8.5" fontFamily="JetBrains Mono" textAnchor="end">
-                        23:00 (Ocaso)
-                      </text>
-                    </svg>
-                  </div>
-
-                  {/* Thermal Metadata & Inertia Card */}
-                  <div className="mt-3 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06] text-xs font-mono">
-                    <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
-                      <span className="text-[#8E929F]">
-                        Inercia Térmica: <strong className="text-white">{targetThermal.inertia || 'N/A'}</strong>
-                      </span>
-                      <span className="text-[#6B6F7B] text-[10px]">
-                        Sensor: <strong className="text-[#E8E8EC]">{targetThermal.instrument}</strong>
-                      </span>
-                    </div>
-                    {targetThermal.note && (
-                      <p className="text-[11px] text-[#8E929F] leading-tight">
-                        {targetThermal.note}
-                      </p>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="mt-4 pt-3 border-t border-[rgba(255,255,255,0.06)] flex items-center justify-between font-mono text-[10px] text-[#6B6F7B]">
-              <span>MODO: {activeChartTab === 'topo' ? 'PERFIL TOPOGRÁFICO DE TRANSECTO' : 'RADIANCIA DIURNA / TERMORREGULACIÓN'}</span>
-              <span className="text-[#2544FF] font-semibold">DATOS OFICIALES NASA TREK</span>
-            </div>
-          </div>
-        </div>
-
-        {/* 6. Hardware Testing Protocols & Scientific Summary */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
-          <div className="bg-[#0F1015] p-8 rounded-3xl border border-[rgba(255,255,255,0.08)]">
-            <span className="font-mono text-xs uppercase tracking-widest text-[#6B6F7B] block mb-4">
-              PROTOCOLOS DE PRUEBA DE HARDWARE RECOMENDADOS (TRL 5-8)
-            </span>
-            <div className="space-y-3">
-              {site.protocols.map((proto) => (
-                <div key={proto.code} className="bg-[#050508] p-4 rounded-2xl border border-[rgba(255,255,255,0.06)]">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-mono text-sm font-bold text-white">{proto.title}</span>
-                    <span className="font-mono text-[10px] px-2.5 py-0.5 rounded-full bg-[#2544FF]/20 text-[#2544FF] font-bold">
-                      {proto.trl}
-                    </span>
-                  </div>
-                  <p className="font-mono text-xs text-[#8E929F] leading-relaxed">{proto.desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-[#0F1015] p-8 rounded-3xl border border-[rgba(255,255,255,0.08)] flex flex-col justify-between">
-            <div>
-              <span className="font-mono text-xs uppercase tracking-widest text-[#6B6F7B] block mb-3">
-                SÍNTESIS CIENTÍFICA Y ASTROBIOLOGÍA
-              </span>
-              <p className="text-base text-[#E8E8EC] leading-relaxed font-light mb-4">
-                {site.summary}
-              </p>
-              {site.engineeringBenchmark && (
-                <div className="p-4 rounded-2xl bg-[#2544FF]/10 border border-[#2544FF]/30 text-xs font-mono text-[#E8E8EC] leading-relaxed mb-4">
-                  <strong className="text-[#2544FF] block mb-1">BENCHMARK DE INGENIERÍA DE MISIÓN (NASA):</strong>
-                  {site.engineeringBenchmark}
-                </div>
-              )}
-              {site.grayZone && (
-                <div className="p-4 rounded-2xl bg-[#FF4D24]/10 border border-[#FF4D24]/30 text-xs font-mono text-[#E8E8EC] leading-relaxed mb-4">
-                  <strong className="text-[#FF4D24] block mb-1">JUSTIFICACIÓN SATELITAL ZONA GRIS:</strong>
-                  {site.grayZone}
-                </div>
-              )}
-              {target.testingChallenge && (
-                <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] text-xs font-mono text-[#8E929F] leading-relaxed">
-                  <strong className="text-white block mb-1">DESAFÍO TÉCNICO EN EL DESTINO ({target.name}):</strong>
-                  {target.testingChallenge}
-                </div>
-              )}
-            </div>
-
+          {/* Bottom Back Button: White on Dark Background */}
+          <div className="text-center pt-6 border-t border-white/10">
             <button
               onClick={onClose}
-              className="pill-btn pill-btn-cobalt w-full justify-center py-3 text-xs mt-6"
+              className="bg-white hover:bg-[#E4E4E7] text-[#0A0A0C] px-8 py-3.5 rounded-full font-sans text-xs font-semibold transition-all shadow-md"
             >
-              VOLVER A LA VISTA GENERAL DE SITIOS
+              Volver a la galería principal
             </button>
           </div>
         </div>
       </div>
+
+      {/* Written Mission Report Modal */}
+      {isReportOpen && (
+        <MissionReportModal
+          site={site}
+          target={target}
+          pfi={pfi}
+          weights={
+            weights || {
+              geology: 50,
+              terrain: 50,
+              temperature: 50,
+              iceWater: 50,
+              atmosphere: 50,
+              biosphere: 50,
+              subsurface: 50,
+              robotics: 50,
+            }
+          }
+          isOpen={isReportOpen}
+          onClose={() => setIsReportOpen(false)}
+        />
+      )}
+      {/* Real NASA Datasets Extraction Modal */}
+      {isDatasetModalOpen && (
+        <DatasetExtractionModal
+          isOpen={isDatasetModalOpen}
+          onClose={() => setIsDatasetModalOpen(false)}
+          initialTargetFilter={target.body === 'Luna' ? 'Luna' : 'Marte'}
+        />
+      )}
     </div>
   );
 }

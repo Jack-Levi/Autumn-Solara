@@ -11,34 +11,39 @@ export default function FloatingNav({
 }: FloatingNavProps) {
   return (
     <nav className="fixed top-6 left-0 right-0 z-50 px-6 md:px-10 flex items-center justify-between pointer-events-none select-none">
-      {/* Top Left: Logo only */}
+      {/* Top Left: Clean Logo */}
       <div className="flex items-center gap-4 pointer-events-auto">
         <a
           href="#"
-          className="flex items-center bg-[#0F1015]/80 backdrop-blur-md px-4 py-2 rounded-full border border-[rgba(255,255,255,0.08)] shadow-lg hover:border-[#2544FF] transition-colors"
+          className="transition-opacity hover:opacity-80"
+          style={{
+            fontSize: '16px',
+            fontWeight: 500,
+            letterSpacing: '-0.02em',
+            color: '#F4F4F6',
+            textDecoration: 'none',
+          }}
         >
-          <span className="font-bold text-sm tracking-wider text-white">
-            TERRA—ANALOG™
-          </span>
+          Autumn Solara
         </a>
       </div>
 
-      {/* Top Right: 2 pills only */}
+      {/* Top Right: 2 Luxury Minimalist Pills */}
       <div className="flex items-center gap-2.5 pointer-events-auto">
         {/* Calibration PFI Pill */}
         <button
           onClick={onOpenCalibration}
-          className="pill-btn pill-btn-dark py-2 px-4 text-xs font-mono"
+          className="px-4 py-2 rounded-full text-xs font-medium text-white/90 bg-[#16171B]/90 hover:bg-[#202227] border border-white/15 transition-all shadow-sm font-sans"
         >
-          <span>CALIBRAR PFI</span>
+          Calibrar PFI
         </button>
 
-        {/* Tutorial Pill */}
+        {/* Tutorial Pill: Pure White with Black Text */}
         <button
           onClick={onOpenTutorial}
-          className="pill-btn pill-btn-cobalt py-2 px-4 text-xs font-mono"
+          className="px-4 py-2 rounded-full text-xs font-semibold text-[#0A0A0C] bg-white hover:bg-[#E4E4E7] border border-white transition-all shadow-md font-sans"
         >
-          <span>TUTORIAL •</span>
+          Tutorial
         </button>
       </div>
     </nav>

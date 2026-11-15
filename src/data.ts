@@ -1,40 +1,181 @@
-/* ═══ TERRA—ANALOG™ Complete Data & Types ═══ */
-/* Enriquecido con datos oficiales de NASA Trek, LRO LOLA, MGS MOLA, Diviner y THEMIS */
+/* === Autumn Solara Complete Data & Types === */
+/* Enriquecido con datos oficiales de NASA Trek, LRO LOLA, MGS MOLA, Diviner, THEMIS y SRTM */
 
-/* ── Types ── */
-export type BiomeType = 'Todos' | 'Hiperárido' | 'Polar/Criogénico' | 'Volcánico/Basáltico' | 'Impacto/Cráter' | 'Subterráneo/Cueva';
+/* -- Types -- */
+export type BiomeType =
+  | 'Todos'
+  | 'Hiperárido'
+  | 'Polar/Criogénico'
+  | 'Volcánico/Basáltico'
+  | 'Impacto/Cráter'
+  | 'Subterráneo/Cueva';
+
 export type CharLevel = 'Alto' | 'Medio' | 'Bajo';
 
+/* 8 Dimensiones Oficiales de la NASA para Caracterización de Sitios Análogos */
 export interface PFIWeights {
-  topography: number; geology: number; environment: number; resources: number;
+  geology: number;      // 1. Geología, Mineralogía y Materiales Superficiales
+  terrain: number;      // 2. Terreno, Elevación, Pendiente, Rugosidad y Cráteres
+  temperature: number;  // 3. Temperatura, Iluminación y Extremos Ambientales
+  iceWater: number;     // 4. Agua, Hielo, Permafrost y Recursos ISRU
+  atmosphere: number;   // 5. Polvo, Viento, Erosión y Procesos Atmosféricos
+  biosphere: number;    // 6. Biología, Extremófilos, Habitabilidad y Biofirmas
+  subsurface: number;   // 7. Cuevas, Tubos de Lava y Ambientes Subterráneos
+  robotics: number;     // 8. Operaciones Robóticas, Aterrizaje, Movilidad y Construcción
 }
 
-export interface VectorScores {
-  topography: number; geology: number; environment: number; resources: number;
+export type VectorScores = PFIWeights;
+
+export interface PFIDimensionInfo {
+  key: keyof PFIWeights;
+  title: string;
+  datasets: string;
 }
+
+export const NASA_PFI_DIMENSIONS: PFIDimensionInfo[] = [
+  {
+    key: 'geology',
+    title: 'Geología, Mineralogía y Materiales Superficiales',
+    datasets: 'TERRA/ASTER TIR vs. MRO-CRISM / LRO-Diviner',
+  },
+  {
+    key: 'terrain',
+    title: 'Terreno, Elevación, Pendiente, Rugosidad y Cráteres',
+    datasets: 'NASA SRTM 30m DEM vs. LRO-LOLA / MGS-MOLA',
+  },
+  {
+    key: 'temperature',
+    title: 'Temperatura, Iluminación y Extremos Ambientales',
+    datasets: 'MODIS Land Surface Temp vs. LRO-Diviner / MCS',
+  },
+  {
+    key: 'iceWater',
+    title: 'Agua, Hielo, Permafrost y Recursos ISRU',
+    datasets: 'NSIDC / GRACE-FO vs. LRO-LAMP / Mars Odyssey GRS',
+  },
+  {
+    key: 'atmosphere',
+    title: 'Polvo, Viento, Erosión y Procesos Atmosféricos',
+    datasets: 'MODIS Aerosol Optical Depth vs. MEDA / MARCI',
+  },
+  {
+    key: 'biosphere',
+    title: 'Biología, Extremófilos, Habitabilidad y Biofirmas',
+    datasets: 'Landsat 9 NDVI vs. Perseverance SHERLOC',
+  },
+  {
+    key: 'subsurface',
+    title: 'Cuevas, Tubos de Lava y Ambientes Subterráneos',
+    datasets: 'GPR / LiDAR Terrestre vs. GRAIL / LRO Mini-RF',
+  },
+  {
+    key: 'robotics',
+    title: 'Operaciones Robóticas, Aterrizaje, Movilidad y Construcción',
+    datasets: 'NASA Field Trials vs. Artemis / Mars Landing Specs',
+  },
+];
+
+export const PFI_PRESETS: { name: string; weights: PFIWeights }[] = [
+  {
+    name: 'Balanceado NASA',
+    weights: {
+      geology: 50,
+      terrain: 50,
+      temperature: 50,
+      iceWater: 50,
+      atmosphere: 50,
+      biosphere: 50,
+      subsurface: 50,
+      robotics: 50,
+    },
+  },
+  {
+    name: 'Prioridad Geológica',
+    weights: {
+      geology: 95,
+      terrain: 85,
+      temperature: 40,
+      iceWater: 30,
+      atmosphere: 45,
+      biosphere: 70,
+      subsurface: 35,
+      robotics: 50,
+    },
+  },
+  {
+    name: 'Prioridad Subterránea/Cuevas',
+    weights: {
+      geology: 60,
+      terrain: 70,
+      temperature: 40,
+      iceWater: 30,
+      atmosphere: 20,
+      biosphere: 35,
+      subsurface: 98,
+      robotics: 85,
+    },
+  },
+  {
+    name: 'Prioridad Hielo/ISRU',
+    weights: {
+      geology: 50,
+      terrain: 65,
+      temperature: 85,
+      iceWater: 98,
+      atmosphere: 40,
+      biosphere: 30,
+      subsurface: 55,
+      robotics: 75,
+    },
+  },
+];
 
 export interface RadarAxes {
-  morphology: number; mineralogy: number; temperature: number; aridity: number; radiation: number; isru: number;
+  morphology: number;
+  mineralogy: number;
+  temperature: number;
+  aridity: number;
+  radiation: number;
+  isru: number;
 }
 
-export interface TopoPoint { distKm: number; elevM: number; }
+export interface TopoPoint {
+  distKm: number;
+  elevM: number;
+}
 
 export interface TestProtocol {
-  code: string; title: string; trl: string; domain: string; desc: string;
+  code: string;
+  title: string;
+  trl: string;
+  domain: string;
+  desc: string;
 }
 
 export interface ExtraTerrestrialTarget {
-  id: string; body: 'Luna' | 'Marte'; name: string; subtitle: string;
+  id: string;
+  body: 'Luna' | 'Marte';
+  name: string;
+  subtitle: string;
   cardIcon: string;
-  coords: string; gravity: number; pressure: string; tempRange: string; meanTemp: number;
-  focus: string; mineralogy: string; waterFraction: string; radiation: string;
+  coords: string;
+  gravity: number;
+  pressure: string;
+  tempRange: string;
+  meanTemp: number;
+  focus: string;
+  mineralogy: string;
+  waterFraction: string;
+  radiation: string;
   missionRef: string;
   instrument?: string;
   demSource?: string;
   testingChallenge?: string;
   thermalInertia?: string;
   primaryAnalog?: string;
-  vector: VectorScores; radar: RadarAxes; topo: TopoPoint[];
+  vector: VectorScores;
+  radar: RadarAxes;
+  topo: TopoPoint[];
 }
 
 export interface GeologicalInspectionPhoto {
@@ -45,20 +186,39 @@ export interface GeologicalInspectionPhoto {
 }
 
 export interface EarthSite {
-  id: string; name: string; country: string; region: string;
-  lat: number; lng: number; dms: string; elevM: number;
-  biome: BiomeType; charLevel: CharLevel;
+  id: string;
+  name: string;
+  country: string;
+  region: string;
+  lat: number;
+  lng: number;
+  dms: string;
+  elevM: number;
+  biome: BiomeType;
+  charLevel: CharLevel;
   isCandidate?: boolean;
   isUserCandidate?: boolean;
-  meanTempC: number; tempMinC: number; tempMaxC: number;
-  precipMm: number; humidityPct: number;
-  slopeDeg: number; roughnessRms: number;
-  uvPeak: number; solarWpm2: number; pressureHpa: number;
-  mineralogy: string; petrology: string;
+  microScale: string;
+  activeProcess: string;
+  nasaDatasets?: string;
+  meanTempC: number;
+  tempMinC: number;
+  tempMaxC: number;
+  precipMm: number;
+  humidityPct: number;
+  slopeDeg: number;
+  roughnessRms: number;
+  uvPeak: number;
+  solarWpm2: number;
+  pressureHpa: number;
+  mineralogy: string;
+  petrology: string;
   summary: string;
   grayZone?: string;
   protocols: TestProtocol[];
-  vector: VectorScores; radar: RadarAxes; topo: TopoPoint[];
+  vector: VectorScores;
+  radar: RadarAxes;
+  topo: TopoPoint[];
   photoEarth: string;
   photoSpace: string;
   photoEarthCaption: string;
@@ -68,38 +228,77 @@ export interface EarthSite {
   engineeringBenchmark?: string;
 }
 
-export interface RankedSite { site: EarthSite; pfi: number; breakdown: VectorScores; rank: number; }
-
-/* ── PFI Calculation Engine ── */
-export function calculatePFI(site: EarthSite, target: ExtraTerrestrialTarget, w: PFIWeights): { pfi: number; breakdown: VectorScores } {
-  const total = w.topography + w.geology + w.environment + w.resources || 1;
-  const nw = { topography: w.topography / total, geology: w.geology / total, environment: w.environment / total, resources: w.resources / total };
-  const t = Math.max(0, 100 - Math.abs(site.vector.topography - target.vector.topography));
-  const g = Math.max(0, 100 - Math.abs(site.vector.geology - target.vector.geology));
-  const e = Math.max(0, 100 - Math.abs(site.vector.environment - target.vector.environment));
-  const r = Math.max(0, 100 - Math.abs(site.vector.resources - target.vector.resources));
-  const pfi = Math.round((t * nw.topography + g * nw.geology + e * nw.environment + r * nw.resources) * 10) / 10;
-  return { pfi, breakdown: { topography: Math.round(t * 10) / 10, geology: Math.round(g * 10) / 10, environment: Math.round(e * 10) / 10, resources: Math.round(r * 10) / 10 } };
+export interface RankedSite {
+  site: EarthSite;
+  pfi: number;
+  breakdown: VectorScores;
+  rank: number;
 }
 
-export function rankSites(sites: EarthSite[], target: ExtraTerrestrialTarget, w: PFIWeights): RankedSite[] {
-  return sites.map(site => { const { pfi, breakdown } = calculatePFI(site, target, w); return { site, pfi, breakdown, rank: 0 }; })
-    .sort((a, b) => b.pfi - a.pfi).map((s, i) => ({ ...s, rank: i + 1 }));
+/* -- PFI Calculation Engine (8 Official NASA Dimensions) -- */
+export function calculatePFI(
+  site: EarthSite,
+  target: ExtraTerrestrialTarget,
+  w: PFIWeights
+): { pfi: number; breakdown: VectorScores } {
+  const keys: (keyof PFIWeights)[] = [
+    'geology',
+    'terrain',
+    'temperature',
+    'iceWater',
+    'atmosphere',
+    'biosphere',
+    'subsurface',
+    'robotics',
+  ];
+
+  let totalWeight = 0;
+  keys.forEach((k) => {
+    totalWeight += (w[k] ?? 0);
+  });
+  if (totalWeight <= 0) totalWeight = 1;
+
+  let weightedSum = 0;
+  const breakdown: any = {};
+
+  keys.forEach((k) => {
+    const sVal = site.vector[k] ?? 50;
+    const tVal = target.vector[k] ?? 50;
+    const fidelity = Math.max(0, 100 - Math.abs(sVal - tVal));
+    breakdown[k] = Math.round(fidelity * 10) / 10;
+    weightedSum += fidelity * (w[k] ?? 0);
+  });
+
+  const pfi = Math.round((weightedSum / totalWeight) * 10) / 10;
+  return { pfi, breakdown: breakdown as VectorScores };
+}
+
+export function rankSites(
+  sites: EarthSite[],
+  target: ExtraTerrestrialTarget,
+  w: PFIWeights
+): RankedSite[] {
+  return sites
+    .map((site) => {
+      const { pfi, breakdown } = calculatePFI(site, target, w);
+      return { site, pfi, breakdown, rank: 0 };
+    })
+    .sort((a, b) => b.pfi - a.pfi)
+    .map((s, i) => ({ ...s, rank: i + 1 }));
 }
 
 export function fidelityColor(score: number): string {
-  if (score >= 82) return '#2544FF';
-  if (score >= 68) return '#F59E0B';
-  return '#EF4444';
+  if (score >= 82) return '#0A0A0C';
+  if (score >= 68) return '#18181B';
+  return '#27272A';
 }
 
 export function fidelityLabel(score: number): string {
-  if (score >= 82) return 'ÓPTIMO';
-  if (score >= 68) return 'MODERADO';
-  return 'BAJO';
+  if (score >= 82) return 'Alta fidelidad';
+  if (score >= 68) return 'Fidelidad media';
+  return 'Fidelidad exploratoria';
 }
 
-/* ── Verified Space Reference Images ── */
 export const SPACE_PHOTOS = {
   mars: 'https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?auto=format&fit=crop&w=1200&q=80',
   moon: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=1200&q=80',
@@ -111,8 +310,8 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
   {
     "id": "MOON-SHK",
     "body": "Luna",
-    "name": "Polo Sur — Shackleton",
-    "subtitle": "Trampas criogénicas de hielo en sombra permanente (PSR) e iluminación rasante.",
+    "name": "Polo Sur — Cráter Shackleton",
+    "subtitle": "Regiones en sombra permanente (PSR), trampas criogénicas de hielo de agua a -203°C, iluminación solar rasante y regolito anortosítico.",
     "cardIcon": "LUN-01",
     "coords": "89.9° S, 0.0° E",
     "gravity": 1.62,
@@ -130,10 +329,14 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
     "thermalInertia": "PSR a 38.4 K (-234.7 °C) / Bordes iluminados a 200 K",
     "primaryAnalog": "Valles Secos de McMurdo (Antártida) y Svalbard (Noruega)",
     "vector": {
-      "topography": 90,
-      "geology": 76,
-      "environment": 98,
-      "resources": 95
+      "geology": 78,
+      "terrain": 90,
+      "temperature": 99,
+      "iceWater": 96,
+      "atmosphere": 10,
+      "biosphere": 0,
+      "subsurface": 45,
+      "robotics": 95
     },
     "radar": {
       "morphology": 92,
@@ -189,8 +392,8 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
   {
     "id": "MOON-LAV",
     "body": "Luna",
-    "name": "Mare Tranquillitatis",
-    "subtitle": "Planicies basálticas ricas en ilmenita (FeTiO₃) y claraboyas a tubos de lava.",
+    "name": "Mare Tranquillitatis (Tubos de Lava)",
+    "subtitle": "Claraboyas basálticas (skylights) y túneles volcánicos subsuperficiales con blindaje natural contra radiación cósmica y micrometeoritos.",
     "cardIcon": "LUN-02",
     "coords": "8.22° N, 30.46° E",
     "gravity": 1.62,
@@ -208,10 +411,14 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
     "thermalInertia": "Oscilación diurna de 250 K (superficie) vs estable -20 °C (tubos)",
     "primaryAnalog": "La Payunia (Mendoza, Argentina) y Craters of the Moon (Idaho, EE.UU.)",
     "vector": {
-      "topography": 82,
       "geology": 96,
-      "environment": 72,
-      "resources": 84
+      "terrain": 82,
+      "temperature": 65,
+      "iceWater": 20,
+      "atmosphere": 10,
+      "biosphere": 0,
+      "subsurface": 98,
+      "robotics": 88
     },
     "radar": {
       "morphology": 85,
@@ -286,10 +493,14 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
     "thermalInertia": "Protección térmica natural subterránea a -20 °C constante",
     "primaryAnalog": "Cueva de los Verdes (Lanzarote, España) y Undara (Australia)",
     "vector": {
-      "topography": 88,
       "geology": 94,
-      "environment": 78,
-      "resources": 80
+      "terrain": 88,
+      "temperature": 75,
+      "iceWater": 25,
+      "atmosphere": 10,
+      "biosphere": 0,
+      "subsurface": 90,
+      "robotics": 82
     },
     "radar": {
       "morphology": 92,
@@ -364,10 +575,14 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
     "thermalInertia": "Diviner DLRE: Ciclo diurno completo 95 K a 385 K (delta 290 K)",
     "primaryAnalog": "Gosses Bluff (Australia) y Domo de Vredefort (Sudáfrica)",
     "vector": {
-      "topography": 95,
-      "geology": 98,
-      "environment": 80,
-      "resources": 65
+      "geology": 95,
+      "terrain": 94,
+      "temperature": 80,
+      "iceWater": 20,
+      "atmosphere": 10,
+      "biosphere": 0,
+      "subsurface": 50,
+      "robotics": 85
     },
     "radar": {
       "morphology": 98,
@@ -442,10 +657,14 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
     "thermalInertia": "Fuertes gradientes térmicos en laderas de sol y sombra",
     "primaryAnalog": "Sierra Nevada / Cañón del Colorado (EE.UU.) y Andes Centrales (Bolivia/Chile)",
     "vector": {
-      "topography": 98,
-      "geology": 92,
-      "environment": 82,
-      "resources": 60
+      "geology": 90,
+      "terrain": 96,
+      "temperature": 78,
+      "iceWater": 15,
+      "atmosphere": 10,
+      "biosphere": 0,
+      "subsurface": 40,
+      "robotics": 86
     },
     "radar": {
       "morphology": 99,
@@ -520,10 +739,14 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
     "thermalInertia": "Inercia térmica elevada debido a abundancia de bloques rocosos desnudos sin meteorización",
     "primaryAnalog": "Cráter Haughton (Isla Devon, Canadá) y Meteor Crater (Arizona, EE.UU.)",
     "vector": {
-      "topography": 94,
-      "geology": 95,
-      "environment": 84,
-      "resources": 58
+      "geology": 92,
+      "terrain": 95,
+      "temperature": 82,
+      "iceWater": 15,
+      "atmosphere": 10,
+      "biosphere": 0,
+      "subsurface": 45,
+      "robotics": 88
     },
     "radar": {
       "morphology": 97,
@@ -598,10 +821,14 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
     "thermalInertia": "Regolito volcánico fino con bloques basálticos expuestos",
     "primaryAnalog": "Garganta del Río Columbia (EE.UU.) y Cueva del Viento (Tenerife)",
     "vector": {
-      "topography": 89,
-      "geology": 95,
-      "environment": 80,
-      "resources": 72
+      "geology": 94,
+      "terrain": 90,
+      "temperature": 74,
+      "iceWater": 18,
+      "atmosphere": 10,
+      "biosphere": 0,
+      "subsurface": 85,
+      "robotics": 85
     },
     "radar": {
       "morphology": 94,
@@ -612,23 +839,53 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
       "isru": 70
     },
     "topo": [
-      { "distKm": 0.0, "elevM": -1218 },
-      { "distKm": 5.05, "elevM": -1930 },
-      { "distKm": 10.1, "elevM": -1918 },
-      { "distKm": 15.15, "elevM": -1913 },
-      { "distKm": 20.2, "elevM": -1922 },
-      { "distKm": 25.25, "elevM": -1925 },
-      { "distKm": 30.3, "elevM": -1968 },
-      { "distKm": 35.35, "elevM": -1376 },
-      { "distKm": 40.41, "elevM": -798 },
-      { "distKm": 45.46, "elevM": 788 }
+      {
+        "distKm": 0.0,
+        "elevM": -1218
+      },
+      {
+        "distKm": 5.05,
+        "elevM": -1930
+      },
+      {
+        "distKm": 10.1,
+        "elevM": -1918
+      },
+      {
+        "distKm": 15.15,
+        "elevM": -1913
+      },
+      {
+        "distKm": 20.2,
+        "elevM": -1922
+      },
+      {
+        "distKm": 25.25,
+        "elevM": -1925
+      },
+      {
+        "distKm": 30.3,
+        "elevM": -1968
+      },
+      {
+        "distKm": 35.35,
+        "elevM": -1376
+      },
+      {
+        "distKm": 40.41,
+        "elevM": -798
+      },
+      {
+        "distKm": 45.46,
+        "elevM": 788
+      }
     ]
   },
   {
     "id": "MARS-JEZ",
     "body": "Marte",
-    "name": "Cráter Jezero Delta",
-    "subtitle": "Paleolago y delta fluvial con arcillas y carbonatos para biofirmas microbianas.",
+    "name": "Cráter Jezero (Delta Fluvial)",
+    "subtitle": "Antiguo sistema lacustre con arcillas filosilicatadas, carbonatos, dunas eólicas y terreno rocoso para navegación autónoma de rovers.",
     "cardIcon": "MAR-01",
     "coords": "18.38° N, 77.58° E",
     "gravity": 3.72,
@@ -646,10 +903,14 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
     "thermalInertia": "TES: 320 J m⁻² K⁻¹ s⁻⁰·⁵ / Ciclo térmico -81.15 °C a +0.85 °C",
     "primaryAnalog": "Lago Salda (Turquía), Cuenca de Qaidam (Tíbet) y Cuatro Ciénegas (México)",
     "vector": {
-      "topography": 86,
       "geology": 98,
-      "environment": 87,
-      "resources": 82
+      "terrain": 85,
+      "temperature": 75,
+      "iceWater": 65,
+      "atmosphere": 70,
+      "biosphere": 95,
+      "subsurface": 40,
+      "robotics": 98
     },
     "radar": {
       "morphology": 88,
@@ -705,8 +966,8 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
   {
     "id": "MARS-ARC",
     "body": "Marte",
-    "name": "Arcadia Planitia",
-    "subtitle": "Llanura ultraplana con mantos masivos de hielo de agua a 1-2 m de profundidad.",
+    "name": "Arcadia Planitia (Planicie Volcánica)",
+    "subtitle": "Llanuras basálticas de baja elevación con sábanas de hielo subsuperficial somero ideales para aterrizaje humano e ISRU.",
     "cardIcon": "MAR-02",
     "coords": "47.20° N, 175.80° W",
     "gravity": 3.72,
@@ -724,10 +985,14 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
     "thermalInertia": "Inercia térmica moderada con permafrost continuo bajo regolito eólico",
     "primaryAnalog": "Salar de Uyuni (Bolivia) y Península de Yamal (Siberia, Rusia)",
     "vector": {
-      "topography": 72,
-      "geology": 79,
-      "environment": 88,
-      "resources": 98
+      "geology": 82,
+      "terrain": 70,
+      "temperature": 80,
+      "iceWater": 98,
+      "atmosphere": 75,
+      "biosphere": 40,
+      "subsurface": 75,
+      "robotics": 92
     },
     "radar": {
       "morphology": 68,
@@ -802,10 +1067,14 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
     "thermalInertia": "TES: 145 J m⁻² K⁻¹ s⁻⁰·⁵ (polvo ultrafino suelto) / T diurna 175 K a 260 K",
     "primaryAnalog": "Campos de Pómez de la Puna (Catamarca, Argentina) y Salar de Antofalla",
     "vector": {
-      "topography": 78,
-      "geology": 94,
-      "environment": 92,
-      "resources": 68
+      "geology": 92,
+      "terrain": 80,
+      "temperature": 75,
+      "iceWater": 50,
+      "atmosphere": 72,
+      "biosphere": 30,
+      "subsurface": 80,
+      "robotics": 80
     },
     "radar": {
       "morphology": 75,
@@ -880,10 +1149,14 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
     "thermalInertia": "Grandes contrastes térmicos entre meseta alta y fondo del cañón",
     "primaryAnalog": "Gran Cañón del Colorado (Arizona, EE.UU.) y Valle de la Muerte (California)",
     "vector": {
-      "topography": 98,
-      "geology": 96,
-      "environment": 88,
-      "resources": 75
+      "geology": 95,
+      "terrain": 98,
+      "temperature": 70,
+      "iceWater": 55,
+      "atmosphere": 80,
+      "biosphere": 50,
+      "subsurface": 65,
+      "robotics": 90
     },
     "radar": {
       "morphology": 99,
@@ -958,10 +1231,14 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
     "thermalInertia": "Microclima subterráneo estable protegido del frío polar marciano",
     "primaryAnalog": "Mauna Loa (Hawái - HI-SEAS) y Monte Etna (Italia)",
     "vector": {
-      "topography": 95,
-      "geology": 94,
-      "environment": 86,
-      "resources": 65
+      "geology": 90,
+      "terrain": 88,
+      "temperature": 78,
+      "iceWater": 45,
+      "atmosphere": 65,
+      "biosphere": 35,
+      "subsurface": 98,
+      "robotics": 90
     },
     "radar": {
       "morphology": 96,
@@ -1036,10 +1313,14 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
     "thermalInertia": "Vacío casi total en cumbre con ciclos de radiación solar directa sin filtro",
     "primaryAnalog": "Nevado Ojos del Salado (Chile/Argentina) e Islas Galápagos (Ecuador)",
     "vector": {
-      "topography": 99,
-      "geology": 92,
-      "environment": 96,
-      "resources": 55
+      "geology": 96,
+      "terrain": 99,
+      "temperature": 82,
+      "iceWater": 40,
+      "atmosphere": 60,
+      "biosphere": 20,
+      "subsurface": 75,
+      "robotics": 85
     },
     "radar": {
       "morphology": 100,
@@ -1114,10 +1395,14 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
     "thermalInertia": "TES: 280 J m⁻² K⁻¹ s⁻⁰·⁵ / Ciclo diurno -84 °C a -2 °C",
     "primaryAnalog": "Campos geotermales de El Tatio (Chile) y Cuenca de Laguna Blanca (Puna)",
     "vector": {
-      "topography": 84,
-      "geology": 96,
-      "environment": 88,
-      "resources": 79
+      "geology": 92,
+      "terrain": 86,
+      "temperature": 74,
+      "iceWater": 45,
+      "atmosphere": 78,
+      "biosphere": 60,
+      "subsurface": 50,
+      "robotics": 92
     },
     "radar": {
       "morphology": 86,
@@ -1128,16 +1413,46 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
       "isru": 76
     },
     "topo": [
-      { "distKm": 0.0, "elevM": -1869 },
-      { "distKm": 14.37, "elevM": -1906 },
-      { "distKm": 30.18, "elevM": -1912 },
-      { "distKm": 45.99, "elevM": -1898 },
-      { "distKm": 61.81, "elevM": -1938 },
-      { "distKm": 77.62, "elevM": -1900 },
-      { "distKm": 93.43, "elevM": -1718 },
-      { "distKm": 109.24, "elevM": -1747 },
-      { "distKm": 125.05, "elevM": -566 },
-      { "distKm": 140.86, "elevM": 1416 }
+      {
+        "distKm": 0.0,
+        "elevM": -1869
+      },
+      {
+        "distKm": 14.37,
+        "elevM": -1906
+      },
+      {
+        "distKm": 30.18,
+        "elevM": -1912
+      },
+      {
+        "distKm": 45.99,
+        "elevM": -1898
+      },
+      {
+        "distKm": 61.81,
+        "elevM": -1938
+      },
+      {
+        "distKm": 77.62,
+        "elevM": -1900
+      },
+      {
+        "distKm": 93.43,
+        "elevM": -1718
+      },
+      {
+        "distKm": 109.24,
+        "elevM": -1747
+      },
+      {
+        "distKm": 125.05,
+        "elevM": -566
+      },
+      {
+        "distKm": 140.86,
+        "elevM": 1416
+      }
     ]
   },
   {
@@ -1162,10 +1477,14 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
     "thermalInertia": "TES: 800 J m⁻² K⁻¹ s⁻⁰·⁵ (hielo masivo) / T_max -32 °C",
     "primaryAnalog": "Glaciar Vatnajökull (Islandia) y Casquete Hielo Devon Island (Ártico Canadiense)",
     "vector": {
-      "topography": 88,
-      "geology": 82,
-      "environment": 96,
-      "resources": 99
+      "geology": 85,
+      "terrain": 88,
+      "temperature": 95,
+      "iceWater": 99,
+      "atmosphere": 70,
+      "biosphere": 45,
+      "subsurface": 70,
+      "robotics": 90
     },
     "radar": {
       "morphology": 90,
@@ -1176,16 +1495,46 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
       "isru": 99
     },
     "topo": [
-      { "distKm": 0.0, "elevM": -3407 },
-      { "distKm": 8.72, "elevM": -5408 },
-      { "distKm": 17.45, "elevM": -4597 },
-      { "distKm": 26.17, "elevM": -4493 },
-      { "distKm": 34.9, "elevM": -4488 },
-      { "distKm": 43.62, "elevM": -4603 },
-      { "distKm": 52.35, "elevM": -4874 },
-      { "distKm": 61.07, "elevM": -5020 },
-      { "distKm": 69.79, "elevM": -6181 },
-      { "distKm": 78.52, "elevM": -4110 }
+      {
+        "distKm": 0.0,
+        "elevM": -3407
+      },
+      {
+        "distKm": 8.72,
+        "elevM": -5408
+      },
+      {
+        "distKm": 17.45,
+        "elevM": -4597
+      },
+      {
+        "distKm": 26.17,
+        "elevM": -4493
+      },
+      {
+        "distKm": 34.9,
+        "elevM": -4488
+      },
+      {
+        "distKm": 43.62,
+        "elevM": -4603
+      },
+      {
+        "distKm": 52.35,
+        "elevM": -4874
+      },
+      {
+        "distKm": 61.07,
+        "elevM": -5020
+      },
+      {
+        "distKm": 69.79,
+        "elevM": -6181
+      },
+      {
+        "distKm": 78.52,
+        "elevM": -4110
+      }
     ]
   },
   {
@@ -1210,10 +1559,14 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
     "thermalInertia": "TES: 210 J m⁻² K⁻¹ s⁻⁰·⁵ / Rango térmico -82 °C a +4 °C",
     "primaryAnalog": "Cuenca Minera de Río Tinto (Huelva, España) y Salar de Uyuni (Bolivia)",
     "vector": {
-      "topography": 74,
       "geology": 98,
-      "environment": 84,
-      "resources": 89
+      "terrain": 68,
+      "temperature": 70,
+      "iceWater": 40,
+      "atmosphere": 72,
+      "biosphere": 75,
+      "subsurface": 45,
+      "robotics": 88
     },
     "radar": {
       "morphology": 75,
@@ -1224,16 +1577,46 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
       "isru": 88
     },
     "topo": [
-      { "distKm": 0.0, "elevM": -1450 },
-      { "distKm": 2.27, "elevM": -1461 },
-      { "distKm": 4.53, "elevM": -1454 },
-      { "distKm": 6.8, "elevM": -1437 },
-      { "distKm": 9.06, "elevM": -1427 },
-      { "distKm": 11.33, "elevM": -1418 },
-      { "distKm": 13.59, "elevM": -1403 },
-      { "distKm": 15.86, "elevM": -1384 },
-      { "distKm": 18.12, "elevM": -1397 },
-      { "distKm": 20.39, "elevM": -1433 }
+      {
+        "distKm": 0.0,
+        "elevM": -1450
+      },
+      {
+        "distKm": 2.27,
+        "elevM": -1461
+      },
+      {
+        "distKm": 4.53,
+        "elevM": -1454
+      },
+      {
+        "distKm": 6.8,
+        "elevM": -1437
+      },
+      {
+        "distKm": 9.06,
+        "elevM": -1427
+      },
+      {
+        "distKm": 11.33,
+        "elevM": -1418
+      },
+      {
+        "distKm": 13.59,
+        "elevM": -1403
+      },
+      {
+        "distKm": 15.86,
+        "elevM": -1384
+      },
+      {
+        "distKm": 18.12,
+        "elevM": -1397
+      },
+      {
+        "distKm": 20.39,
+        "elevM": -1433
+      }
     ]
   },
   {
@@ -1258,10 +1641,14 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
     "thermalInertia": "TES: 190 J m⁻² K⁻¹ s⁻⁰·⁵ / Fuerte gradiente térmico cañón-meseta",
     "primaryAnalog": "Cañón del Colorado (Arizona, EE.UU.) y Valles de fisura volcánica en Islandia",
     "vector": {
-      "topography": 98,
       "geology": 92,
-      "environment": 89,
-      "resources": 84
+      "terrain": 96,
+      "temperature": 76,
+      "iceWater": 50,
+      "atmosphere": 75,
+      "biosphere": 40,
+      "subsurface": 88,
+      "robotics": 86
     },
     "radar": {
       "morphology": 99,
@@ -1272,476 +1659,1132 @@ export const TARGETS: ExtraTerrestrialTarget[] = [
       "isru": 82
     },
     "topo": [
-      { "distKm": 0.0, "elevM": 7699 },
-      { "distKm": 12.86, "elevM": 7932 },
-      { "distKm": 25.72, "elevM": 4923 },
-      { "distKm": 38.58, "elevM": 4307 },
-      { "distKm": 51.43, "elevM": 6972 },
-      { "distKm": 64.29, "elevM": 6031 },
-      { "distKm": 77.15, "elevM": 6263 },
-      { "distKm": 90.01, "elevM": 7243 },
-      { "distKm": 102.87, "elevM": 5911 },
-      { "distKm": 115.73, "elevM": 4932 }
+      {
+        "distKm": 0.0,
+        "elevM": 7699
+      },
+      {
+        "distKm": 12.86,
+        "elevM": 7932
+      },
+      {
+        "distKm": 25.72,
+        "elevM": 4923
+      },
+      {
+        "distKm": 38.58,
+        "elevM": 4307
+      },
+      {
+        "distKm": 51.43,
+        "elevM": 6972
+      },
+      {
+        "distKm": 64.29,
+        "elevM": 6031
+      },
+      {
+        "distKm": 77.15,
+        "elevM": 6263
+      },
+      {
+        "distKm": 90.01,
+        "elevM": 7243
+      },
+      {
+        "distKm": 102.87,
+        "elevM": 5911
+      },
+      {
+        "distKm": 115.73,
+        "elevM": 4932
+      }
     ]
   }
 ];
 
 export const SITES: EarthSite[] = [
-{
-    id: 'ATC-01', name: 'Desierto de Atacama — Zona Yungay', country: 'Chile', region: 'Sudamérica',
-    lat: -24.088, lng: -69.916, dms: '24°05′17″ S, 69°54′58″ W', elevM: 1020,
-    biome: 'Hiperárido', charLevel: 'Alto',
-    meanTempC: 18.2, tempMinC: 1.5, tempMaxC: 36.4, precipMm: 1.2, humidityPct: 8.5,
-    slopeDeg: 4.8, roughnessRms: 0.12, uvPeak: 14.5, solarWpm2: 1140, pressureHpa: 898,
-    mineralogy: 'Halita, Anhidrita, Percloratos (ClO₄⁻), Nitratos',
-    petrology: 'Costra evaporítica sobre regolito coluvial sin materia orgánica',
-    summary: 'Límite de sequedad extrema de la Tierra con aridez ininterrumpida por >15 Ma. Concentraciones de percloratos análogas a las detectadas por Curiosity y Phoenix. Referencia global para astrobiología y perforación marciana.',
-    protocols: [
-      { code: 'PRT-ATC-DRL', title: 'Perforación Autónoma en Subsuelo Seco', trl: 'TRL-6', domain: 'Drilling', desc: 'Brocas rotopercursivas sin fluidos en regolito cementado por sales.' },
-      { code: 'PRT-ATC-BIO', title: 'Fluorescencia Raman de Biofirmas', trl: 'TRL-7', domain: 'Sensors', desc: 'Detección de extremófilos endolíticos con óptica de baja potencia.' },
+  {
+    "id": "ATC-01",
+    "name": "Desierto de Atacama (Cuenca de Yungay)",
+    "country": "Chile",
+    "region": "Antofagasta / Sudamérica",
+    "lat": -24.088,
+    "lng": -69.916,
+    "dms": "24°05′17″ S, 69°54′58″ W",
+    "elevM": 1020,
+    "biome": "Hiperárido",
+    "charLevel": "Alto",
+    "isCandidate": false,
+    "microScale": "Cuenca hiperárida de Yungay y domos salinos de la Cordillera de la Sal (12 km²).",
+    "activeProcess": "Precipitación hiperárida de percloratos/sulfatos, oxidación fotoquímica UV extrema y erosión eólica sin intemperismo pluvial.",
+    "nasaDatasets": "TERRA/ASTER TIR, MODIS LST, SRTM 30m DEM",
+    "meanTempC": 18.2,
+    "tempMinC": 1.5,
+    "tempMaxC": 36.4,
+    "precipMm": 1.2,
+    "humidityPct": 8.5,
+    "slopeDeg": 4.8,
+    "roughnessRms": 0.12,
+    "uvPeak": 14.5,
+    "solarWpm2": 1140,
+    "pressureHpa": 898,
+    "mineralogy": "Halita, Anhidrita, Percloratos (ClO₄⁻), Nitratos, Yeso",
+    "petrology": "Costra evaporítica sobre regolito coluvial sin materia orgánica",
+    "summary": "Límite de sequedad extrema de la Tierra con aridez ininterrumpida por más de 15 Ma. Concentraciones de percloratos idénticas a las detectadas por Phoenix y Curiosity en Marte.",
+    "protocols": [
+      {
+        "code": "PRT-ATC-DRL",
+        "title": "Perforación Autónoma en Subsuelo Seco",
+        "trl": "TRL-6",
+        "domain": "Drilling",
+        "desc": "Penetración de 2 m en costra de halita sin lubricación fluida para rovers marcianos."
+      },
+      {
+        "code": "PRT-ATC-BIO",
+        "title": "Fluorescencia Raman de Biofirmas",
+        "trl": "TRL-7",
+        "domain": "Sensors",
+        "desc": "Detección no destructiva de carotenoides y pigmentos protectores en endolitos."
+      }
     ],
-    vector: { topography: 68, geology: 96, environment: 94, resources: 42 },
-    radar: { morphology: 70, mineralogy: 98, temperature: 75, aridity: 100, radiation: 96, isru: 44 },
-    topo: [{ distKm: 0, elevM: 1040 }, { distKm: 3, elevM: 1030 }, { distKm: 7, elevM: 1020 }, { distKm: 12, elevM: 1015 }, { distKm: 16, elevM: 1005 }, { distKm: 20, elevM: 995 }, { distKm: 25, elevM: 990 }],
-    photoEarth: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1200&q=80',
-    photoSpace: SPACE_PHOTOS.mars,
-    photoEarthCaption: 'Desierto de Atacama, Zona Yungay — Cuenca hiperárida',
-    photoSpaceCaption: 'Marte, Valles Marineris / Cráter Jezero — NASA/JPL',
-    inspectionGallery: [
-      { title: 'Vista Satelital SRTM', category: 'Vista Orbital SRTM', url: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80', caption: 'Llanuras aluviales y abanicos hiperáridos' },
-      { title: 'Costra de Sal y Percloratos', category: 'Textura de Regolito', url: 'https://images.unsplash.com/photo-1473580044384-7ba9967e16a0?auto=format&fit=crop&w=800&q=80', caption: 'Superficie friable cementada por halita y sales anhidras' },
-      { title: 'Reflectancia ASTER TIR', category: 'Espectro Mineralógico', url: 'https://images.unsplash.com/photo-1542401886-65d6c61db217?auto=format&fit=crop&w=800&q=80', caption: 'Firmas de sulfatos y óxidos de hierro en bandas SWIR' },
-      { title: 'Homólogo Marciano', category: 'Homólogo Extraterrestre', url: SPACE_PHOTOS.mars, caption: 'Planicies oxidadas del cráter Gale y Jezero' },
+    "vector": {
+      "geology": 94,
+      "terrain": 72,
+      "temperature": 80,
+      "iceWater": 15,
+      "atmosphere": 88,
+      "biosphere": 90,
+      "subsurface": 45,
+      "robotics": 85
+    },
+    "radar": {
+      "morphology": 70,
+      "mineralogy": 98,
+      "temperature": 75,
+      "aridity": 100,
+      "radiation": 96,
+      "isru": 44
+    },
+    "topo": [
+      {
+        "distKm": 0,
+        "elevM": 1040
+      },
+      {
+        "distKm": 3,
+        "elevM": 1030
+      },
+      {
+        "distKm": 7,
+        "elevM": 1020
+      },
+      {
+        "distKm": 12,
+        "elevM": 1015
+      }
     ],
+    "photoEarth": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Valle_de_la_Luna_-_Atacama_Desert.jpg/1280px-Valle_de_la_Luna_-_Atacama_Desert.jpg",
+    "photoSpace": "https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?auto=format&fit=crop&w=1200&q=80",
+    "photoEarthCaption": "Valle de la Luna, Cuenca de Atacama — Domos salinos y cuencas hiperáridas",
+    "photoSpaceCaption": "Marte, Cráter Gale / Jezero — NASA/JPL",
+    "inspectionGallery": [
+      {
+        "title": "Vista Satelital SRTM",
+        "category": "Vista Orbital SRTM",
+        "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Valle_de_la_Luna_-_Atacama_Desert.jpg/1280px-Valle_de_la_Luna_-_Atacama_Desert.jpg",
+        "caption": "Topografía SRTM de la cuenca salina de Atacama"
+      },
+      {
+        "title": "Costra de Sal y Percloratos",
+        "category": "Textura de Regolito",
+        "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Valle_de_la_Luna_-_Atacama_Desert.jpg/1280px-Valle_de_la_Luna_-_Atacama_Desert.jpg",
+        "caption": "Microestructura de cristales halíticos y percloratos"
+      }
+    ]
   },
   {
-    id: 'HGT-02', name: 'Cráter de Impacto Haughton', country: 'Canadá', region: 'Ártico',
-    lat: 75.383, lng: -89.666, dms: '75°22′59″ N, 89°39′58″ W', elevM: 240,
-    biome: 'Impacto/Cráter', charLevel: 'Alto',
-    meanTempC: -16.4, tempMinC: -48, tempMaxC: 12, precipMm: 120, humidityPct: 76,
-    slopeDeg: 14.5, roughnessRms: 0.48, uvPeak: 3.2, solarWpm2: 480, pressureHpa: 988,
-    mineralogy: 'Brechas de impacto, Dolomita, Cuarzo chocado, Esmectitas',
-    petrology: 'Astroblema de 23 km en secuencias sedimentarias paleozoicas con permafrost continuo',
-    summary: 'Cráter de impacto de 23 km formado hace ~39 Ma en desierto polar con permafrost continuo. Inversión de relieve y depósitos hidrotermales fósiles. Análogo primario para cráteres del Polo Sur Lunar y tierras altas de Marte.',
-    protocols: [
-      { code: 'PRT-HGT-EVA', title: 'Operaciones EVA con Trajes Presurizados', trl: 'TRL-7', domain: 'EVA', desc: 'Movilidad articular y fatiga en terreno de impacto con luz rasante.' },
-      { code: 'PRT-HGT-LID', title: 'Navegación LiDAR en Bajo Contraste', trl: 'TRL-7', domain: 'Mobility', desc: 'SLAM en brechas caóticas bajo niebla ártica.' },
+    "id": "HGT-02",
+    "name": "Cráter de Impacto Haughton",
+    "country": "Canadá",
+    "region": "Isla Devon / Nunavut / Ártico",
+    "lat": 75.383,
+    "lng": -89.666,
+    "dms": "75°22′59″ N, 89°39′58″ W",
+    "elevM": 240,
+    "biome": "Impacto/Cráter",
+    "charLevel": "Alto",
+    "isCandidate": false,
+    "microScale": "Anillo central de brechas de impacto y valle de deshielo estacional Von Braun Planitia (23 km de diámetro).",
+    "activeProcess": "Cratering de impacto meteorítico sobre sustrato carbonatado en permafrost continuo y ciclos criogénicos de congelación-descongelación.",
+    "nasaDatasets": "ArcticDEM, Radarsat, Landsat 8/9",
+    "meanTempC": -16.4,
+    "tempMinC": -48,
+    "tempMaxC": 12,
+    "precipMm": 120,
+    "humidityPct": 76,
+    "slopeDeg": 14.5,
+    "roughnessRms": 0.48,
+    "uvPeak": 3.2,
+    "solarWpm2": 480,
+    "pressureHpa": 988,
+    "mineralogy": "Brechas de impacto, Dolomita, Cuarzo chocado, Esmectitas, Yeso",
+    "petrology": "Astroblema de 23 km en secuencias carbonatadas paleozoicas con permafrost continuo",
+    "summary": "Cráter de impacto de 23 km formado hace ~39 Ma en desierto polar con permafrost continuo. Sede del proyecto Haughton-Mars Project (HMP) de NASA.",
+    "protocols": [
+      {
+        "code": "PRT-HGT-EVA",
+        "title": "Operaciones EVA con Trajes Presurizados",
+        "trl": "TRL-7",
+        "domain": "EVA",
+        "desc": "Evaluación de movilidad articular y consumo metabólico en terreno pedregoso."
+      }
     ],
-    vector: { topography: 93, geology: 86, environment: 89, resources: 86 },
-    radar: { morphology: 96, mineralogy: 82, temperature: 92, aridity: 75, radiation: 65, isru: 88 },
-    topo: [{ distKm: 0, elevM: 320 }, { distKm: 2, elevM: 360 }, { distKm: 5, elevM: 210 }, { distKm: 10, elevM: 140 }, { distKm: 11.5, elevM: 220 }, { distKm: 13, elevM: 145 }, { distKm: 18, elevM: 355 }, { distKm: 20, elevM: 310 }],
-    photoEarth: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80',
-    photoSpace: SPACE_PHOTOS.moon,
-    photoEarthCaption: 'Cráter Haughton, Isla Devon — Astroblema de impacto en desierto ártico',
-    photoSpaceCaption: 'Cráter Shackleton, Polo Sur Lunar — LRO/LOLA NASA',
-    inspectionGallery: [
-      { title: 'Borde Anular de Impacto', category: 'Vista Orbital SRTM', url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80', caption: 'Relieve invertido de colinas de brecha de impacto' },
-      { title: 'Permafrost y Bloques Autógenos', category: 'Textura de Regolito', url: 'https://images.unsplash.com/photo-1517783999520-f068d7431a60?auto=format&fit=crop&w=800&q=80', caption: 'Sustrato congelado con fragmentos rocosos angulares' },
-      { title: 'Esmectitas Hidrotermales', category: 'Espectro Mineralógico', url: 'https://images.unsplash.com/photo-1504893524553-b855bce32c67?auto=format&fit=crop&w=800&q=80', caption: 'Arcillas de alteración post-impacto análogas a cráteres marcianos' },
-      { title: 'Topografía de Shackleton', category: 'Homólogo Extraterrestre', url: SPACE_PHOTOS.moon, caption: 'Pendientes empinadas y sombras permanentes del polo lunar' },
+    "vector": {
+      "geology": 92,
+      "terrain": 90,
+      "temperature": 95,
+      "iceWater": 90,
+      "atmosphere": 65,
+      "biosphere": 60,
+      "subsurface": 65,
+      "robotics": 92
+    },
+    "radar": {
+      "morphology": 94,
+      "mineralogy": 88,
+      "temperature": 96,
+      "aridity": 82,
+      "radiation": 40,
+      "isru": 85
+    },
+    "topo": [
+      {
+        "distKm": 0,
+        "elevM": 320
+      },
+      {
+        "distKm": 5,
+        "elevM": 180
+      },
+      {
+        "distKm": 11.5,
+        "elevM": 140
+      },
+      {
+        "distKm": 23,
+        "elevM": 310
+      }
     ],
+    "photoEarth": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Haughton_impact_crater_Devon_Island.jpg/1280px-Haughton_impact_crater_Devon_Island.jpg",
+    "photoSpace": "https://images.unsplash.com/photo-1545156521-77bd85671d30?auto=format&fit=crop&w=1200&q=80",
+    "photoEarthCaption": "Cráter Haughton en Isla Devon — Brechas de impacto y permafrost",
+    "photoSpaceCaption": "Marte, Cráter Holden / Jezero — NASA/JPL",
+    "inspectionGallery": []
   },
   {
-    id: 'LNZ-03', name: 'Tubos de Lava de Corona — Lanzarote', country: 'España', region: 'Canarias',
-    lat: 29.152, lng: -13.447, dms: '29°09′07″ N, 13°26′49″ W', elevM: 185,
-    biome: 'Subterráneo/Cueva', charLevel: 'Medio',
-    meanTempC: 19.8, tempMinC: 14, tempMaxC: 28.5, precipMm: 135, humidityPct: 68,
-    slopeDeg: 12, roughnessRms: 0.35, uvPeak: 9.8, solarWpm2: 920, pressureHpa: 994,
-    mineralogy: 'Basalto alcalino, Clinopiroxeno, Magnetita, Vidrio volcánico',
-    petrology: 'Tubos de lava pahoehoe con secciones de >25 m de diámetro y claraboyas de colapso',
-    summary: 'Uno de los sistemas de tubos de lava más extensos del planeta (~7.6 km). Utilizado por ESA (PANGAEA) y NASA para entrenamiento. Analogía precisa para refugios subterráneos en Mare Tranquillitatis (Luna) y Tharsis (Marte).',
-    protocols: [
-      { code: 'PRT-LNZ-CAV', title: 'Exploración Autónoma sin GNSS', trl: 'TRL-6', domain: 'Mobility', desc: 'Drones y rovers con LiDAR en oscuridad total y reflectividad basáltica ultrabaja.' },
-      { code: 'PRT-LNZ-HAB', title: 'Hábitats Inflables en Cavidades', trl: 'TRL-5', domain: 'Habitat', desc: 'Anclajes mecánicos en bóvedas de basalto vesicular.' },
+    "id": "LNZ-03",
+    "name": "Tubo Volcánico de La Corona",
+    "country": "España",
+    "region": "Lanzarote / Islas Canarias",
+    "lat": 29.141,
+    "lng": -13.468,
+    "dms": "29°08′28″ N, 13°28′05″ W",
+    "elevM": 145,
+    "biome": "Subterráneo/Cueva",
+    "charLevel": "Alto",
+    "isCandidate": false,
+    "microScale": "Tramo basáltico subterráneo Cueva de los Verdes y jameos de colapso (6.1 km de galería).",
+    "activeProcess": "Drenaje de flujos de lava pahoehoe con solidificación de techo cortical y formación de claraboyas naturales (skylights).",
+    "nasaDatasets": "Terrestrial LiDAR, GPR, Sentinel-2 MSI",
+    "meanTempC": 19.8,
+    "tempMinC": 12.0,
+    "tempMaxC": 31.0,
+    "precipMm": 110,
+    "humidityPct": 68,
+    "slopeDeg": 8.2,
+    "roughnessRms": 0.65,
+    "uvPeak": 10.2,
+    "solarWpm2": 920,
+    "pressureHpa": 1002,
+    "mineralogy": "Basalto toleítico, Olivino, Piroxeno augítico, Plagioclasa",
+    "petrology": "Tubo lávico cuaternario de 6.1 km emergido y 1.6 km sumergido (Túnel de la Atlántida)",
+    "summary": "Uno de los mayores tubos volcánicos del planeta. Terreno de entrenamiento para las campañas PANGAEA de la ESA para exploración de claraboyas en la Luna y Marte.",
+    "protocols": [
+      {
+        "code": "PRT-LNZ-CAV",
+        "title": "Mapeo 3D LiDAR en Cavidades Sin GNSS",
+        "trl": "TRL-7",
+        "domain": "Speleology",
+        "desc": "Navegación SLAM y fotogrametría en túneles lávicos sin señal de satélite."
+      }
     ],
-    vector: { topography: 84, geology: 96, environment: 64, resources: 56 },
-    radar: { morphology: 88, mineralogy: 95, temperature: 62, aridity: 58, radiation: 42, isru: 55 },
-    topo: [{ distKm: 0, elevM: 260 }, { distKm: 0.4, elevM: 245 }, { distKm: 0.9, elevM: 160 }, { distKm: 1.1, elevM: 155 }, { distKm: 1.5, elevM: 140 }, { distKm: 1.8, elevM: 205 }, { distKm: 2.2, elevM: 185 }],
-    photoEarth: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1200&q=80',
-    photoSpace: SPACE_PHOTOS.moon,
-    photoEarthCaption: 'Malpaís de La Corona, Lanzarote — Bóvedas de basalto volcánico',
-    photoSpaceCaption: 'Claraboya de Tubo de Lava, Mare Tranquillitatis — NASA/LRO',
-    inspectionGallery: [
-      { title: 'Conductos de Descenso (Jameos)', category: 'Vista Orbital SRTM', url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80', caption: 'Claraboyas colapsadas con acceso directo a galerías' },
-      { title: 'Basalto Pahoehoe Ondulado', category: 'Textura de Regolito', url: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&w=800&q=80', caption: 'Paredes de lava basáltica con cornisas de refundición' },
-      { title: 'Reflectancia Magnética', category: 'Espectro Mineralógico', url: 'https://images.unsplash.com/photo-1542401886-65d6c61db217?auto=format&fit=crop&w=800&q=80', caption: 'Abundancia de titanomagnetita y piroxenos cálcicos' },
-      { title: 'Túnel Lunar Análogo', category: 'Homólogo Extraterrestre', url: SPACE_PHOTOS.moon, caption: 'Blindaje de más de 30m de roca basáltica contra radiación' },
+    "vector": {
+      "geology": 95,
+      "terrain": 75,
+      "temperature": 60,
+      "iceWater": 25,
+      "atmosphere": 30,
+      "biosphere": 40,
+      "subsurface": 99,
+      "robotics": 94
+    },
+    "radar": {
+      "morphology": 88,
+      "mineralogy": 96,
+      "temperature": 55,
+      "aridity": 75,
+      "radiation": 20,
+      "isru": 78
+    },
+    "topo": [
+      {
+        "distKm": 0,
+        "elevM": 210
+      },
+      {
+        "distKm": 2,
+        "elevM": 145
+      },
+      {
+        "distKm": 6.1,
+        "elevM": 20
+      }
     ],
+    "photoEarth": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Cueva_de_los_Verdes_Lanzarote.jpg/1280px-Cueva_de_los_Verdes_Lanzarote.jpg",
+    "photoSpace": "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=1200&q=80",
+    "photoEarthCaption": "Cueva de los Verdes — Bóveda basáltica de tubo de lava",
+    "photoSpaceCaption": "Luna, Marius Hills Skylight — LRO LOLA NASA",
+    "inspectionGallery": []
   },
   {
-    id: 'PIN-04', name: 'Campo Volcánico El Pinacate', country: 'México', region: 'Norteamérica',
-    lat: 31.772, lng: -113.498, dms: '31°46′19″ N, 113°29′53″ W', elevM: 260,
-    biome: 'Volcánico/Basáltico', charLevel: 'Bajo', isCandidate: true,
-    meanTempC: 22.8, tempMinC: -2, tempMaxC: 49.5, precipMm: 74, humidityPct: 18,
-    slopeDeg: 24.5, roughnessRms: 0.62, uvPeak: 12.8, solarWpm2: 1080, pressureHpa: 982,
-    mineralogy: 'Basalto vesicular, Olivino, Magnetita, Vidrio piroclástico',
-    petrology: 'Cráteres maar en escudo basáltico — El Elegante (1.6 km ø × 250 m profundidad)',
-    summary: 'Cráteres maar con geometría indistinguible de cráteres de impacto lunares. Sitio de entrenamiento geológico del Apolo pero sin caracterización robótica contemporánea. El campo de pruebas de más bajo costo logístico en Norteamérica.',
-    grayZone: 'Los datos SRTM y ASTER demuestran perfiles transversales indistinguibles de cráteres lunares de tamaño medio, pero existe un vacío de literatura científica indexada en la última década.',
-    protocols: [
-      { code: 'PRT-PIN-SLP', title: 'Rovers en Pendientes Basálticas >28°', trl: 'TRL-6', domain: 'Mobility', desc: 'Tracción en taludes de escoria y eyección de cráteres maar.' },
-      { code: 'PRT-PIN-VIS', title: 'Odometría Visual en Albedo Ultrabajo', trl: 'TRL-7', domain: 'Sensors', desc: 'Cámaras estereoscópicas en mantos de lapilli negro bajo sol intenso.' },
+    "id": "PIN-04",
+    "name": "Campo Volcánico El Pinacate",
+    "country": "México",
+    "region": "Desierto de Sonora",
+    "lat": 31.773,
+    "lng": -113.518,
+    "dms": "31°46′23″ N, 113°31′05″ W",
+    "elevM": 260,
+    "biome": "Volcánico/Basáltico",
+    "charLevel": "Alto",
+    "isCandidate": true,
+    "microScale": "Cráter maar freatomagmático El Elegante (1.6 km de diámetro, 250 m de profundidad) y campo de ceniza basáltica circundante.",
+    "activeProcess": "Explosión freatomagmática por interacción magma-agua subterránea (análogo directo de cráteres marcianos con volátiles) y transporte eólico de dunas estelares.",
+    "nasaDatasets": "SRTM 30m DEM, ASTER TIR, Landsat 9",
+    "meanTempC": 23.5,
+    "tempMinC": 2.0,
+    "tempMaxC": 48.0,
+    "precipMm": 85,
+    "humidityPct": 18,
+    "slopeDeg": 26.0,
+    "roughnessRms": 0.58,
+    "uvPeak": 13.8,
+    "solarWpm2": 1120,
+    "pressureHpa": 985,
+    "mineralogy": "Basalto alcalino, Xenolitos del manto (Peridotita, Espinela), Lapilli",
+    "petrology": "Cráteres maar gigantes y conos de escoria sobre basamento granítico precámbrico",
+    "summary": "Campo de cráteres gigantes tipo maar donde los astronautas del programa Apollo entrenaron geología lunar entre 1965 y 1970.",
+    "protocols": [
+      {
+        "code": "PRT-PIN-MAR",
+        "title": "Simulación de Descenso a Maar Volcánico",
+        "trl": "TRL-6",
+        "domain": "Mobility",
+        "desc": "Navegación sobre pendientes inestables de ceniza basáltica y regolito granular."
+      }
     ],
-    vector: { topography: 94, geology: 91, environment: 80, resources: 44 },
-    radar: { morphology: 95, mineralogy: 92, temperature: 78, aridity: 88, radiation: 86, isru: 46 },
-    topo: [{ distKm: 0, elevM: 260 }, { distKm: 0.3, elevM: 285 }, { distKm: 0.5, elevM: 180 }, { distKm: 0.9, elevM: 50 }, { distKm: 1.1, elevM: 35 }, { distKm: 1.6, elevM: 120 }, { distKm: 1.9, elevM: 280 }, { distKm: 2.2, elevM: 260 }],
-    photoEarth: 'https://images.unsplash.com/photo-1542401886-65d6c61db217?auto=format&fit=crop&w=1200&q=80',
-    photoSpace: SPACE_PHOTOS.moon,
-    photoEarthCaption: 'Cráter El Elegante, El Pinacate (Sonora, México) — Cráter maar basáltico',
-    photoSpaceCaption: 'Cráter Copernicus, Luna — LRO/WAC NASA',
-    inspectionGallery: [
-      { title: 'Morfometría SRTM', category: 'Vista Orbital SRTM', url: 'https://images.unsplash.com/photo-1542401886-65d6c61db217?auto=format&fit=crop&w=800&q=80', caption: 'Caída vertical de 248 m y diámetro de 1,600 m' },
-      { title: 'Cenizas y Lapilli Negro', category: 'Textura de Regolito', url: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&w=800&q=80', caption: 'Eyecta basáltica de grano fino (<0.5 mm) idéntica al regolito lunar' },
-      { title: 'Bandas ASTER Mineral', category: 'Espectro Mineralógico', url: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80', caption: 'Contrastes entre arenas de dunas y flujos de basalto alcalino' },
-      { title: 'Simulación Apolo / Artemis', category: 'Homólogo Extraterrestre', url: SPACE_PHOTOS.moon, caption: 'Entrenamiento histórico de astronautas de las misiones Apolo' },
+    "vector": {
+      "geology": 90,
+      "terrain": 92,
+      "temperature": 82,
+      "iceWater": 30,
+      "atmosphere": 80,
+      "biosphere": 50,
+      "subsurface": 60,
+      "robotics": 88
+    },
+    "radar": {
+      "morphology": 92,
+      "mineralogy": 92,
+      "temperature": 84,
+      "aridity": 94,
+      "radiation": 88,
+      "isru": 55
+    },
+    "topo": [
+      {
+        "distKm": 0,
+        "elevM": 310
+      },
+      {
+        "distKm": 0.8,
+        "elevM": 60
+      },
+      {
+        "distKm": 1.6,
+        "elevM": 305
+      }
     ],
+    "photoEarth": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Pinacate_peaks_and_crater.jpg/1280px-Pinacate_peaks_and_crater.jpg",
+    "photoSpace": "https://images.unsplash.com/photo-1545156521-77bd85671d30?auto=format&fit=crop&w=1200&q=80",
+    "photoEarthCaption": "Cráter maar El Elegante en El Pinacate, Sonora",
+    "photoSpaceCaption": "Marte, Cráter volcánico en Tharsis — NASA MGS",
+    "inspectionGallery": []
   },
   {
-    id: 'MCM-05', name: 'Valles Secos de McMurdo', country: 'Antártida', region: 'Antártida',
-    lat: -77.862, lng: 163.05, dms: '77°51′43″ S, 163°03′00″ E', elevM: 1680,
-    biome: 'Polar/Criogénico', charLevel: 'Medio',
-    meanTempC: -21.5, tempMinC: -53, tempMaxC: -1.2, precipMm: 10, humidityPct: 11.2,
-    slopeDeg: 16, roughnessRms: 0.42, uvPeak: 4.8, solarWpm2: 520, pressureHpa: 790,
-    mineralogy: 'Doleritas de Ferrar, Cuarzo, Feldespato, Hielo intersticial',
-    petrology: 'Regolito criogénico con permafrost masivo a 2-10 cm de profundidad',
-    summary: 'El desierto más frío y seco de la Tierra. Vientos catabáticos impiden acumulación de nieve. Análogo supremo para hielo en trampas frías del Polo Sur Lunar y misiones polares de Marte.',
-    protocols: [
-      { code: 'PRT-MCM-ICE', title: 'Extracción Criogénica ISRU', trl: 'TRL-6', domain: 'ISRU', desc: 'Extracción térmica al vacío de agua en regolito a -30°C.' },
-      { code: 'PRT-MCM-BAT', title: 'Ciclos de Baterías a -50°C', trl: 'TRL-7', domain: 'Sensors', desc: 'Autodescarga y calentamiento por radioisótopos simulados.' },
+    "id": "MCM-05",
+    "name": "Valles Secos de McMurdo",
+    "country": "Antártida",
+    "region": "Tierra de Victoria / Antártida Oriental",
+    "lat": -77.528,
+    "lng": 161.693,
+    "dms": "77°31′41″ S, 161°41′35″ E",
+    "elevM": 850,
+    "biome": "Polar/Criogénico",
+    "charLevel": "Alto",
+    "isCandidate": false,
+    "microScale": "Suelo poligonal criogénico sobre permafrost cementado por hielo en el piso superior del Valle Universitario (4.5 km de largo).",
+    "activeProcess": "Sublimación directa de hielo subsuperficial sin fase líquida bajo hiperaridez polar y vientos catabáticos.",
+    "nasaDatasets": "REMA DEM, Landsat 8 LST, IceBridge LiDAR",
+    "meanTempC": -19.8,
+    "tempMinC": -56.0,
+    "tempMaxC": 4.0,
+    "precipMm": 10,
+    "humidityPct": 12,
+    "slopeDeg": 12.0,
+    "roughnessRms": 0.35,
+    "uvPeak": 8.5,
+    "solarWpm2": 520,
+    "pressureHpa": 890,
+    "mineralogy": "Arenisca Beacon, Kimberlita, Halita, Yeso, Sales de nitrato",
+    "petrology": "Desierto frío sin cubierta de nieve retenido por vientos catabáticos supersónicos",
+    "summary": "El ecosistema terrestre más frío y seco. Homólogo por excelencia de las llanuras polares marcianas y de las trampas frías de la Luna.",
+    "protocols": [
+      {
+        "code": "PRT-MCM-ICE",
+        "title": "Perforación Criogénica en Hielo Seco",
+        "trl": "TRL-7",
+        "domain": "Cryogenics",
+        "desc": "Muestreo subsuperficial de hielos milenarios a temperaturas bajo -40°C."
+      }
     ],
-    vector: { topography: 74, geology: 83, environment: 98, resources: 96 },
-    radar: { morphology: 76, mineralogy: 78, temperature: 100, aridity: 96, radiation: 82, isru: 98 },
-    topo: [{ distKm: 0, elevM: 2150 }, { distKm: 1.5, elevM: 1950 }, { distKm: 3, elevM: 1720 }, { distKm: 5, elevM: 1680 }, { distKm: 6.5, elevM: 1675 }, { distKm: 8, elevM: 1850 }, { distKm: 10, elevM: 2200 }],
-    photoEarth: 'https://images.unsplash.com/photo-1517783999520-f068d7431a60?auto=format&fit=crop&w=1200&q=80',
-    photoSpace: SPACE_PHOTOS.mars,
-    photoEarthCaption: 'Valles Secos de McMurdo, Antártida — Desierto polar hiperárido',
-    photoSpaceCaption: 'Arcadia Planitia y Phoenix Landing Site, Marte — NASA/JPL',
-    inspectionGallery: [
-      { title: 'Topografía de Valles en U', category: 'Vista Orbital SRTM', url: 'https://images.unsplash.com/photo-1517783999520-f068d7431a60?auto=format&fit=crop&w=800&q=80', caption: 'Valles barridos por vientos catabáticos supersónicos' },
-      { title: 'Terreno Poligonal de Hielo', category: 'Textura de Regolito', url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80', caption: 'Cuñas de contracción térmica idénticas a Phoenix' },
-      { title: 'Mantos de Permafrost Seco', category: 'Espectro Mineralógico', url: 'https://images.unsplash.com/photo-1504893524553-b855bce32c67?auto=format&fit=crop&w=800&q=80', caption: 'Ausencia total de agua líquida superficial' },
-      { title: 'Manto de Hielo Masivo', category: 'Homólogo Extraterrestre', url: SPACE_PHOTOS.mars, caption: 'Sábanas de hielo subterráneo a 1 metro de profundidad' },
+    "vector": {
+      "geology": 88,
+      "terrain": 88,
+      "temperature": 98,
+      "iceWater": 96,
+      "atmosphere": 85,
+      "biosphere": 80,
+      "subsurface": 80,
+      "robotics": 94
+    },
+    "radar": {
+      "morphology": 90,
+      "mineralogy": 84,
+      "temperature": 100,
+      "aridity": 98,
+      "radiation": 85,
+      "isru": 95
+    },
+    "topo": [
+      {
+        "distKm": 0,
+        "elevM": 920
+      },
+      {
+        "distKm": 2.2,
+        "elevM": 850
+      },
+      {
+        "distKm": 4.5,
+        "elevM": 810
+      }
     ],
+    "photoEarth": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/McMurdo_Dry_Valleys.jpg/1280px-McMurdo_Dry_Valleys.jpg",
+    "photoSpace": "https://images.unsplash.com/photo-1522030299830-16b8d3d049fe?auto=format&fit=crop&w=1200&q=80",
+    "photoEarthCaption": "Valles Secos de McMurdo — Terreno poligonal periglaciar",
+    "photoSpaceCaption": "Marte, Llanuras del Polo Norte — NASA Phoenix",
+    "inspectionGallery": []
   },
   {
-    id: 'PUN-06', name: 'Puna de Atacama — Campo de Piedra Pómez', country: 'Argentina', region: 'Sudamérica',
-    lat: -25.56, lng: -67.53, dms: '25°33′36″ S, 67°31′48″ W', elevM: 4250,
-    biome: 'Hiperárido', charLevel: 'Bajo', isCandidate: true,
-    meanTempC: 6.5, tempMinC: -22, tempMaxC: 26, precipMm: 38, humidityPct: 12.5,
-    slopeDeg: 9.8, roughnessRms: 0.75, uvPeak: 19.8, solarWpm2: 1390, pressureHpa: 595,
-    mineralogy: 'Ignimbrita, Piedra pómez, Ulexita, Bórax, Halita',
-    petrology: 'Mega-yardangs eólicos esculpidos en ignimbrita y salares hipersalinos',
-    summary: 'Altiplano volcánico de >4,200 m con la radiación UV más alta de la Tierra, presión atmosférica reducida (60% del nivel del mar) y el mayor campo de mega-yardangs del planeta. Análogo perfecto para la Formación Medusae Fossae en Marte.',
-    grayZone: 'Valores de radiación UV superiores a cualquier otro desierto y yardangs que reproducen la aerodinámica eólica marciana, pero el aislamiento ha limitado las campañas.',
-    protocols: [
-      { code: 'PRT-PUN-UV', title: 'Degradación Óptica bajo UV Extremo', trl: 'TRL-6', domain: 'Sensors', desc: 'Exposición a dosis UV-B/C atípicas por altitud de 4,200 m.' },
-      { code: 'PRT-PUN-YRD', title: 'Navegación en Corredores de Yardangs', trl: 'TRL-6', domain: 'Mobility', desc: 'Path-planning en laberintos de mega-crestas eólicas.' },
+    "id": "PUN-06",
+    "name": "Puna de Atacama (Campo de Piedra Pómez)",
+    "country": "Argentina",
+    "region": "Catamarca / Cordillera de los Andes",
+    "lat": -26.685,
+    "lng": -67.485,
+    "dms": "26°41′06″ S, 67°29′06″ W",
+    "elevM": 4100,
+    "biome": "Hiperárido",
+    "charLevel": "Alto",
+    "isCandidate": true,
+    "microScale": "Corredor de mega-yardangs de ignimbrita a 4,100 m s.n.m. (25 km²).",
+    "activeProcess": "Abrasión eólica supersónica de depósitos piroclásticos bajo hipobaria (610 hPa) e irradiación UV récord mundial.",
+    "nasaDatasets": "SRTM 30m DEM, Sentinel-2 MSI, MODIS AOD",
+    "meanTempC": 6.2,
+    "tempMinC": -24.0,
+    "tempMaxC": 22.0,
+    "precipMm": 30,
+    "humidityPct": 14,
+    "slopeDeg": 11.5,
+    "roughnessRms": 0.44,
+    "uvPeak": 18.2,
+    "solarWpm2": 1340,
+    "pressureHpa": 612,
+    "mineralogy": "Piedra pómez riolítica, Ignimbrita rica en cuarzo y sanidina, Vidrio volcánico",
+    "petrology": "Manto piroclástico esculpido por vientos catabáticos andinos en mega-yardangs",
+    "summary": "Laberinto gigante de yardangs blancos de ignimbrita a más de 4,000 m. Análogo geofísico directo de la Formación Medusae Fossae de Marte.",
+    "protocols": [
+      {
+        "code": "PRT-PUN-YRD",
+        "title": "Navegación Autónoma entre Mega-Yardangs",
+        "trl": "TRL-6",
+        "domain": "Autonomous",
+        "desc": "Evasión de corredores de viento extremo y arena piroclástica abrasiva."
+      }
     ],
-    vector: { topography: 86, geology: 93, environment: 97, resources: 64 },
-    radar: { morphology: 90, mineralogy: 92, temperature: 86, aridity: 98, radiation: 100, isru: 68 },
-    topo: [{ distKm: 0, elevM: 4320 }, { distKm: 2, elevM: 4280 }, { distKm: 4, elevM: 4240 }, { distKm: 6, elevM: 4235 }, { distKm: 8, elevM: 4220 }, { distKm: 11, elevM: 3910 }, { distKm: 14, elevM: 3900 }],
-    photoEarth: 'https://images.unsplash.com/photo-1473580044384-7ba9967e16a0?auto=format&fit=crop&w=1200&q=80',
-    photoSpace: SPACE_PHOTOS.mars,
-    photoEarthCaption: 'Campo de Piedra Pómez, Catamarca — Mega-yardangs eólicos de ignimbrita blanca',
-    photoSpaceCaption: 'Medusae Fossae Formation, Marte — MRO HiRISE NASA',
-    inspectionGallery: [
-      { title: 'Estructura de Yardangs', category: 'Vista Orbital SRTM', url: 'https://images.unsplash.com/photo-1473580044384-7ba9967e16a0?auto=format&fit=crop&w=800&q=80', caption: 'Laberintos tallados por vientos catabáticos persistentes' },
-      { title: 'Gravas de Piedra Pómez', category: 'Textura de Regolito', url: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80', caption: 'Pómez piroclástica de ultrabaja densidad' },
-      { title: 'Absorción Atmosférica Reducida', category: 'Espectro Mineralógico', url: 'https://images.unsplash.com/photo-1542401886-65d6c61db217?auto=format&fit=crop&w=800&q=80', caption: 'Presión de 595 hPa y flujo UV biológicamente crítico' },
-      { title: 'Erosión Eólica Marciana', category: 'Homólogo Extraterrestre', url: SPACE_PHOTOS.mars, caption: 'Campos de yardangs en formaciones estratificadas de Marte' },
+    "vector": {
+      "geology": 88,
+      "terrain": 90,
+      "temperature": 84,
+      "iceWater": 25,
+      "atmosphere": 95,
+      "biosphere": 55,
+      "subsurface": 40,
+      "robotics": 86
+    },
+    "radar": {
+      "morphology": 96,
+      "mineralogy": 85,
+      "temperature": 88,
+      "aridity": 96,
+      "radiation": 98,
+      "isru": 50
+    },
+    "topo": [
+      {
+        "distKm": 0,
+        "elevM": 4150
+      },
+      {
+        "distKm": 3,
+        "elevM": 4100
+      },
+      {
+        "distKm": 6,
+        "elevM": 4080
+      }
     ],
+    "photoEarth": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Campo_de_Piedra_P%C3%B3mez_Catamarca.jpg/1280px-Campo_de_Piedra_P%C3%B3mez_Catamarca.jpg",
+    "photoSpace": "https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?auto=format&fit=crop&w=1200&q=80",
+    "photoEarthCaption": "Campo de Piedra Pómez en Catamarca — Mega-yardangs de ignimbrita",
+    "photoSpaceCaption": "Marte, Medusae Fossae — NASA MRO HiRISE",
+    "inspectionGallery": []
   },
   {
-    id: 'ASK-07', name: 'Tierras Altas de Askja — Holuhraun', country: 'Islandia', region: 'Atlántico Norte',
-    lat: 64.92, lng: -16.75, dms: '64°55′12″ N, 16°45′00″ W', elevM: 1100,
-    biome: 'Volcánico/Basáltico', charLevel: 'Medio',
-    meanTempC: -1.8, tempMinC: -28, tempMaxC: 15, precipMm: 450, humidityPct: 62,
-    slopeDeg: 11.2, roughnessRms: 0.55, uvPeak: 4.2, solarWpm2: 610, pressureHpa: 875,
-    mineralogy: 'Basalto toleítico, Plagioclasa, Piroxeno, Palagonita',
-    petrology: 'Lavas recientes (2014-15) sobre desierto volcánico periglacial',
-    summary: 'Campo de lavas basálticas activas más representativo. Terreno de instrucción del Apolo 11 y actualmente de robótica rover NASA/ESA. Lavas de Holuhraun son basaltos prístinos libres de intemperismo biológico.',
-    protocols: [
-      { code: 'PRT-ASK-WHL', title: 'Abrasión de Ruedas en Lavas Aʻā', trl: 'TRL-7', domain: 'Mobility', desc: 'Deformación plástica en grousers de Ti sobre escoria vítrea.' },
-      { code: 'PRT-ASK-GEO', title: 'Muestreo Geológico Artemis', trl: 'TRL-8', domain: 'EVA', desc: 'Procedimientos de recolección con herramientas presurizadas.' },
+    "id": "ASK-07",
+    "name": "Caldera de Askja y Holuhraun",
+    "country": "Islandia",
+    "region": "Tierras Altas Centrales / Ódáðahraun",
+    "lat": 65.033,
+    "lng": -16.75,
+    "dms": "65°02′00″ N, 16°45′00″ W",
+    "elevM": 1100,
+    "biome": "Volcánico/Basáltico",
+    "charLevel": "Alto",
+    "isCandidate": false,
+    "microScale": "Cráter explosivo Víti y llanura de inundación basáltica de Holuhraun (85 km²).",
+    "activeProcess": "Vulcanismo fisural toleítico e interacción glacio-volcánica con sedimentación de arenas basálticas vítreas.",
+    "nasaDatasets": "TanDEM-X, Sentinel-1 InSAR, Landsat 8/9",
+    "meanTempC": -2.4,
+    "tempMinC": -32.0,
+    "tempMaxC": 14.0,
+    "precipMm": 450,
+    "humidityPct": 75,
+    "slopeDeg": 18.0,
+    "roughnessRms": 0.72,
+    "uvPeak": 4.5,
+    "solarWpm2": 580,
+    "pressureHpa": 880,
+    "mineralogy": "Basalto toleítico vítreo, Piroxeno, Vidrio riolítico, Azufre",
+    "petrology": "Caldera de colapso múltiple y campos de lava fisural fresca (erupción 2014-2015)",
+    "summary": "Campo de lava basáltica y arenas oscuras donde los astronautas del Apollo 11 realizaron sus entrenamientos de geología de campo.",
+    "protocols": [
+      {
+        "code": "PRT-ASK-LAV",
+        "title": "Tracción sobre Arenas Basálticas Vítreas",
+        "trl": "TRL-7",
+        "domain": "Locomotion",
+        "desc": "Pruebas de hundimiento de ruedas rígidas en regolito granular basáltico."
+      }
     ],
-    vector: { topography: 87, geology: 98, environment: 84, resources: 70 },
-    radar: { morphology: 89, mineralogy: 99, temperature: 82, aridity: 72, radiation: 68, isru: 74 },
-    topo: [{ distKm: 0, elevM: 1450 }, { distKm: 2, elevM: 1100 }, { distKm: 4, elevM: 1060 }, { distKm: 6, elevM: 1080 }, { distKm: 9, elevM: 920 }, { distKm: 12, elevM: 880 }, { distKm: 15, elevM: 860 }],
-    photoEarth: 'https://images.unsplash.com/photo-1504893524553-b855bce32c67?auto=format&fit=crop&w=1200&q=80',
-    photoSpace: SPACE_PHOTOS.mars,
-    photoEarthCaption: 'Tierras Altas de Askja y Lavas de Holuhraun — Islandia',
-    photoSpaceCaption: 'Flujos de Basalto en Olympus Mons, Marte — NASA/Viking',
-    inspectionGallery: [
-      { title: 'Caldera Volcánica Askja', category: 'Vista Orbital SRTM', url: 'https://images.unsplash.com/photo-1504893524553-b855bce32c67?auto=format&fit=crop&w=800&q=80', caption: 'Colapsos de caldera anidados y llanuras piroclásticas' },
-      { title: 'Escoria Aʻā y Arenas Negras', category: 'Textura de Regolito', url: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&w=800&q=80', caption: 'Vidrio volcánico cortante y basalto toleítico vesicular' },
-      { title: 'Enfriamiento Térmico Landsat', category: 'Espectro Mineralógico', url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80', caption: 'Monitoreo de tasa de enfriamiento espectral' },
-      { title: 'Entrenamiento de Muestreo Artemis', category: 'Homólogo Extraterrestre', url: SPACE_PHOTOS.mars, caption: 'Instrucción directa de geología lunar para astronautas' },
+    "vector": {
+      "geology": 96,
+      "terrain": 86,
+      "temperature": 85,
+      "iceWater": 65,
+      "atmosphere": 70,
+      "biosphere": 45,
+      "subsurface": 60,
+      "robotics": 90
+    },
+    "radar": {
+      "morphology": 92,
+      "mineralogy": 98,
+      "temperature": 86,
+      "aridity": 65,
+      "radiation": 45,
+      "isru": 82
+    },
+    "topo": [
+      {
+        "distKm": 0,
+        "elevM": 1450
+      },
+      {
+        "distKm": 4,
+        "elevM": 1050
+      },
+      {
+        "distKm": 8,
+        "elevM": 1100
+      }
     ],
+    "photoEarth": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Askja_Caldera_Iceland.jpg/1280px-Askja_Caldera_Iceland.jpg",
+    "photoSpace": "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=1200&q=80",
+    "photoEarthCaption": "Caldera de Askja y cráter hidrotermal Víti en Islandia",
+    "photoSpaceCaption": "Luna, Mare Imbrium — NASA LRO",
+    "inspectionGallery": []
   },
   {
-    id: 'DNK-08', name: 'Depresión de Danakil — Dallol', country: 'Etiopía', region: 'África Oriental',
-    lat: 14.241, lng: 40.3, dms: '14°14′28″ N, 40°18′00″ E', elevM: -125,
-    biome: 'Hiperárido', charLevel: 'Bajo', isCandidate: true,
-    meanTempC: 34.6, tempMinC: 22, tempMaxC: 51.5, precipMm: 95, humidityPct: 24,
-    slopeDeg: 6.2, roughnessRms: 0.28, uvPeak: 13.5, solarWpm2: 1120, pressureHpa: 1030,
-    mineralogy: 'Halita, Jarosita, Azufre elemental, Hematita',
-    petrology: 'Cráter hidrotermal en depresión tectónica con salmueras hiperácidas (pH <0)',
-    summary: 'Uno de los lugares más inhóspitos del planeta (-125 m). Piscinas hidrotermales ácidas con pH negativo. Minerales de jarosita idénticos a los del rover Opportunity en Marte. Modelo para sistemas hidrotermales marcianos en desecación.',
-    grayZone: 'Conflicto geopolítico y calor extremo la han mantenido inaccesible para experimentación robótica formal. ASTER confirma que es el análogo geoquímico más fiel para evaporitas ácidas del Hespérico marciano.',
-    protocols: [
-      { code: 'PRT-DNK-COR', title: 'Resistencia a Corrosión Extrema', trl: 'TRL-6', domain: 'Sensors', desc: 'Sellos y aleaciones en vapores de cloro y salmueras ácidas.' },
-      { code: 'PRT-DNK-BIO', title: 'Biofirmas en pH Extremo', trl: 'TRL-5', domain: 'Sensors', desc: 'Microfluídicos de ADN/proteínas en soluciones de azufre y hierro.' },
+    "id": "DNK-08",
+    "name": "Depresión de Danakil (Domo Dallol)",
+    "country": "Etiopía",
+    "region": "Triángulo de Afar",
+    "lat": 14.241,
+    "lng": 40.298,
+    "dms": "14°14′28″ N, 40°17′53″ E",
+    "elevM": -120,
+    "biome": "Hiperárido",
+    "charLevel": "Alto",
+    "isCandidate": true,
+    "microScale": "Terrazas de salmuera hiperácida del cráter freático Dallol (120 m bajo el nivel del mar).",
+    "activeProcess": "Desgasificación magmática subaérea y precipitación hidrotermal de halita, jarosita y óxidos de hierro a pH < 1.",
+    "nasaDatasets": "SRTM 30m, ASTER TIR, MODIS LST",
+    "meanTempC": 34.6,
+    "tempMinC": 21.0,
+    "tempMaxC": 52.0,
+    "precipMm": 80,
+    "humidityPct": 22,
+    "slopeDeg": 6.5,
+    "roughnessRms": 0.28,
+    "uvPeak": 14.8,
+    "solarWpm2": 1180,
+    "pressureHpa": 1025,
+    "mineralogy": "Halita clorurada, Jarosita, Óxidos de hierro, Azufre nativo, Silvita",
+    "petrology": "Domo freático hidrotermal sobre manto evaporítico de 2 km de espesor",
+    "summary": "Punto hidrotermal poliextremófilo más extremo del planeta: acidez hiperbólica (pH < 1), salinidad saturada y temperaturas que superan los 50°C.",
+    "protocols": [
+      {
+        "code": "PRT-DNK-ACD",
+        "title": "Resistencia a Vapores Ácidos Corrosivos",
+        "trl": "TRL-6",
+        "domain": "Materials",
+        "desc": "Evaluación de aleaciones y sellos frente a emanaciones de HCl y SO₂."
+      }
     ],
-    vector: { topography: 70, geology: 95, environment: 95, resources: 52 },
-    radar: { morphology: 72, mineralogy: 98, temperature: 88, aridity: 90, radiation: 88, isru: 58 },
-    topo: [{ distKm: 0, elevM: -80 }, { distKm: 0.5, elevM: -100 }, { distKm: 1, elevM: -125 }, { distKm: 1.5, elevM: -120 }, { distKm: 2, elevM: -128 }, { distKm: 2.5, elevM: -110 }, { distKm: 3, elevM: -85 }],
-    photoEarth: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&w=1200&q=80',
-    photoSpace: SPACE_PHOTOS.mars,
-    photoEarthCaption: 'Dallol, Depresión de Danakil — Fosa tectónica y chimeneas de sulfatos',
-    photoSpaceCaption: 'Meridiani Planum, Marte (Evaporitas y Jarosita) — NASA/Opportunity',
-    inspectionGallery: [
-      { title: 'Depresión Tectónica (-125m)', category: 'Vista Orbital SRTM', url: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&w=800&q=80', caption: 'Piso tectónico bajo el nivel medio del mar' },
-      { title: 'Costras Salinas Hiperácidas', category: 'Textura de Regolito', url: 'https://images.unsplash.com/photo-1542401886-65d6c61db217?auto=format&fit=crop&w=800&q=80', caption: 'Salmueras de pH <0 con precipitación de jarosita' },
-      { title: 'Mapeo ASTER de Azufre', category: 'Espectro Mineralógico', url: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80', caption: 'Emisión de dióxido de azufre e hidrotérmicos' },
-      { title: 'Sistemas Hidrotermales Marcianos', category: 'Homólogo Extraterrestre', url: SPACE_PHOTOS.mars, caption: 'Modelado del Marte del período Hespérico' },
+    "vector": {
+      "geology": 98,
+      "terrain": 78,
+      "temperature": 96,
+      "iceWater": 20,
+      "atmosphere": 85,
+      "biosphere": 98,
+      "subsurface": 70,
+      "robotics": 84
+    },
+    "radar": {
+      "morphology": 84,
+      "mineralogy": 100,
+      "temperature": 98,
+      "aridity": 92,
+      "radiation": 90,
+      "isru": 60
+    },
+    "topo": [
+      {
+        "distKm": 0,
+        "elevM": -130
+      },
+      {
+        "distKm": 1.5,
+        "elevM": -85
+      },
+      {
+        "distKm": 3,
+        "elevM": -120
+      }
     ],
+    "photoEarth": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Dallol_Ethiopia.jpg/1280px-Dallol_Ethiopia.jpg",
+    "photoSpace": "https://images.unsplash.com/photo-1545156521-77bd85671d30?auto=format&fit=crop&w=1200&q=80",
+    "photoEarthCaption": "Terrazas de azufre y salmuera hidrotermal en Dallol, Etiopía",
+    "photoSpaceCaption": "Marte, Depósitos hidrotermales en Gusev / Nili Fossae — NASA MRO",
+    "inspectionGallery": []
   },
   {
-    id: 'PAY-09', name: 'La Payunia — Pampa Negra y Volcán Malacara', country: 'Argentina', region: 'Sudamérica',
-    lat: -36.42, lng: -69.21, dms: '36°25′12″ S, 69°12′36″ W', elevM: 1850,
-    biome: 'Volcánico/Basáltico', charLevel: 'Alto',
-    meanTempC: 11.4, tempMinC: -15, tempMaxC: 32, precipMm: 160, humidityPct: 35,
-    slopeDeg: 6.5, roughnessRms: 0.38, uvPeak: 11.2, solarWpm2: 1050, pressureHpa: 820,
-    mineralogy: 'Basalto alcalino, Ilmenita (FeTiO₃), Olivino, Plagioclasa cálcica, Vidrio basáltico',
-    petrology: 'Manto de Pampa Negra de escoria piroclástica y conos volcánicos de retroarco basáltico',
-    summary: 'Uno de los campos de lava basáltica retroarco más densos del planeta (>800 conos). Sus extensas Pampas Negras de escoria y lapilli fino reproducen la rugosidad nanométrica, la abrasión y la composición mineral de Mare Tranquillitatis en la Luna.',
-    targetHomologue: 'Mare Tranquillitatis (Apolo 11) & Flancos de Tharsis (Marte)',
-    engineeringBenchmark: 'Validación de tracción de ruedas de rovers en regolito cortante y pruebas de pirólisis térmica para extracción de oxígeno de la ilmenita (ISRU).',
-    protocols: [
-      { code: 'PRT-PAY-WHL', title: 'Abrasión de Ruedas por Lapilli Basáltico', trl: 'TRL-7', domain: 'Mobility', desc: 'Desgaste acelerado en grousers de titanio y polímeros sobre escoria vítrea de 0.5-2 mm.' },
-      { code: 'PRT-PAY-O2', title: 'Extracción de Oxígeno de Ilmenita (ISRU)', trl: 'TRL-6', domain: 'ISRU', desc: 'Reducción carbotérmica e hidrogenación de arenas negras ricas en titanio y hierro.' },
+    "id": "PAY-09",
+    "name": "Reserva Volcánica La Payunia",
+    "country": "Argentina",
+    "region": "Mendoza / Malargüe",
+    "lat": -36.416,
+    "lng": -69.216,
+    "dms": "36°25′00″ S, 69°13′00″ W",
+    "elevM": 1850,
+    "biome": "Volcánico/Basáltico",
+    "charLevel": "Alto",
+    "isCandidate": true,
+    "microScale": "Campo de lapilli basáltico negro y cono de escoria Morado (38 km²).",
+    "activeProcess": "Erupción estromboliana monogenética de alta densidad (más de 800 conos) y mantos de piroclastos oscuros análogos a los mares lunares.",
+    "nasaDatasets": "SRTM 30m DEM, Sentinel-2 MSI, ALOS PALSAR",
+    "meanTempC": 11.5,
+    "tempMinC": -18.0,
+    "tempMaxC": 32.0,
+    "precipMm": 180,
+    "humidityPct": 35,
+    "slopeDeg": 16.0,
+    "roughnessRms": 0.62,
+    "uvPeak": 11.2,
+    "solarWpm2": 980,
+    "pressureHpa": 815,
+    "mineralogy": "Basalto alcalino, Lapilli, Olivino, Magnetita, Vidrio volcánico",
+    "petrology": "Mayor concentración de conos volcánicos monogenéticos del hemisferio sur",
+    "summary": "La Pampa Negra es el análogo morfológico y fotométrico más fiel en Sudamérica a los basaltos de los mares lunares y las planicies volcánicas de Marte.",
+    "protocols": [
+      {
+        "code": "PRT-PAY-LPL",
+        "title": "Dinámica de Ruedas en Lapilli Flotante",
+        "trl": "TRL-6",
+        "domain": "Mobility",
+        "desc": "Medición de coeficiente de fricción sobre mantos de escoria negra suelta."
+      }
     ],
-    vector: { topography: 82, geology: 96, environment: 72, resources: 85 },
-    radar: { morphology: 84, mineralogy: 98, temperature: 70, aridity: 88, radiation: 78, isru: 88 },
-    topo: [{ distKm: 0, elevM: 1980 }, { distKm: 3, elevM: 1920 }, { distKm: 7, elevM: 1860 }, { distKm: 12, elevM: 1845 }, { distKm: 16, elevM: 1830 }, { distKm: 20, elevM: 1820 }, { distKm: 25, elevM: 1810 }],
-    photoEarth: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
-    photoSpace: SPACE_PHOTOS.moon,
-    photoEarthCaption: 'La Payunia, Mendoza — Pampas Negras de lapilli y conos basálticos',
-    photoSpaceCaption: 'Mare Tranquillitatis, Luna — LRO LOLA NASA',
-    inspectionGallery: [
-      { title: 'Manto de Pampa Negra', category: 'Vista Orbital SRTM', url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80', caption: 'Llanuras basálticas de baja pendiente con albedo oscuro' },
-      { title: 'Arenas Negras de Ilmenita', category: 'Textura de Regolito', url: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&w=800&q=80', caption: 'Partículas vítreas angulares con alto contenido de titanio' },
-      { title: 'Firma Espectral TIR', category: 'Espectro Mineralógico', url: 'https://images.unsplash.com/photo-1542401886-65d6c61db217?auto=format&fit=crop&w=800&q=80', caption: 'Bandas de absorción de ilmenita y piroxenos idénticas a muestras Apolo' },
-      { title: 'Homólogo de Apolo 11', category: 'Homólogo Extraterrestre', url: SPACE_PHOTOS.moon, caption: 'Sustrato de referencia para minería espacial y bases lunares' },
+    "vector": {
+      "geology": 95,
+      "terrain": 84,
+      "temperature": 75,
+      "iceWater": 30,
+      "atmosphere": 75,
+      "biosphere": 35,
+      "subsurface": 70,
+      "robotics": 89
+    },
+    "radar": {
+      "morphology": 90,
+      "mineralogy": 96,
+      "temperature": 78,
+      "aridity": 80,
+      "radiation": 70,
+      "isru": 75
+    },
+    "topo": [
+      {
+        "distKm": 0,
+        "elevM": 1720
+      },
+      {
+        "distKm": 5,
+        "elevM": 1850
+      },
+      {
+        "distKm": 10,
+        "elevM": 2100
+      }
     ],
+    "photoEarth": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Payunia_Mendoza.jpg/1280px-Payunia_Mendoza.jpg",
+    "photoSpace": "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=1200&q=80",
+    "photoEarthCaption": "Pampa Negra en La Payunia, Mendoza — Conos de escoria basáltica",
+    "photoSpaceCaption": "Luna, Mare Tranquillitatis — NASA Apollo 11",
+    "inspectionGallery": []
   },
   {
-    id: 'SLD-10', name: 'Lago Salda — Carbonatos e Hidromagnesita', country: 'Turquía', region: 'Medio Oriente',
-    lat: 37.55, lng: 29.71, dms: '37°33′00″ N, 29°42′36″ E', elevM: 1180,
-    biome: 'Hiperárido', charLevel: 'Alto',
-    meanTempC: 13.8, tempMinC: -8, tempMaxC: 34, precipMm: 430, humidityPct: 48,
-    slopeDeg: 8.2, roughnessRms: 0.22, uvPeak: 10.5, solarWpm2: 980, pressureHpa: 885,
-    mineralogy: 'Hidromagnesita, Magnesita, Serpentinita, Dolomita, Esmectitas',
-    petrology: 'Playas y estromatolitos de carbonatos precipitados por microbios en lago alcalino máfico',
-    summary: 'Análogo primario oficial de la NASA para el Cráter Jezero (Perseverance). Es el único lago conocido en la Tierra que contiene carbonatos de magnesio e hidromagnesita precipitados por comunidades microbianas, idénticos a los bordes y deltas de Jezero.',
-    targetHomologue: 'Cráter Jezero (Mars 2020 Perseverance & Mars Sample Return)',
-    engineeringBenchmark: 'Calibración de algoritmos de inteligencia artificial para detección de microfósiles (SHERLOC/PIXL) y ensayos de encapsulado hermético de testigos cilíndricos sellados.',
-    protocols: [
-      { code: 'PRT-SLD-BIO', title: 'Detección Raman de Estromatolitos', trl: 'TRL-7', domain: 'Sensors', desc: 'Espectroscopía UV profunda para discernir carbonatos biogénicos de abióticos.' },
-      { code: 'PRT-SLD-COR', title: 'Perforación de Testigos en Carbonatos Friables', trl: 'TRL-8', domain: 'Drilling', desc: 'Toma de núcleos de roca intactos de 13 mm sin fracturar laminaciones microbianas.' },
+    "id": "SLD-10",
+    "name": "Lago Salda (Terrazas de Hidromagnesita)",
+    "country": "Turquía",
+    "region": "Provincia de Burdur / Anatolia",
+    "lat": 37.552,
+    "lng": 29.673,
+    "dms": "37°33′07″ N, 29°40′23″ E",
+    "elevM": 1163,
+    "biome": "Impacto/Cráter",
+    "charLevel": "Alto",
+    "isCandidate": true,
+    "microScale": "Deltas costeros blancos y montículos estromatolíticos de hidromagnesita (44 km²).",
+    "activeProcess": "Meteorización de rocas ultramáficas (serpentinitas) y precipitación de carbonatos de magnesio mediados por microbialitos (homólogo mineralógico exacto del Cráter Jezero).",
+    "nasaDatasets": "Landsat 9 OLI-2, Sentinel-2 MSI, SRTM 30m",
+    "meanTempC": 13.8,
+    "tempMinC": -6.0,
+    "tempMaxC": 34.0,
+    "precipMm": 435,
+    "humidityPct": 52,
+    "slopeDeg": 8.0,
+    "roughnessRms": 0.18,
+    "uvPeak": 9.4,
+    "solarWpm2": 890,
+    "pressureHpa": 882,
+    "mineralogy": "Hidromagnesita, Huntita, Serpentinita, Magnesita, Crisotilo",
+    "petrology": "Depósitos lacustres carbonatados precipitados por microbialitos en cuenca ultramáfica",
+    "summary": "Estudiado activamente por la NASA como el gemelo mineralógico terrestre del Cráter Jezero donde el rover Perseverance busca biofirmas microbianas fósiles.",
+    "protocols": [
+      {
+        "code": "PRT-SLD-CAR",
+        "title": "Espectroscopía UV de Carbonatos Fósiles",
+        "trl": "TRL-7",
+        "domain": "Astrobiology",
+        "desc": "Protocolo SHERLOC/PIXL para mapeo de hidromagnesita en playas lacustres."
+      }
     ],
-    vector: { topography: 85, geology: 99, environment: 84, resources: 80 },
-    radar: { morphology: 86, mineralogy: 100, temperature: 78, aridity: 82, radiation: 80, isru: 76 },
-    topo: [{ distKm: 0, elevM: 1320 }, { distKm: 1.5, elevM: 1240 }, { distKm: 3, elevM: 1195 }, { distKm: 4.5, elevM: 1182 }, { distKm: 6, elevM: 1180 }, { distKm: 7.5, elevM: 1180 }, { distKm: 9, elevM: 1210 }],
-    photoEarth: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
-    photoSpace: SPACE_PHOTOS.mars,
-    photoEarthCaption: 'Lago Salda, Turquía — Playas de hidromagnesita blanca y aguas alcalinas',
-    photoSpaceCaption: 'Delta fluvial fósil en Cráter Jezero, Marte — Mars 2020 NASA',
-    inspectionGallery: [
-      { title: 'Ribera de Carbonatos', category: 'Vista Orbital SRTM', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80', caption: 'Estructuras de terrazas de hidromagnesita blanca brillante' },
-      { title: 'Estromatolitos Microbianos', category: 'Textura de Regolito', url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80', caption: 'Montículos biogénicos con preservación de biofirmas fósiles' },
-      { title: 'Curva Espectral CRISM', category: 'Espectro Mineralógico', url: 'https://images.unsplash.com/photo-1542401886-65d6c61db217?auto=format&fit=crop&w=800&q=80', caption: 'Absorción en 2.3 μm y 2.5 μm correspondiente a carbonatos de magnesio' },
-      { title: 'Gemelo Terrestre de Jezero', category: 'Homólogo Extraterrestre', url: SPACE_PHOTOS.mars, caption: 'Entorno de aterrizaje del rover Perseverance en Marte' },
+    "vector": {
+      "geology": 99,
+      "terrain": 74,
+      "temperature": 65,
+      "iceWater": 60,
+      "atmosphere": 50,
+      "biosphere": 98,
+      "subsurface": 45,
+      "robotics": 88
+    },
+    "radar": {
+      "morphology": 82,
+      "mineralogy": 100,
+      "temperature": 68,
+      "aridity": 50,
+      "radiation": 48,
+      "isru": 90
+    },
+    "topo": [
+      {
+        "distKm": 0,
+        "elevM": 1220
+      },
+      {
+        "distKm": 2,
+        "elevM": 1163
+      },
+      {
+        "distKm": 5,
+        "elevM": 1163
+      }
     ],
+    "photoEarth": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Lake_Salda_NASA_Earth_Observatory.jpg/1280px-Lake_Salda_NASA_Earth_Observatory.jpg",
+    "photoSpace": "https://images.unsplash.com/photo-1545156521-77bd85671d30?auto=format&fit=crop&w=1200&q=80",
+    "photoEarthCaption": "Lago Salda — Playas blancas de hidromagnesita (NASA Earth Observatory)",
+    "photoSpaceCaption": "Marte, Delta de Jezero — NASA/JPL/MRO",
+    "inspectionGallery": []
   },
   {
-    id: 'UYU-11', name: 'Salar de Uyuni — Planicie Salina y Altiplano', country: 'Bolivia', region: 'Sudamérica',
-    lat: -20.13, lng: -67.48, dms: '20°08′00″ S, 67°29′00″ W', elevM: 3656,
-    biome: 'Hiperárido', charLevel: 'Alto',
-    meanTempC: 8.5, tempMinC: -20, tempMaxC: 22, precipMm: 140, humidityPct: 22,
-    slopeDeg: 0.15, roughnessRms: 0.04, uvPeak: 18.5, solarWpm2: 1280, pressureHpa: 650,
-    mineralogy: 'Halita, Yeso, Sulfato de litio, Ulexita, Cloruro de potasio',
-    petrology: 'Costra de sal poligonal ultraplana (>10,500 km²) sobre salmueras profundas',
-    summary: 'La planicie más plana y extensa de la Tierra (desnivel <1 m en 100 km). Utilizada por la NASA para calibración de satélites (ICESat, Sentinel) y altímetros láser. Análogo ideal para el descenso de SpaceX Starship en Arcadia Planitia.',
-    targetHomologue: 'Arcadia Planitia (SpaceX Starship Mars Base) & Planicies Lunares',
-    engineeringBenchmark: 'Calibración de radares altimétricos de descenso terminal a alta velocidad, resistencia mecánica de zapatas para naves pesadas y simulación de extracción de hielo fósil.',
-    protocols: [
-      { code: 'PRT-UYU-RDR', title: 'Calibración de Radar de Aterrizaje Terminal', trl: 'TRL-8', domain: 'Sensors', desc: 'Respuesta de reflectometría en terreno ultraplano sin ecos parásitos.' },
-      { code: 'PRT-UYU-ISRU', title: 'Extracción de Salmueras y Litio en Vacío', trl: 'TRL-6', domain: 'ISRU', desc: 'Procesamiento electrolítico a baja presión atmosférica (650 hPa).' },
+    "id": "UYU-11",
+    "name": "Salar de Uyuni (Sector Tahua)",
+    "country": "Bolivia",
+    "region": "Potosí / Altiplano Andino",
+    "lat": -20.133,
+    "lng": -67.489,
+    "dms": "20°08′01″ S, 67°29′21″ W",
+    "elevM": 3656,
+    "biome": "Hiperárido",
+    "charLevel": "Alto",
+    "isCandidate": true,
+    "microScale": "Costra evaporítica poligonal de halita y salmuera de litio a 3,656 m s.n.m.",
+    "activeProcess": "Desecación de paleolagos pleistocenos y cristalización poligonal por evaporación extrema y alto albedo.",
+    "nasaDatasets": "ICESat-2 ATLAS, SRTM 30m DEM, Sentinel-2",
+    "meanTempC": 8.9,
+    "tempMinC": -14.0,
+    "tempMaxC": 21.0,
+    "precipMm": 160,
+    "humidityPct": 28,
+    "slopeDeg": 0.2,
+    "roughnessRms": 0.05,
+    "uvPeak": 16.5,
+    "solarWpm2": 1280,
+    "pressureHpa": 648,
+    "mineralogy": "Halita (NaCl), Yeso, Cloruro de litio, Ulexita, Sulfato de magnesio",
+    "petrology": "Manto salino continuo de 10,582 km² con variaciones altimétricas < 1 metro",
+    "summary": "El mayor salar del mundo. Empleado por satélites de la NASA (ICESat-2) como superficie de calibración altimétrica global debido a su planitud perfecta.",
+    "protocols": [
+      {
+        "code": "PRT-UYU-ALT",
+        "title": "Calibración de Altimetría Láser Orbitador",
+        "trl": "TRL-8",
+        "domain": "Remote Sensing",
+        "desc": "Ajuste de sesgo vertical en bandas LiDAR espaciales sobre plano reflectivo."
+      }
     ],
-    vector: { topography: 72, geology: 82, environment: 90, resources: 96 },
-    radar: { morphology: 68, mineralogy: 80, temperature: 86, aridity: 95, radiation: 94, isru: 98 },
-    topo: [{ distKm: 0, elevM: 3656 }, { distKm: 5, elevM: 3656 }, { distKm: 12, elevM: 3655 }, { distKm: 20, elevM: 3656 }, { distKm: 30, elevM: 3655 }, { distKm: 40, elevM: 3656 }, { distKm: 50, elevM: 3656 }],
-    photoEarth: 'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=1200&q=80',
-    photoSpace: SPACE_PHOTOS.mars,
-    photoEarthCaption: 'Salar de Uyuni, Bolivia — Patrón poligonal de halita en la planicie más plana del mundo',
-    photoSpaceCaption: 'Arcadia Planitia, Marte — MGS MOLA NASA',
-    inspectionGallery: [
-      { title: 'Calibración Altimétrica ICESat', category: 'Vista Orbital SRTM', url: 'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=800&q=80', caption: 'Superficie de calibración geodésica satelital internacional' },
-      { title: 'Costras Poligonales de Sal', category: 'Textura de Regolito', url: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80', caption: 'Crestas de evaporación de 2-5 cm sobre halita compactada' },
-      { title: 'Reflectancia Térmica ASTER', category: 'Espectro Mineralógico', url: 'https://images.unsplash.com/photo-1542401886-65d6c61db217?auto=format&fit=crop&w=800&q=80', caption: 'Albedo extremadamente elevado (>0.8) y baja rugosidad radar' },
-      { title: 'Llanura Marciana de Aterrizaje', category: 'Homólogo Extraterrestre', url: SPACE_PHOTOS.mars, caption: 'Zona de mínimo riesgo de rocas para Starship y cápsulas pesadas' },
+    "vector": {
+      "geology": 92,
+      "terrain": 88,
+      "temperature": 82,
+      "iceWater": 50,
+      "atmosphere": 86,
+      "biosphere": 65,
+      "subsurface": 55,
+      "robotics": 91
+    },
+    "radar": {
+      "morphology": 98,
+      "mineralogy": 92,
+      "temperature": 85,
+      "aridity": 94,
+      "radiation": 96,
+      "isru": 82
+    },
+    "topo": [
+      {
+        "distKm": 0,
+        "elevM": 3656
+      },
+      {
+        "distKm": 20,
+        "elevM": 3656
+      },
+      {
+        "distKm": 50,
+        "elevM": 3656
+      }
     ],
+    "photoEarth": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Salar_de_Uyuni_Bolivia.jpg/1280px-Salar_de_Uyuni_Bolivia.jpg",
+    "photoSpace": "https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?auto=format&fit=crop&w=1200&q=80",
+    "photoEarthCaption": "Salar de Uyuni — Patrones poligonales de evaporación halítica",
+    "photoSpaceCaption": "Marte, Arcadia Planitia — NASA MRO",
+    "inspectionGallery": []
   },
   {
-    id: 'OJO-12', name: 'Nevado Ojos del Salado — Cumbres Hipobáricas', country: 'Chile / Argentina', region: 'Sudamérica',
-    lat: -27.10, lng: -68.54, dms: '27°06′00″ S, 68°32′00″ W', elevM: 6893,
-    biome: 'Polar/Criogénico', charLevel: 'Bajo', isCandidate: true,
-    meanTempC: -7.5, tempMinC: -35, tempMaxC: 15, precipMm: 80, humidityPct: 14,
-    slopeDeg: 28.5, roughnessRms: 0.85, uvPeak: 22.0, solarWpm2: 1420, pressureHpa: 440,
-    mineralogy: 'Dacita, Riolita, Azufre sublimado, Permafrost relicto, Vidrio volcánico',
-    petrology: 'Estratovolcán activo más alto de la Tierra con fumarolas activas y frío criogénico',
-    summary: 'El volcán activo más alto del mundo (6,893 m). Presión atmosférica extremadamente reducida (44% del nivel del mar), radiación UV extrema y lagunas de agua líquida a más de 6,300 m. Análogo supremo para las condiciones hipobáricas de Olympus Mons y Montes Apenninus.',
-    targetHomologue: 'Olympus Mons & Montes Apenninus (Cumbre y acantilados)',
-    engineeringBenchmark: 'Evaluación de sellos electromecánicos en presiones mínimas (hipobaria), tracción en pendientes empinadas de derrubios y operación de drones en atmósfera ultraligera.',
-    protocols: [
-      { code: 'PRT-OJO-HIP', title: 'Operación en Atmósfera Hipobárica (440 hPa)', trl: 'TRL-6', domain: 'Sensors', desc: 'Rendimiento de rotores y aviónica en densidad de aire mínima.' },
-      { code: 'PRT-OJO-TRC', title: 'Tracción en Taludes de Dacita >30°', trl: 'TRL-7', domain: 'Mobility', desc: 'Maniobras de ascenso y frenado en derrubios inestables de alta montaña.' },
+    "id": "OJS-12",
+    "name": "Nevado Ojos del Salado (Laguna de Cráter)",
+    "country": "Chile / Argentina",
+    "region": "Atacama / Catamarca / Andes Centrales",
+    "lat": -27.109,
+    "lng": -68.541,
+    "dms": "27°06′34″ S, 68°32′28″ W",
+    "elevM": 6390,
+    "biome": "Polar/Criogénico",
+    "charLevel": "Alto",
+    "isCandidate": true,
+    "microScale": "Fumarolas y laguna glaciar perenne en el cráter cumbre (6,390 m s.n.m.).",
+    "activeProcess": "Actividad hidrotermal volcánica de gran altitud bajo congelamiento criogénico y presión atmosférica del 45% terrestre.",
+    "nasaDatasets": "SRTM 30m, ASTER GDEM, MODIS Terra LST",
+    "meanTempC": -12.4,
+    "tempMinC": -38.0,
+    "tempMaxC": 6.0,
+    "precipMm": 65,
+    "humidityPct": 16,
+    "slopeDeg": 32.0,
+    "roughnessRms": 0.85,
+    "uvPeak": 21.0,
+    "solarWpm2": 1420,
+    "pressureHpa": 465,
+    "mineralogy": "Dacita, Andesita, Azufre nativo, Sulfatos hidrotermales, Hielo perenne",
+    "petrology": "Estratovolcán activo más alto del planeta con la masa de agua superficial más elevada",
+    "summary": "Entorno andino hiper-extremo: presión de 465 hPa (45% de la terrestre), radiación UV máxima absoluta y laguna permanente en permafrost volcánico.",
+    "protocols": [
+      {
+        "code": "PRT-OJS-HYP",
+        "title": "Aviónica y Baterías en Hipobaria Fría",
+        "trl": "TRL-6",
+        "domain": "Avionics",
+        "desc": "Ciclos térmicos en electrónica a 450 hPa y temperaturas inferiores a -30°C."
+      }
     ],
-    vector: { topography: 98, geology: 92, environment: 96, resources: 62 },
-    radar: { morphology: 99, mineralogy: 90, temperature: 94, aridity: 96, radiation: 98, isru: 60 },
-    topo: [{ distKm: 0, elevM: 5200 }, { distKm: 2, elevM: 5650 }, { distKm: 4, elevM: 6100 }, { distKm: 6, elevM: 6520 }, { distKm: 8, elevM: 6893 }, { distKm: 10, elevM: 6600 }, { distKm: 12, elevM: 5900 }],
-    photoEarth: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80',
-    photoSpace: SPACE_PHOTOS.mars,
-    photoEarthCaption: 'Nevado Ojos del Salado, Puna de Atacama — El volcán activo más alto de la Tierra',
-    photoSpaceCaption: 'Caldera de Olympus Mons, Marte — MGS MOLA NASA',
-    inspectionGallery: [
-      { title: 'Cumbre y Glaciares de Altura', category: 'Vista Orbital SRTM', url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80', caption: 'Topografía abrupta con escarpes rocosos sobre los 6,000 metros' },
-      { title: 'Sustrato de Derrubios Dacíticos', category: 'Textura de Regolito', url: 'https://images.unsplash.com/photo-1517783999520-f068d7431a60?auto=format&fit=crop&w=800&q=80', caption: 'Bloques de roca volcánica quebrados por ciclos de congelamiento' },
-      { title: 'Índice de UV Extremo', category: 'Espectro Mineralógico', url: 'https://images.unsplash.com/photo-1504893524553-b855bce32c67?auto=format&fit=crop&w=800&q=80', caption: 'Radiación ultravioleta equivalente a mesetas marcianas' },
-      { title: 'Acantilado Basal de Olympus', category: 'Homólogo Extraterrestre', url: SPACE_PHOTOS.mars, caption: 'Ensayos de navegación para los mayores relieves del Sistema Solar' },
+    "vector": {
+      "geology": 88,
+      "terrain": 95,
+      "temperature": 98,
+      "iceWater": 92,
+      "atmosphere": 96,
+      "biosphere": 82,
+      "subsurface": 65,
+      "robotics": 90
+    },
+    "radar": {
+      "morphology": 96,
+      "mineralogy": 88,
+      "temperature": 99,
+      "aridity": 95,
+      "radiation": 100,
+      "isru": 92
+    },
+    "topo": [
+      {
+        "distKm": 0,
+        "elevM": 5200
+      },
+      {
+        "distKm": 3,
+        "elevM": 5850
+      },
+      {
+        "distKm": 6,
+        "elevM": 6390
+      }
     ],
-  },
-{
-    id: 'PAY-09', name: 'La Payunia — Pampa Negra y Volcán Malacara', country: 'Argentina', region: 'Sudamérica',
-    lat: -36.42, lng: -69.21, dms: '36°25′12″ S, 69°12′36″ W', elevM: 1850,
-    biome: 'Volcánico/Basáltico', charLevel: 'Alto',
-    meanTempC: 11.4, tempMinC: -15, tempMaxC: 32, precipMm: 160, humidityPct: 35,
-    slopeDeg: 6.5, roughnessRms: 0.38, uvPeak: 11.2, solarWpm2: 1050, pressureHpa: 820,
-    mineralogy: 'Basalto alcalino, Ilmenita (FeTiO₃), Olivino, Plagioclasa cálcica, Vidrio basáltico',
-    petrology: 'Manto de Pampa Negra de escoria piroclástica y conos volcánicos de retroarco basáltico',
-    summary: 'Uno de los campos de lava basáltica retroarco más densos del planeta (>800 conos). Sus extensas Pampas Negras de escoria y lapilli fino reproducen la rugosidad nanométrica, la abrasión y la composición mineral de Mare Tranquillitatis en la Luna.',
-    targetHomologue: 'Mare Tranquillitatis (Apolo 11) & Flancos de Tharsis (Marte)',
-    engineeringBenchmark: 'Validación de tracción de ruedas de rovers en regolito cortante y pruebas de pirólisis térmica para extracción de oxígeno de la ilmenita (ISRU).',
-    protocols: [
-      { code: 'PRT-PAY-WHL', title: 'Abrasión de Ruedas por Lapilli Basáltico', trl: 'TRL-7', domain: 'Mobility', desc: 'Desgaste acelerado en grousers de titanio y polímeros sobre escoria vítrea de 0.5-2 mm.' },
-      { code: 'PRT-PAY-O2', title: 'Extracción de Oxígeno de Ilmenita (ISRU)', trl: 'TRL-6', domain: 'ISRU', desc: 'Reducción carbotérmica e hidrogenación de arenas negras ricas en titanio y hierro.' },
-    ],
-    vector: { topography: 82, geology: 96, environment: 72, resources: 85 },
-    radar: { morphology: 84, mineralogy: 98, temperature: 70, aridity: 88, radiation: 78, isru: 88 },
-    topo: [{ distKm: 0, elevM: 1980 }, { distKm: 3, elevM: 1920 }, { distKm: 7, elevM: 1860 }, { distKm: 12, elevM: 1845 }, { distKm: 16, elevM: 1830 }, { distKm: 20, elevM: 1820 }, { distKm: 25, elevM: 1810 }],
-    photoEarth: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
-    photoSpace: SPACE_PHOTOS.moon,
-    photoEarthCaption: 'La Payunia, Mendoza — Pampas Negras de lapilli y conos basálticos',
-    photoSpaceCaption: 'Mare Tranquillitatis, Luna — LRO LOLA NASA',
-    inspectionGallery: [
-      { title: 'Manto de Pampa Negra', category: 'Vista Orbital SRTM', url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80', caption: 'Llanuras basálticas de baja pendiente con albedo oscuro' },
-      { title: 'Arenas Negras de Ilmenita', category: 'Textura de Regolito', url: 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?auto=format&fit=crop&w=800&q=80', caption: 'Partículas vítreas angulares con alto contenido de titanio' },
-      { title: 'Firma Espectral TIR', category: 'Espectro Mineralógico', url: 'https://images.unsplash.com/photo-1542401886-65d6c61db217?auto=format&fit=crop&w=800&q=80', caption: 'Bandas de absorción de ilmenita y piroxenos idénticas a muestras Apolo' },
-      { title: 'Homólogo de Apolo 11', category: 'Homólogo Extraterrestre', url: SPACE_PHOTOS.moon, caption: 'Sustrato de referencia para minería espacial y bases lunares' },
-    ],
-  },
-  {
-    id: 'SLD-10', name: 'Lago Salda — Carbonatos e Hidromagnesita', country: 'Turquía', region: 'Medio Oriente',
-    lat: 37.55, lng: 29.71, dms: '37°33′00″ N, 29°42′36″ E', elevM: 1180,
-    biome: 'Hiperárido', charLevel: 'Alto',
-    meanTempC: 13.8, tempMinC: -8, tempMaxC: 34, precipMm: 430, humidityPct: 48,
-    slopeDeg: 8.2, roughnessRms: 0.22, uvPeak: 10.5, solarWpm2: 980, pressureHpa: 885,
-    mineralogy: 'Hidromagnesita, Magnesita, Serpentinita, Dolomita, Esmectitas',
-    petrology: 'Playas y estromatolitos de carbonatos precipitados por microbios en lago alcalino máfico',
-    summary: 'Análogo primario oficial de la NASA para el Cráter Jezero (Perseverance). Es el único lago conocido en la Tierra que contiene carbonatos de magnesio e hidromagnesita precipitados por comunidades microbianas, idénticos a los bordes y deltas de Jezero.',
-    targetHomologue: 'Cráter Jezero (Mars 2020 Perseverance & Mars Sample Return)',
-    engineeringBenchmark: 'Calibración de algoritmos de inteligencia artificial para detección de microfósiles (SHERLOC/PIXL) y ensayos de encapsulado hermético de testigos cilíndricos sellados.',
-    protocols: [
-      { code: 'PRT-SLD-BIO', title: 'Detección Raman de Estromatolitos', trl: 'TRL-7', domain: 'Sensors', desc: 'Espectroscopía UV profunda para discernir carbonatos biogénicos de abióticos.' },
-      { code: 'PRT-SLD-COR', title: 'Perforación de Testigos en Carbonatos Friables', trl: 'TRL-8', domain: 'Drilling', desc: 'Toma de núcleos de roca intactos de 13 mm sin fracturar laminaciones microbianas.' },
-    ],
-    vector: { topography: 85, geology: 99, environment: 84, resources: 80 },
-    radar: { morphology: 86, mineralogy: 100, temperature: 78, aridity: 82, radiation: 80, isru: 76 },
-    topo: [{ distKm: 0, elevM: 1320 }, { distKm: 1.5, elevM: 1240 }, { distKm: 3, elevM: 1195 }, { distKm: 4.5, elevM: 1182 }, { distKm: 6, elevM: 1180 }, { distKm: 7.5, elevM: 1180 }, { distKm: 9, elevM: 1210 }],
-    photoEarth: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80',
-    photoSpace: SPACE_PHOTOS.mars,
-    photoEarthCaption: 'Lago Salda, Turquía — Playas de hidromagnesita blanca y aguas alcalinas',
-    photoSpaceCaption: 'Delta fluvial fósil en Cráter Jezero, Marte — Mars 2020 NASA',
-    inspectionGallery: [
-      { title: 'Ribera de Carbonatos', category: 'Vista Orbital SRTM', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80', caption: 'Estructuras de terrazas de hidromagnesita blanca brillante' },
-      { title: 'Estromatolitos Microbianos', category: 'Textura de Regolito', url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80', caption: 'Montículos biogénicos con preservación de biofirmas fósiles' },
-      { title: 'Curva Espectral CRISM', category: 'Espectro Mineralógico', url: 'https://images.unsplash.com/photo-1542401886-65d6c61db217?auto=format&fit=crop&w=800&q=80', caption: 'Absorción en 2.3 μm y 2.5 μm correspondiente a carbonatos de magnesio' },
-      { title: 'Gemelo Terrestre de Jezero', category: 'Homólogo Extraterrestre', url: SPACE_PHOTOS.mars, caption: 'Entorno de aterrizaje del rover Perseverance en Marte' },
-    ],
+    "photoEarth": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Ojos_del_Salado_volcano.jpg/1280px-Ojos_del_Salado_volcano.jpg",
+    "photoSpace": "https://images.unsplash.com/photo-1522030299830-16b8d3d049fe?auto=format&fit=crop&w=1200&q=80",
+    "photoEarthCaption": "Nevado Ojos del Salado — Cumbres volcánicas y lagunas criogénicas",
+    "photoSpaceCaption": "Marte, Olympus Mons — NASA Viking / MGS",
+    "inspectionGallery": []
   },
   {
-    id: 'UYU-11', name: 'Salar de Uyuni — Planicie Salina y Altiplano', country: 'Bolivia', region: 'Sudamérica',
-    lat: -20.13, lng: -67.48, dms: '20°08′00″ S, 67°29′00″ W', elevM: 3656,
-    biome: 'Hiperárido', charLevel: 'Alto',
-    meanTempC: 8.5, tempMinC: -20, tempMaxC: 22, precipMm: 140, humidityPct: 22,
-    slopeDeg: 0.15, roughnessRms: 0.04, uvPeak: 18.5, solarWpm2: 1280, pressureHpa: 650,
-    mineralogy: 'Halita, Yeso, Sulfato de litio, Ulexita, Cloruro de potasio',
-    petrology: 'Costra de sal poligonal ultraplana (>10,500 km²) sobre salmueras profundas',
-    summary: 'La planicie más plana y extensa de la Tierra (desnivel <1 m en 100 km). Utilizada por la NASA para calibración de satélites (ICESat, Sentinel) y altímetros láser. Análogo ideal para el descenso de SpaceX Starship en Arcadia Planitia.',
-    targetHomologue: 'Arcadia Planitia (SpaceX Starship Mars Base) & Planicies Lunares',
-    engineeringBenchmark: 'Calibración de radares altimétricos de descenso terminal a alta velocidad, resistencia mecánica de zapatas para naves pesadas y simulación de extracción de hielo fósil.',
-    protocols: [
-      { code: 'PRT-UYU-RDR', title: 'Calibración de Radar de Aterrizaje Terminal', trl: 'TRL-8', domain: 'Sensors', desc: 'Respuesta de reflectometría en terreno ultraplano sin ecos parásitos.' },
-      { code: 'PRT-UYU-ISRU', title: 'Extracción de Salmueras y Litio en Vacío', trl: 'TRL-6', domain: 'ISRU', desc: 'Procesamiento electrolítico a baja presión atmosférica (650 hPa).' },
+    "id": "BAR-13",
+    "name": "Cráter Barringer (Meteor Crater)",
+    "country": "Estados Unidos",
+    "region": "Coconino County / Arizona",
+    "lat": 35.027,
+    "lng": -111.022,
+    "dms": "35°01′38″ N, 111°01′20″ W",
+    "elevM": 1740,
+    "biome": "Impacto/Cráter",
+    "charLevel": "Alto",
+    "isCandidate": false,
+    "microScale": "Pared invertida de estratos de arenisca Coconino y piso del cráter (1.2 km de diámetro, 170 m de profundidad).",
+    "activeProcess": "Metamorfismo de choque por impacto hiperveloz (coesita/stishovita) y depósito de manto de eyección invertido.",
+    "nasaDatasets": "USGS 3DEP 1m LiDAR, SRTM 30m, ASTER TIR",
+    "meanTempC": 12.8,
+    "tempMinC": -15.0,
+    "tempMaxC": 38.0,
+    "precipMm": 210,
+    "humidityPct": 26,
+    "slopeDeg": 38.0,
+    "roughnessRms": 0.68,
+    "uvPeak": 11.5,
+    "solarWpm2": 1050,
+    "pressureHpa": 825,
+    "mineralogy": "Coesita, Stishovita, Meteorita de hierro-níquel (Taenita, Kamacita), Arenisca chocado",
+    "petrology": "Cráter de impacto meteórico simple de 1.2 km de diámetro conservado en clima árido",
+    "summary": "El cráter de impacto meteorítico mejor preservado de la Tierra. Emplazamiento pionero de entrenamiento de astronautas Apollo y pruebas de tracción en taludes empinados.",
+    "protocols": [
+      {
+        "code": "PRT-BAR-IMP",
+        "title": "Estudio de Eyección y Manto Volcado",
+        "trl": "TRL-7",
+        "domain": "Geology",
+        "desc": "Mapeo de estratigrafía invertida análoga a cráteres lunares simples."
+      }
     ],
-    vector: { topography: 72, geology: 82, environment: 90, resources: 96 },
-    radar: { morphology: 68, mineralogy: 80, temperature: 86, aridity: 95, radiation: 94, isru: 98 },
-    topo: [{ distKm: 0, elevM: 3656 }, { distKm: 5, elevM: 3656 }, { distKm: 12, elevM: 3655 }, { distKm: 20, elevM: 3656 }, { distKm: 30, elevM: 3655 }, { distKm: 40, elevM: 3656 }, { distKm: 50, elevM: 3656 }],
-    photoEarth: 'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=1200&q=80',
-    photoSpace: SPACE_PHOTOS.mars,
-    photoEarthCaption: 'Salar de Uyuni, Bolivia — Patrón poligonal de halita en la planicie más plana del mundo',
-    photoSpaceCaption: 'Arcadia Planitia, Marte — MGS MOLA NASA',
-    inspectionGallery: [
-      { title: 'Calibración Altimétrica ICESat', category: 'Vista Orbital SRTM', url: 'https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=800&q=80', caption: 'Superficie de calibración geodésica satelital internacional' },
-      { title: 'Costras Poligonales de Sal', category: 'Textura de Regolito', url: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80', caption: 'Crestas de evaporación de 2-5 cm sobre halita compactada' },
-      { title: 'Reflectancia Térmica ASTER', category: 'Espectro Mineralógico', url: 'https://images.unsplash.com/photo-1542401886-65d6c61db217?auto=format&fit=crop&w=800&q=80', caption: 'Albedo extremadamente elevado (>0.8) y baja rugosidad radar' },
-      { title: 'Llanura Marciana de Aterrizaje', category: 'Homólogo Extraterrestre', url: SPACE_PHOTOS.mars, caption: 'Zona de mínimo riesgo de rocas para Starship y cápsulas pesadas' },
+    "vector": {
+      "geology": 96,
+      "terrain": 94,
+      "temperature": 75,
+      "iceWater": 25,
+      "atmosphere": 70,
+      "biosphere": 30,
+      "subsurface": 55,
+      "robotics": 95
+    },
+    "radar": {
+      "morphology": 98,
+      "mineralogy": 96,
+      "temperature": 75,
+      "aridity": 85,
+      "radiation": 65,
+      "isru": 60
+    },
+    "topo": [
+      {
+        "distKm": 0,
+        "elevM": 1740
+      },
+      {
+        "distKm": 0.6,
+        "elevM": 1570
+      },
+      {
+        "distKm": 1.2,
+        "elevM": 1740
+      }
     ],
+    "photoEarth": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Meteor_Crater_-_Arizona.jpg/1280px-Meteor_Crater_-_Arizona.jpg",
+    "photoSpace": "https://images.unsplash.com/photo-1545156521-77bd85671d30?auto=format&fit=crop&w=1200&q=80",
+    "photoEarthCaption": "Meteor Crater en Winslow, Arizona — Bol de impacto intacto",
+    "photoSpaceCaption": "Luna, Cráter Linné — NASA LRO",
+    "inspectionGallery": []
   },
   {
-    id: 'OJO-12', name: 'Nevado Ojos del Salado — Cumbres Hipobáricas', country: 'Chile / Argentina', region: 'Sudamérica',
-    lat: -27.10, lng: -68.54, dms: '27°06′00″ S, 68°32′00″ W', elevM: 6893,
-    biome: 'Polar/Criogénico', charLevel: 'Bajo', isCandidate: true,
-    meanTempC: -7.5, tempMinC: -35, tempMaxC: 15, precipMm: 80, humidityPct: 14,
-    slopeDeg: 28.5, roughnessRms: 0.85, uvPeak: 22.0, solarWpm2: 1420, pressureHpa: 440,
-    mineralogy: 'Dacita, Riolita, Azufre sublimado, Permafrost relicto, Vidrio volcánico',
-    petrology: 'Estratovolcán activo más alto de la Tierra con fumarolas activas y frío criogénico',
-    summary: 'El volcán activo más alto del mundo (6,893 m). Presión atmosférica extremadamente reducida (44% del nivel del mar), radiación UV extrema y lagunas de agua líquida a más de 6,300 m. Análogo supremo para las condiciones hipobáricas de Olympus Mons y Montes Apenninus.',
-    targetHomologue: 'Olympus Mons & Montes Apenninus (Cumbre y acantilados)',
-    engineeringBenchmark: 'Evaluación de sellos electromecánicos en presiones mínimas (hipobaria), tracción en pendientes empinadas de derrubios y operación de drones en atmósfera ultraligera.',
-    protocols: [
-      { code: 'PRT-OJO-HIP', title: 'Operación en Atmósfera Hipobárica (440 hPa)', trl: 'TRL-6', domain: 'Sensors', desc: 'Rendimiento de rotores y aviónica en densidad de aire mínima.' },
-      { code: 'PRT-OJO-TRC', title: 'Tracción en Taludes de Dacita >30°', trl: 'TRL-7', domain: 'Mobility', desc: 'Maniobras de ascenso y frenado en derrubios inestables de alta montaña.' },
+    "id": "RIO-14",
+    "name": "Río Tinto (Nacimiento en Peña de Hierro)",
+    "country": "España",
+    "region": "Huelva / Andalucía",
+    "lat": 37.697,
+    "lng": -6.564,
+    "dms": "37°41′50″ N, 6°33′51″ W",
+    "elevM": 320,
+    "biome": "Hiperárido",
+    "charLevel": "Alto",
+    "isCandidate": false,
+    "microScale": "Terrazas fluviales de sulfatos férricos y jarosita en la Faja Pirítica Ibérica (5 km de cabecera).",
+    "activeProcess": "Biolixiviación quimiolitótrofa de sulfuros metálicos generando aguas ácidas (pH 2.2) y precipitación de jarosita/goethita (análoga a Meridiani Planum en Marte).",
+    "nasaDatasets": "Sentinel-2 MSI, ASTER TIR, Airborne HyMap",
+    "meanTempC": 17.5,
+    "tempMinC": 2.0,
+    "tempMaxC": 42.0,
+    "precipMm": 580,
+    "humidityPct": 58,
+    "slopeDeg": 12.0,
+    "roughnessRms": 0.42,
+    "uvPeak": 9.8,
+    "solarWpm2": 950,
+    "pressureHpa": 978,
+    "mineralogy": "Jarosita, Goethita, Hematita, Pirita, Copiapita, Cuarzo",
+    "petrology": "Aguas fluviales ácidas hiperférricas (pH 1.5 - 2.5) sobre sulfuros masivos volcánicos",
+    "summary": "Laboratorio natural de astrobiología para Marte. La jarosita de Río Tinto es idéntica a la descubierta por el rover Opportunity en Meridiani Planum.",
+    "protocols": [
+      {
+        "code": "PRT-RIO-JAR",
+        "title": "Detección de Biofirmas Férricas",
+        "trl": "TRL-7",
+        "domain": "Astrobiology",
+        "desc": "Calibración de espectrómetros Mössbauer y Raman en terrazas de gossan."
+      }
     ],
-    vector: { topography: 98, geology: 92, environment: 96, resources: 62 },
-    radar: { morphology: 99, mineralogy: 90, temperature: 94, aridity: 96, radiation: 98, isru: 60 },
-    topo: [{ distKm: 0, elevM: 5200 }, { distKm: 2, elevM: 5650 }, { distKm: 4, elevM: 6100 }, { distKm: 6, elevM: 6520 }, { distKm: 8, elevM: 6893 }, { distKm: 10, elevM: 6600 }, { distKm: 12, elevM: 5900 }],
-    photoEarth: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80',
-    photoSpace: SPACE_PHOTOS.mars,
-    photoEarthCaption: 'Nevado Ojos del Salado, Puna de Atacama — El volcán activo más alto de la Tierra',
-    photoSpaceCaption: 'Caldera de Olympus Mons, Marte — MGS MOLA NASA',
-    inspectionGallery: [
-      { title: 'Cumbre y Glaciares de Altura', category: 'Vista Orbital SRTM', url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80', caption: 'Topografía abrupta con escarpes rocosos sobre los 6,000 metros' },
-      { title: 'Sustrato de Derrubios Dacíticos', category: 'Textura de Regolito', url: 'https://images.unsplash.com/photo-1517783999520-f068d7431a60?auto=format&fit=crop&w=800&q=80', caption: 'Bloques de roca volcánica quebrados por ciclos de congelamiento' },
-      { title: 'Índice de UV Extremo', category: 'Espectro Mineralógico', url: 'https://images.unsplash.com/photo-1504893524553-b855bce32c67?auto=format&fit=crop&w=800&q=80', caption: 'Radiación ultravioleta equivalente a mesetas marcianas' },
-      { title: 'Acantilado Basal de Olympus', category: 'Homólogo Extraterrestre', url: SPACE_PHOTOS.mars, caption: 'Ensayos de navegación para los mayores relieves del Sistema Solar' },
+    "vector": {
+      "geology": 98,
+      "terrain": 76,
+      "temperature": 65,
+      "iceWater": 55,
+      "atmosphere": 50,
+      "biosphere": 99,
+      "subsurface": 75,
+      "robotics": 90
+    },
+    "radar": {
+      "morphology": 80,
+      "mineralogy": 100,
+      "temperature": 65,
+      "aridity": 60,
+      "radiation": 40,
+      "isru": 85
+    },
+    "topo": [
+      {
+        "distKm": 0,
+        "elevM": 410
+      },
+      {
+        "distKm": 2.5,
+        "elevM": 320
+      },
+      {
+        "distKm": 5,
+        "elevM": 260
+      }
     ],
-  },
+    "photoEarth": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Rio_Tinto_mine_water.jpg/1280px-Rio_Tinto_mine_water.jpg",
+    "photoSpace": "https://images.unsplash.com/photo-1614728894747-a83421e2b9c9?auto=format&fit=crop&w=1200&q=80",
+    "photoEarthCaption": "Aguas rojas ricas en hierro y jarosita en Río Tinto, España",
+    "photoSpaceCaption": "Marte, Meridiani Planum — NASA Opportunity",
+    "inspectionGallery": []
+  }
 ];
 
 
-/* ── NASA Diviner & THEMIS Authentic Thermal Datasets ── */
 export interface DiurnalPoint {
   hour: string;
   tempC: number;

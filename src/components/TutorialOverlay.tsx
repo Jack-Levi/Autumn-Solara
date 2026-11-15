@@ -9,31 +9,33 @@ interface TutorialOverlayProps {
 const TOUR_STEPS = [
   {
     step: 1,
-    title: 'Paso 1: Elige tu Destino Espacial',
-    desc: 'Selecciona una de las 4 misiones extraterrestres (Polo Sur Lunar, Mare Tranquillitatis, Cráter Jezero o Arcadia Planitia). Cada destino calibra en tiempo real los algoritmos de compatibilidad.',
-    actionLabel: 'Ver Cartas de Misión',
+    title: 'Misiones Destino (Luna y Marte)',
+    desc: 'Las 4 cartas de misión en abanico 3D definen las condiciones ambientales objetivo: Polo Sur Lunar (Cráter Shackleton), Tubos de Lava en Mare Tranquillitatis, Cráter Jezero o Arcadia Planitia en Marte.',
     targetSection: 'missions-section',
   },
   {
     step: 2,
-    title: 'Paso 2: Explorador Satelital Real',
-    desc: 'Navega por la Tierra desde el espacio usando imágenes satelitales Esri y de relieve topográfico sin restricciones de API Key. Haz clic en los marcadores para sobrevolar cráteres reales.',
-    actionLabel: 'Ir al Mapa Satelital',
-    targetSection: 'satellite-section',
+    title: 'Calibración PFI de 8 Dimensiones NASA',
+    desc: 'El botón superior CALIBRAR PFI despliega el motor de las 8 dimensiones oficiales de la NASA. Ajusta los controles de geología, pendientes, régimen térmico o hielo ISRU para recalcular los índices de fidelidad en vivo.',
+    targetSection: 'missions-section',
   },
   {
     step: 3,
-    title: 'Paso 3: Comparador Fotográfico Deslizable',
-    desc: 'Abre cualquier sitio análogo para activar la cortina interactiva: arrastra el divisor para ver cara a cara las fotos reales de la Tierra frente a las fotos de los rovers y sondas de la NASA.',
-    actionLabel: 'Explorar Galería',
+    title: 'Galería de Análogos y Estudio "Dive-In"',
+    desc: 'Haz clic en cualquiera de las 14 tarjetas geológicas para desplegar el estudio inmersivo: carrusel con Motion Blur dinámico, cortina fotográfica deslizable (Tierra vs. Rover espacial) y matriz de "Dónde se rompe la analogía".',
     targetSection: 'gallery-section',
   },
   {
     step: 4,
-    title: 'Paso 4: Calibración PFI & Nuevos Candidatos',
-    desc: 'Usa el Dock Flotante para priorizar Topografía, Geología, Clima o Recursos ISRU según las necesidades de tu misión, o descubre zonas grises satelitales como El Pinacate o la Puna.',
-    actionLabel: 'Finalizar y Explorar',
-    targetSection: 'missions-section',
+    title: 'Mapa Orbital NASA GIBS y Escáner en Vivo',
+    desc: 'Alterna entre capas térmicas NASA MODIS WMTS, relieve SRTM e imágenes ópticas. Activa el Modo Escáner y haz clic en cualquier coordenada terrestre para consultar elevación SRTM y atmósfera real, discriminando océanos y continentes.',
+    targetSection: 'satellite-section',
+  },
+  {
+    step: 5,
+    title: 'Simulador de Gravedad y Reporte Escrito',
+    desc: 'Interactúa con las 280 esferas de regolito sobre el simulador físico para comparar la física de la Tierra (9.81 m/s²), Marte (3.72 m/s²) y la Luna (1.62 m/s²), simula la eyección de un cráter y genera el expediente técnico oficial.',
+    targetSection: 'gravity-section',
   },
 ];
 
@@ -42,7 +44,7 @@ export default function TutorialOverlay({
   onClose,
   onJumpToSection,
 }: TutorialOverlayProps) {
-  const [currentStepIndex, setCurrentStepIndex] = useState<number>(-1); // -1 = Welcome Card
+  const [currentStepIndex, setCurrentStepIndex] = useState<number>(-1); // -1 = Welcome card
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -58,6 +60,9 @@ export default function TutorialOverlay({
 
   const handleStartTour = () => {
     setCurrentStepIndex(0);
+    if (onJumpToSection) {
+      onJumpToSection(TOUR_STEPS[0].targetSection);
+    }
   };
 
   const handleNext = () => {
@@ -85,63 +90,65 @@ export default function TutorialOverlay({
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md select-none">
-      {/* Click outside backdrop to close */}
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md select-none">
+      {/* Click outside backdrop */}
       <div className="fixed inset-0" onClick={onClose} />
 
       {/* 1. WELCOME CARD (Step -1) */}
       {currentStepIndex === -1 ? (
-        <div className="relative z-10 bg-[#0F1015] border border-[rgba(255,255,255,0.12)] rounded-3xl p-8 max-w-lg w-full text-center shadow-2xl">
-          <div className="w-12 h-12 rounded-full bg-[#2544FF]/20 border border-[#2544FF] flex items-center justify-center mx-auto mb-4 text-[#2544FF] font-bold text-xl">
-            T
+        <div className="relative z-10 bg-[#0A0C14] border border-[rgba(255,255,255,0.12)] rounded-3xl p-8 max-w-lg w-full text-center shadow-2xl">
+          <div className="w-12 h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center mx-auto mb-4 text-white font-sans font-semibold text-lg">
+            A
           </div>
 
-          <span className="font-mono text-[11px] uppercase tracking-widest text-[#6B6F7B] block mb-2">
-            ONBOARDING // SYS-04
+          <span className="font-sans text-[11px] uppercase tracking-wider text-[#8E9299] block mb-2 font-medium">
+            Onboarding científico · NASA Space Apps
           </span>
 
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 tracking-tight">
-            Bienvenido a TERRA—ANALOG™
+            Guía Interactiva de Autumn Solara
           </h2>
 
           <p className="text-sm text-[#8E929F] leading-relaxed mb-6 font-light">
-            Una plataforma de exploración planetaria y cartografía científica que compara los
-            lugares más extremos de la Tierra con futuros sitios de aterrizaje en la Luna y Marte.
+            Recorre en 5 pasos esenciales la arquitectura de caracterización: desde la selección del objetivo extraterrestre y la calibración multivariable de 8 dimensiones hasta el escaneo orbital en tiempo real y el reporte técnico exportable.
           </p>
 
           <div className="flex flex-col gap-3">
             <button
               onClick={handleStartTour}
-              className="pill-btn pill-btn-cobalt w-full justify-center py-3 text-xs"
+              className="py-3 px-6 rounded-full font-sans text-xs font-semibold bg-white hover:bg-white/90 text-[#0A0A0C] transition-all flex items-center justify-center gap-2"
             >
-              Iniciar Tour Guiado (4 Pasos · 30s) →
+              <span>Iniciar tour guiado (5 pasos) →</span>
             </button>
             <button
               onClick={onClose}
-              className="text-xs font-mono text-[#6B6F7B] hover:text-white transition-colors py-2"
+              className="text-xs font-sans text-[#8E9299] hover:text-white transition-colors py-2"
             >
-              Saltar Tutorial e Ir a la Plataforma
+              Saltar tutorial e ir a la plataforma
             </button>
           </div>
         </div>
       ) : (
-        /* 2. STEP CARD (Step 0 to 3) */
-        <div className="relative z-10 bg-[#0F1015] border border-[#2544FF]/50 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl">
+        /* 2. STEP CARD (Step 0 to 4) */
+        <div className="relative z-10 bg-[#0A0C14] border border-white/15 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl">
           {/* Header */}
           <div className="flex items-center justify-between mb-4">
-            <span className="font-mono text-xs text-[#2544FF] font-bold bg-[#2544FF]/10 px-3 py-1 rounded-full border border-[#2544FF]/30">
-              PASO {TOUR_STEPS[currentStepIndex].step} DE {TOUR_STEPS.length}
+            <span className="font-sans text-xs text-white font-medium bg-white/10 px-2.5 py-1 rounded-md border border-white/20">
+              Paso {TOUR_STEPS[currentStepIndex].step} de {TOUR_STEPS.length}
             </span>
             <button
               onClick={onClose}
-              className="text-xs font-mono text-[#6B6F7B] hover:text-white transition-colors"
+              className="flex items-center gap-1.5 text-xs font-sans text-[#8E9299] hover:text-white transition-colors py-1 px-2 rounded-md hover:bg-white/5"
             >
-              Cerrar (Esc) [X]
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M1 1l8 8M9 1L1 9" />
+              </svg>
+              <span>Cerrar</span>
             </button>
           </div>
 
           {/* Title & Desc */}
-          <h3 className="text-xl font-bold text-white mb-2">
+          <h3 className="text-xl font-bold text-white mb-2 leading-snug">
             {TOUR_STEPS[currentStepIndex].title}
           </h3>
           <p className="text-sm text-[#8E929F] leading-relaxed mb-6 font-light">
@@ -155,7 +162,7 @@ export default function TutorialOverlay({
                 key={s.step}
                 className={`h-1.5 rounded-full transition-all duration-300 ${
                   idx === currentStepIndex
-                    ? 'w-8 bg-[#2544FF]'
+                    ? 'w-8 bg-white'
                     : 'w-2 bg-[rgba(255,255,255,0.2)]'
                 }`}
               />
@@ -166,16 +173,16 @@ export default function TutorialOverlay({
           <div className="flex items-center justify-between gap-3 pt-3 border-t border-[rgba(255,255,255,0.08)]">
             <button
               onClick={handlePrev}
-              className="pill-btn pill-btn-dark py-2 px-4 text-xs"
+              className="py-2 px-4 rounded-lg font-sans text-xs text-[#8E9299] hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
             >
               ← Anterior
             </button>
 
             <button
               onClick={handleNext}
-              className="pill-btn pill-btn-cobalt py-2 px-5 text-xs"
+              className="py-2.5 px-5 rounded-lg font-sans text-xs font-semibold bg-white hover:bg-white/90 text-[#0A0A0C] transition-all"
             >
-              {currentStepIndex === TOUR_STEPS.length - 1 ? '¡Finalizar!' : 'Siguiente →'}
+              {currentStepIndex === TOUR_STEPS.length - 1 ? 'Finalizar tour' : 'Siguiente →'}
             </button>
           </div>
         </div>

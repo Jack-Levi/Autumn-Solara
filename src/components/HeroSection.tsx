@@ -1,5 +1,4 @@
-import React, { useRef, useEffect, useCallback } from 'react';
-import { ChevronDown } from 'lucide-react';
+import React, { useRef, useEffect, useCallback, useState } from 'react';
 
 interface HeroSectionProps {
   scrollProgress?: number;
@@ -21,7 +20,7 @@ interface Particle3D {
   color: string;
 }
 
-const PARTICLE_COUNT = 240;
+const PARTICLE_COUNT = 450;
 const REPULSION_RADIUS = 160;
 
 export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
@@ -30,28 +29,36 @@ export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
   const animFrameRef = useRef<number>(0);
   const mousePosRef = useRef<{ x: number; y: number }>({ x: -1000, y: -1000 });
   const sectionRef = useRef<HTMLDivElement>(null);
+  const titleBlockRef = useRef<HTMLDivElement>(null);
+  const [revealed, setRevealed] = useState(false);
 
-  // Initialize 3 depth layers of planetary regolith particles
+  useEffect(() => {
+    const timer = setTimeout(() => setRevealed(true), 60);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Initialize 450 white stars with constant noticeable drift
   const initParticles = useCallback((width: number, height: number) => {
     const particles: Particle3D[] = [];
     for (let i = 0; i < PARTICLE_COUNT; i++) {
       const x = Math.random() * width;
       const y = Math.random() * height;
-      const depth = Math.random() < 0.5 ? 1 : Math.random() < 0.8 ? 2 : 3;
-      const radius = depth === 1 ? 1 + Math.random() * 1.5 : depth === 2 ? 2 + Math.random() * 2 : 3.5 + Math.random() * 3;
-      const opacity = depth === 1 ? 0.2 + Math.random() * 0.25 : depth === 2 ? 0.45 + Math.random() * 0.3 : 0.8 + Math.random() * 0.2;
-      const color = depth === 3 ? '#E8EDFF' : depth === 2 ? '#B0B8C8' : '#707888';
+      const depth = Math.random() < 0.45 ? 1 : Math.random() < 0.8 ? 2 : 3;
+      // Size: 0.8px to 2.6px
+      const radius = 0.8 + Math.random() * 1.8;
+      const opacity = 0.35 + Math.random() * 0.6;
+      const color = depth === 3 ? '#FFFFFF' : depth === 2 ? '#F0F4FF' : '#E2EAFF';
 
-      const depthFactor = depth === 1 ? 0.45 : depth === 2 ? 0.8 : 1.25;
+      const depthFactor = depth === 1 ? 0.6 : depth === 2 ? 0.95 : 1.35;
       const angle = Math.random() * Math.PI * 2;
-      const speed = (0.55 + Math.random() * 0.85) * depthFactor;
+      const speed = (0.75 + Math.random() * 1.15) * depthFactor;
       particles.push({
         x,
         y,
         originX: x,
         originY: y,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.4,
         vxBase: Math.cos(angle) * speed,
         vyBase: Math.sin(angle) * speed,
         depth,
@@ -95,17 +102,16 @@ export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
     window.addEventListener('resize', resize);
 
     const handleMove = (e: MouseEvent) => {
-      const section = sectionRef.current;
-      if (!section) return;
-      const rect = section.getBoundingClientRect();
       mousePosRef.current = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
+        x: e.clientX,
+        y: e.clientY,
       };
     };
     window.addEventListener('mousemove', handleMove, { passive: true });
 
     let isVisible = true;
+    let smoothScroll = window.scrollY;
+    let scrollVelocity = 0;
 
     const animate = () => {
       if (!isVisible) {
@@ -119,12 +125,27 @@ export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
       const w = rect.width;
       const h = rect.height;
 
+      // Global 60fps LERP inertia engine
+      const targetScroll = window.scrollY;
+      const scrollDiff = targetScroll - smoothScroll;
+      smoothScroll += scrollDiff * 0.085;
+      scrollVelocity = scrollDiff;
+
+      // Parallax on title block during the first 40-65vh
+      if (titleBlockRef.current) {
+        const maxFade = (window.innerHeight || 900) * 0.65;
+        const op = Math.max(0, 1 - smoothScroll / maxFade);
+        const ty = smoothScroll * -0.25;
+        titleBlockRef.current.style.transform = `translateY(${ty}px)`;
+        titleBlockRef.current.style.opacity = `${op}`;
+      }
+
       ctx.clearRect(0, 0, w, h);
 
       // 1. Vertical Zenith Lunar Light Beam
       const gradient = ctx.createRadialGradient(w / 2, -100, 50, w / 2, h * 0.5, w * 0.7);
-      gradient.addColorStop(0, 'rgba(37, 68, 255, 0.18)');
-      gradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.04)');
+      gradient.addColorStop(0, 'rgba(255, 255, 255, 0.08)');
+      gradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.02)');
       gradient.addColorStop(1, 'transparent');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, w, h);
@@ -137,9 +158,10 @@ export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
 
-        // 0. Constant drift velocity (makes stars move perpetually, not sluggish)
+        // 0. Constant drift velocity + upward vertical acceleration during orbit descent
         p.originX += p.vxBase;
-        p.originY += p.vyBase;
+        const upwardBoost = (Math.max(0, scrollVelocity) * 0.22 + smoothScroll * 0.003) * (p.depth / 2);
+        p.originY += p.vyBase - upwardBoost;
         // Seamless wraparound: shift both origin and position simultaneously so springs don't jerk
         if (p.originX < -30) {
           p.originX += w + 60;
@@ -223,9 +245,23 @@ export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
 
   return (
     <section
+      id="hero-section"
       ref={sectionRef}
-      className="hero-interactive section-dark min-h-screen relative overflow-hidden flex flex-col justify-between select-none"
-      style={{ background: '#050508' }}
+      className="hero-interactive section-dark relative overflow-hidden select-none"
+      style={{
+        background: '#050508',
+        minHeight: '100vh',
+        height: '100vh',
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        justifyContent: 'flex-end',
+        position: 'relative',
+        zIndex: 2,
+        willChange: 'transform, filter',
+        transformOrigin: 'center center',
+      }}
     >
       {/* 1. Canvas 2D Depth Particle Field */}
       <canvas
@@ -234,7 +270,7 @@ export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
         style={{ zIndex: 1 }}
       />
 
-      {/* 2. Signature Lusion Spline (48px thick blue curve meandering behind title) */}
+      {/* 2. Signature Minimalist Architectural Spline (Monochrome curve behind title) */}
       <svg
         className="absolute inset-0 w-full h-full pointer-events-none"
         viewBox="0 0 1600 1000"
@@ -243,72 +279,97 @@ export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
       >
         <defs>
           <linearGradient id="splineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#2544FF" stopOpacity="0.8" />
-            <stop offset="50%" stopColor="#1E38D4" stopOpacity="0.9" />
-            <stop offset="100%" stopColor="#4A66FF" stopOpacity="0.85" />
+            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.14" />
+            <stop offset="50%" stopColor="#E4E4E7" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.1" />
           </linearGradient>
         </defs>
         <path
           d="M -100,200 C 400,100 300,750 800,600 C 1300,450 1200,900 1750,850"
           stroke="url(#splineGradient)"
-          strokeWidth="48"
+          strokeWidth="42"
           strokeLinecap="round"
           fill="none"
           strokeDasharray={pathLength}
           strokeDashoffset={dashOffset}
           style={{
-            filter: 'drop-shadow(0 20px 60px rgba(37,68,255,0.4))',
+            filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.6))',
             transition: 'stroke-dashoffset 0.12s ease-out',
           }}
         />
       </svg>
 
-      {/* 3. Hero Content Overlaid on Top */}
-      <div className="relative z-10 flex-1 flex flex-col justify-center px-8 md:px-16 pt-28 pb-12 max-w-7xl mx-auto w-full">
-        {/* Colossal Main Title (3 Lines) */}
+      {/* 3. Hero Content Overlaid on Lower-Left Third with Line-by-Line Masked Reveal */}
+      <div
+        ref={titleBlockRef}
+        className="relative z-10 w-full flex flex-col"
+        style={{
+          alignItems: 'flex-start',
+          justifyContent: 'flex-end',
+          padding: '0 7vw 12vh 7vw',
+          textAlign: 'left',
+          maxWidth: '900px',
+          willChange: 'transform, opacity',
+        }}
+      >
         <h1
-          className="tracking-tight uppercase text-white font-extrabold leading-[0.92]"
           style={{
             fontFamily: "'Inter', sans-serif",
-            fontSize: 'clamp(44px, 8.2vw, 120px)',
-            maxWidth: '1200px',
-            textShadow: '0 2px 30px rgba(0,0,0,0.5)',
+            fontSize: 'clamp(2.4rem, 4.4vw, 4.2rem)',
+            fontWeight: 500,
+            lineHeight: 1.08,
+            letterSpacing: '-0.03em',
+            color: '#FFFFFF',
+            textAlign: 'left',
+            margin: 0,
+            textShadow: '0 2px 24px rgba(0,0,0,0.5)',
           }}
         >
-          <span className="block">EARTH AS A</span>
-          <span className="block text-[#E8E8EC]">PROVING GROUND</span>
-          <span className="block text-white">FOR NEW WORLDS</span>
+          <div style={{ overflow: 'hidden' }}>
+            <span
+              style={{
+                display: 'block',
+                transform: revealed ? 'translateY(0%)' : 'translateY(105%)',
+                transition: 'transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.0s',
+                willChange: 'transform',
+              }}
+            >
+              Earth as a Proving Ground
+            </span>
+          </div>
+          <div style={{ overflow: 'hidden' }}>
+            <span
+              style={{
+                display: 'block',
+                transform: revealed ? 'translateY(0%)' : 'translateY(105%)',
+                transition: 'transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.08s',
+                willChange: 'transform',
+              }}
+            >
+              for New Worlds
+            </span>
+          </div>
         </h1>
 
-        {/* Subtitle */}
-        <p
-          className="mt-8 max-w-2xl text-base md:text-xl font-light text-[#8E929F] leading-relaxed"
-          style={{ fontFamily: "'Inter', sans-serif" }}
-        >
-          Plataforma de caracterización geomorfológica y física que vincula los desiertos y cráteres más extremos
-          de la Tierra con misiones Artemis en la Luna y bases tripuladas en Marte.
-        </p>
-      </div>
-
-      {/* 4. Bottom Scroll Cue */}
-      <div className="relative z-10 pb-8 flex flex-col items-center justify-center gap-3">
-        <div className="relative flex items-center justify-center">
-          <span
-            className="absolute rounded-full"
+        <div style={{ overflow: 'hidden', marginTop: '1.25rem' }}>
+          <p
+            className="font-normal leading-[1.65]"
             style={{
-              width: '40px',
-              height: '40px',
-              border: '1px solid rgba(37, 68, 255, 0.5)',
-              animation: 'pulseRing 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite',
+              fontFamily: "'Inter', sans-serif",
+              maxWidth: '520px',
+              fontSize: '15px',
+              color: '#A1A1AA',
+              textAlign: 'left',
+              margin: 0,
+              transform: revealed ? 'translateY(0%)' : 'translateY(105%)',
+              transition: 'transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.16s',
+              willChange: 'transform',
             }}
-          />
-          <span className="w-10 h-10 rounded-full border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.04)] backdrop-blur-md flex items-center justify-center">
-            <ChevronDown size={16} color="#E8E8EC" className="animate-bounce" />
-          </span>
+          >
+            Plataforma de caracterización geomorfológica y física que vincula los desiertos y cráteres más extremos
+            de la Tierra con misiones Artemis en la Luna y bases tripuladas en Marte.
+          </p>
         </div>
-        <span className="font-mono text-[10px] uppercase tracking-widest text-[#6B6F7B]">
-          SCROLL PARA ENTRAR AL TÚNEL ESPACIAL
-        </span>
       </div>
     </section>
   );

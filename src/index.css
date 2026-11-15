@@ -1,40 +1,38 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════════
-   TERRA—ANALOG™  Design System
-   "Swiss Editorial Cartography meets Lusion Creative Experience"
+   Autumn Solara  Design System
+   Swiss Editorial Cartography & High-End Minimalist Aesthetics
    ═══════════════════════════════════════════════════════════════ */
 
 @layer base {
   :root {
     /* Light Studio Mode */
-    --light-bg: #F4F4F6;
+    --light-bg: #F5F5F3;
     --light-card: #FFFFFF;
     --light-text: #0A0A0E;
-    --light-text-secondary: #686B75;
-    --light-border: rgba(0,0,0,0.07);
+    --light-text-secondary: #6B7280;
+    --light-border: rgba(0,0,0,0.08);
 
     /* Deep Space Mode */
-    --dark-bg: #050508;
-    --dark-panel: #0F1015;
-    --dark-border: rgba(255,255,255,0.08);
-    --dark-text: #E8E8EC;
-    --dark-text-dim: #6B6F7B;
+    --dark-bg: #0A0A0C;
+    --dark-panel: #121316;
+    --dark-border: rgba(255,255,255,0.09);
+    --dark-text: #F4F4F6;
+    --dark-text-dim: #8E9299;
 
-    /* Signature Accents */
-    --cobalt: #2544FF;
-    --cobalt-soft: rgba(37,68,255,0.12);
-    --cobalt-glow: rgba(37,68,255,0.25);
-    --orange: #FF4D24;
-    --orange-soft: rgba(255,77,36,0.12);
+    /* Signature Neutral Luxury Accents (Zero Neon Slop) */
+    --accent: #FFFFFF;
+    --accent-contrast: #0A0A0C;
+    --surface-elevated: #16171B;
 
     /* Grid Marks */
-    --cross-color: rgba(142,146,159,0.35);
+    --cross-color: rgba(142,146,159,0.2);
 
-    /* Fidelity Badges */
-    --fidelity-high: #2544FF;
-    --fidelity-mid: #F59E0B;
-    --fidelity-low: #EF4444;
+    /* Fidelity Badges (Clean Monochromatic Values) */
+    --fidelity-high: #FFFFFF;
+    --fidelity-mid: #D4D4D8;
+    --fidelity-low: #A1A1AA;
   }
 
   * {
@@ -49,22 +47,24 @@
   html {
     scroll-behavior: smooth;
     scrollbar-width: thin;
-    scrollbar-color: rgba(37,68,255,0.3) transparent;
+    scrollbar-color: #27272A #0A0A0C;
+    background: #0A0A0C;
   }
 
   body {
     margin: 0;
+    padding: 0;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background: var(--light-bg);
-    color: var(--light-text);
+    background: #0A0A0C;
+    color: var(--dark-text);
     overflow-x: hidden;
   }
 
   ::selection {
-    background: var(--cobalt);
-    color: white;
+    background: #FFFFFF;
+    color: #0A0A0C;
   }
 
   .font-mono {
@@ -73,10 +73,26 @@
   }
 }
 
-/* ── Scrollbar ── */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(37,68,255,0.25); border-radius: 3px; }
+/* ── Scrollbars Global ── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #27272A #0A0A0C;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #0A0A0C;
+}
+::-webkit-scrollbar-thumb {
+  background: #27272A;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3F3F46;
+}
 
 /* ── Cross Grid Background Pattern ── */
 .cross-grid {
@@ -88,7 +104,7 @@
 
 .cross-grid-dark {
   background-image:
-    radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+    radial-gradient(circle, rgba(255,255,255,0.04) 1px, transparent 1px);
   background-size: 120px 120px;
   background-position: 60px 60px;
 }
@@ -151,57 +167,53 @@
   gap: 8px;
   padding: 10px 22px;
   border-radius: 999px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
   border: 1px solid rgba(0,0,0,0.08);
   background: white;
   color: #0A0A0E;
   backdrop-filter: blur(12px);
-  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: all 0.25s ease;
 }
 
 .pill-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 20px rgba(37,68,255,0.15);
-  border-color: var(--cobalt);
-  color: var(--cobalt);
+  background: #F4F4F6;
+  border-color: rgba(0,0,0,0.16);
+  color: #0A0A0E;
 }
 
 .pill-btn-dark {
-  background: var(--dark-panel);
-  color: var(--dark-text);
-  border-color: var(--dark-border);
+  background: rgba(255,255,255,0.06);
+  color: #F4F4F6;
+  border-color: rgba(255,255,255,0.12);
 }
 
 .pill-btn-dark:hover {
-  border-color: var(--cobalt);
-  color: var(--cobalt);
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.28);
+  color: #FFFFFF;
 }
 
 .pill-btn-cobalt {
-  background: var(--cobalt);
-  color: white;
-  border-color: var(--cobalt);
+  background: #FFFFFF;
+  color: #0A0A0C;
+  border-color: #FFFFFF;
+  font-weight: 600;
 }
 
 .pill-btn-cobalt:hover {
-  background: #1a36d4;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 24px rgba(37,68,255,0.35);
+  background: #E4E4E7;
+  border-color: #E4E4E7;
+  color: #0A0A0C;
 }
 
 /* ── Blueprint Mission Cards ── */
 .mission-card {
   position: relative;
-  width: 280px;
-  height: 420px;
-  border-radius: 16px;
-  background: var(--cobalt);
-  color: white;
-  padding: 28px 24px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -212,15 +224,6 @@
   overflow: hidden;
 }
 
-.mission-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.2);
-  pointer-events: none;
-}
-
 .mission-card::after {
   content: '';
   position: absolute;
@@ -229,7 +232,7 @@
   width: 200%;
   height: 200%;
   background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-    rgba(255,255,255,0.12) 0%, transparent 50%);
+    rgba(255,255,255,0.08) 0%, transparent 50%);
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -240,7 +243,7 @@
 }
 
 .mission-card.selected {
-  box-shadow: 0 0 0 3px white, 0 20px 60px rgba(37,68,255,0.4);
+  box-shadow: 0 0 0 2px #0A0A0C, 0 12px 32px rgba(0,0,0,0.12);
 }
 
 /* ── Site Gallery Cards ── */
@@ -289,7 +292,7 @@
 }
 
 .gallery-card:hover .gallery-card-arrow .card-title {
-  transform: translateX(8px);
+  transform: translateX(12px);
 }
 
 .gallery-card-arrow .card-title {
@@ -394,12 +397,12 @@
 }
 
 .leaflet-control-zoom a:hover {
-  color: var(--cobalt) !important;
+  color: #FFFFFF !important;
 }
 
 .leaflet-control-attribution {
-  background: rgba(5,5,8,0.7) !important;
-  color: rgba(255,255,255,0.3) !important;
+  background: rgba(10,10,12,0.85) !important;
+  color: rgba(255,255,255,0.4) !important;
   font-size: 9px !important;
 }
 
@@ -450,39 +453,77 @@
 .tutorial-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(5, 5, 8, 0.75);
+  background: rgba(10, 10, 12, 0.82);
   backdrop-filter: blur(4px);
 }
 
 .tutorial-spotlight {
   position: absolute;
-  border: 2px solid var(--cobalt);
+  border: 1.5px solid #FFFFFF;
   border-radius: 16px;
-  box-shadow: 0 0 0 9999px rgba(5, 5, 8, 0.75),
-              0 0 40px rgba(37, 68, 255, 0.3);
+  box-shadow: 0 0 0 9999px rgba(10, 10, 12, 0.82);
   transition: all 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* ── Slider Styling ── */
+/* ── Slider Styling (Swiss Minimalist Range Control - Zero Browser Blue) ── */
 input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 4px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 2px;
+  background: transparent !important;
   outline: none;
+  border: none;
+  padding: 0;
+  margin: 8px 0;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  border: none;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: var(--cobalt);
-  border: 2px solid white;
-  cursor: none !important;
+  background: #FFFFFF;
+  border: none;
+  cursor: pointer;
+  margin-top: -6px;
+  box-shadow: none;
+  transition: transform 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+input[type="range"]::-moz-range-track {
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  border: none;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  border: none;
+  cursor: pointer;
+  box-shadow: none;
+  transition: transform 0.15s ease;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.2);
 }
 
 /* ── Gravity Canvas Container ── */
@@ -501,3 +542,105 @@ input[type="range"]::-webkit-slider-thumb {
     height: 360px;
   }
 }
+
+/* ── Print Media Optimization for Technical Memorandum ── */
+@media print {
+  body {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+  }
+
+  nav, footer, canvas, .tutorial-overlay, #missions-section, #gallery-section, #satellite-section, #gravity-section {
+    display: none !important;
+  }
+
+  .select-text {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  button {
+    display: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LOCOMOTIVE AGENCY MOTION & LUXURY BEZIER SPECIFICATION
+   Curve: cubic-bezier(0.16, 1, 0.3, 1) — Smooth inertia & depth
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  --ease-locomotive: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-locomotive-slow: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* ── Lenis Smooth Scroll Core Rules ── */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+/* ── Sticky Curtain Stacking & Depth Shadows ── */
+.sticky-curtain-section {
+  position: relative;
+  z-index: 10;
+  will-change: transform, opacity;
+  transform-origin: center top;
+}
+
+.sticky-curtain-layer {
+  position: relative;
+  z-index: 20;
+  box-shadow: 0 -30px 60px -15px rgba(0, 0, 0, 0.6);
+}
+
+/* ── Parallax Window Frame for Earth Analog Photography ── */
+.parallax-frame {
+  position: relative;
+  overflow: hidden;
+}
+
+.parallax-frame-img {
+  will-change: transform;
+  transform-origin: center center;
+}
+
+/* ── Editorial Mask Reveal with Luxury Bezier ── */
+.editorial-reveal-title {
+  clip-path: inset(0 0 100% 0);
+  transform: translate3d(0, 32px, 0);
+  opacity: 0;
+  transition: clip-path 0.95s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.95s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.95s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: clip-path, transform, opacity;
+}
+
+.editorial-reveal-title.is-revealed {
+  clip-path: inset(0 0 0% 0);
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+}
+
+/* ── Kinetic Elastic Skew on Mission Cards ── */
+.kinetic-skew-wrap {
+  will-change: transform;
+  transform-style: preserve-3d;
+}
+

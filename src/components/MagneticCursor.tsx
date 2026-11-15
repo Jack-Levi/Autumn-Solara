@@ -88,8 +88,8 @@ export default function MagneticCursor({ onSoundTrigger }: MagneticCursorProps) 
       style={{
         width: isExpanded ? '80px' : '10px',
         height: isExpanded ? '80px' : '10px',
-        backgroundColor: '#2544FF',
-        boxShadow: isExpanded ? '0 10px 30px rgba(37,68,255,0.45)' : 'none',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        boxShadow: isExpanded ? '0 10px 30px rgba(0,0,0,0.35)' : 'none',
       }}
     >
       {/* Clean large white vector arrow, strictly NO text inside */}
