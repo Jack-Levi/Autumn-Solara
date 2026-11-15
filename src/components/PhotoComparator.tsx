@@ -9,7 +9,7 @@ import {
   getTemperaturePositionPct,
 } from '../data/nasaExtractedDatasets';
 import type { PlanetaryTopoTransect } from '../data/nasaExtractedDatasets';
-import PlanetaryThermalSimulator from './PlanetaryThermalSimulator';
+import DiurnalThermal24hSimulator from './DiurnalThermal24hSimulator';
 import { useWikipediaImage } from '../services/wikipediaImages';
 
 interface PhotoComparatorProps {
@@ -157,7 +157,6 @@ export default function PhotoComparator({
   const [isDragging, setIsDragging] = useState(false);
   const [earthImgError, setEarthImgError] = useState(false);
   const [spaceImgError, setSpaceImgError] = useState(false);
-  const [activeTab, setActiveTab] = useState<'topo' | 'simulator'>('topo');
   const [hoverSvgX, setHoverSvgX] = useState<number | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -512,29 +511,15 @@ export default function PhotoComparator({
         </div>
       </div>
 
-      {/* ── TAB BAR: ALTIMETRY & GEOPHYSICS vs. 24H SIMULATOR ─────── */}
+      {/* ── SECTION HEADER STRIP ───────────────────────────────────── */}
       <div className="px-6 py-3 bg-[#121316] border-t border-b border-white/[0.08] flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 font-sans text-xs">
-          <button
-            onClick={() => setActiveTab('topo')}
-            className={`px-4 py-2 rounded-full font-semibold transition-all ${
-              activeTab === 'topo'
-                ? 'bg-white text-[#0A0A0C] shadow-sm'
-                : 'text-[#8E9299] hover:text-[#F4F4F6] bg-white/[0.05]'
-            }`}
-          >
-            Altimetría Morfológica y Geofísica (LOLA/MOLA & Diviner/TES)
-          </button>
-          <button
-            onClick={() => setActiveTab('simulator')}
-            className={`px-4 py-2 rounded-full font-semibold transition-all ${
-              activeTab === 'simulator'
-                ? 'bg-white text-[#0A0A0C] shadow-sm'
-                : 'text-[#8E9299] hover:text-[#F4F4F6] bg-white/[0.05]'
-            }`}
-          >
-            Simulador Horario 24h
-          </button>
+          <span className="font-semibold text-[#F4F4F6]">
+            Dossier Científico: Altimetría Cruzada, Inercia Térmica y Ciclo Diurno de 24 Horas
+          </span>
+          <span className="hidden sm:inline font-mono text-[10px] px-2 py-0.5 rounded bg-white/[0.06] text-[#8E9299]">
+            LOLA/MOLA DEM · Diviner DLRE · TES/THEMIS · MODIS LST
+          </span>
         </div>
 
         {onOpenDatasetModal && (
@@ -547,9 +532,8 @@ export default function PhotoComparator({
         )}
       </div>
 
-      {/* ── TAB CONTENT 1: NORMALIZED TOPOGRAPHY & THERMAL PANEL ────── */}
-      {activeTab === 'topo' && (
-        <div className="px-6 py-6 bg-[#0A0A0C]">
+      {/* ── DOSSIER CONTENT: TOPOGRAPHY, THERMAL INERTIA & 24H CYCLE ── */}
+      <div className="px-6 py-6 bg-[#0A0A0C]">
           {/* Header */}
           <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
             <div>
@@ -964,20 +948,24 @@ export default function PhotoComparator({
                 </div>
               </div>
             </div>
+
+            {/* ── SECTION 3: 24-HOUR DIURNAL THERMAL WAVEFRONT SIMULATOR ── */}
+            <div
+              className="mt-8 pt-8 border-t border-white/[0.08]"
+              style={{ borderTop: '1px solid rgba(255, 255, 255, 0.08)', paddingTop: '32px' }}
+            >
+              <DiurnalThermal24hSimulator
+                targetId={targetId}
+                targetName={targetName}
+                targetBody={targetBody}
+                earthSiteName={earthSiteName}
+                earthMeanTempC={earthMeanTempC}
+                earthTempMinC={earthTempMinC}
+                earthTempMaxC={earthTempMaxC}
+              />
+            </div>
           </div>
         </div>
-      )}
-
-      {/* ── TAB CONTENT 2: 24H INTERACTIVE THERMAL WAVEFRONT SIMULATOR ── */}
-      {activeTab === 'simulator' && (
-        <PlanetaryThermalSimulator
-          targetId={targetId}
-          targetName={targetName}
-          targetBody={targetBody}
-          earthSiteName={earthSiteName}
-          earthMeanTempC={earthMeanTempC}
-        />
-      )}
-    </div>
+      </div>
   );
 }
