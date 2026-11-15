@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { EXTRACTED_DATASETS_REGISTRY } from '../data/nasaExtractedDatasets';
 import type { ExtractedDatasetMetadata } from '../data/nasaExtractedDatasets';
+import ScientificEvidenceVault from './ScientificEvidenceVault';
 
 interface DatasetExtractionModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ export default function DatasetExtractionModal({
   onClose,
   initialTargetFilter = 'all',
 }: DatasetExtractionModalProps) {
+  const [viewMode, setViewMode] = useState<'vault' | 'inspector'>('vault');
   const [filter, setFilter] = useState<'all' | 'Luna' | 'Marte'>(initialTargetFilter);
   const [selectedDatasetId, setSelectedDatasetId] = useState<string>(
     EXTRACTED_DATASETS_REGISTRY[0].id
@@ -31,7 +33,7 @@ export default function DatasetExtractionModal({
   return (
     <div className="fixed inset-0 z-[80] bg-black/85 backdrop-blur-xl flex items-center justify-center p-4 md:p-8 select-none">
       <div
-        className="bg-[#0C0E17] border border-white/15 w-full max-w-5xl max-h-[88vh] rounded-2xl overflow-hidden shadow-2xl flex flex-col text-white"
+        className="bg-[#0C0E17] border border-white/15 w-full max-w-6xl max-h-[88vh] rounded-2xl overflow-hidden shadow-2xl flex flex-col text-white"
         style={{ fontFamily: "'Inter', sans-serif" }}
       >
         {/* Top Header (flex-shrink: 0, fixed at top) */}
@@ -44,38 +46,72 @@ export default function DatasetExtractionModal({
               </span>
             </div>
             <h2 className="text-xl md:text-2xl font-semibold tracking-tight text-white">
-              Metodología de Extracción y Descarga de Datasets
+              {viewMode === 'vault'
+                ? 'Bóveda de Evidencia Científica y Datasets NASA'
+                : 'Metodología de Extracción y Descarga de Datasets'}
             </h2>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Filter buttons as Segmented Control */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* View Mode Switcher */}
             <div className="inline-flex p-1 rounded-lg bg-[#16171B] border border-white/10 font-sans text-xs">
               <button
-                onClick={() => setFilter('all')}
+                onClick={() => setViewMode('vault')}
                 className={`px-3 py-1.5 rounded-md transition-colors ${
-                  filter === 'all' ? 'bg-white text-[#0A0A0C] font-semibold' : 'text-[#8E9299] hover:text-white'
+                  viewMode === 'vault'
+                    ? 'bg-white text-[#0A0A0C] font-semibold'
+                    : 'text-[#8E9299] hover:text-white'
                 }`}
               >
-                Todos (8)
+                Bóveda y Matriz (14 Sitios)
               </button>
               <button
-                onClick={() => setFilter('Luna')}
+                onClick={() => setViewMode('inspector')}
                 className={`px-3 py-1.5 rounded-md transition-colors ${
-                  filter === 'Luna' ? 'bg-white text-[#0A0A0C] font-semibold' : 'text-[#8E9299] hover:text-white'
+                  viewMode === 'inspector'
+                    ? 'bg-white text-[#0A0A0C] font-semibold'
+                    : 'text-[#8E9299] hover:text-white'
                 }`}
               >
-                Luna (4)
-              </button>
-              <button
-                onClick={() => setFilter('Marte')}
-                className={`px-3 py-1.5 rounded-md transition-colors ${
-                  filter === 'Marte' ? 'bg-white text-[#0A0A0C] font-semibold' : 'text-[#8E9299] hover:text-white'
-                }`}
-              >
-                Marte (4)
+                Inspector Individual (8 Datasets)
               </button>
             </div>
+
+            {/* Filter buttons as Segmented Control (only in Inspector mode) */}
+            {viewMode === 'inspector' && (
+              <div className="inline-flex p-1 rounded-lg bg-[#16171B] border border-white/10 font-sans text-xs">
+                <button
+                  onClick={() => setFilter('all')}
+                  className={`px-3 py-1.5 rounded-md transition-colors ${
+                    filter === 'all'
+                      ? 'bg-white text-[#0A0A0C] font-semibold'
+                      : 'text-[#8E9299] hover:text-white'
+                  }`}
+                >
+                  Todos (8)
+                </button>
+                <button
+                  onClick={() => setFilter('Luna')}
+                  className={`px-3 py-1.5 rounded-md transition-colors ${
+                    filter === 'Luna'
+                      ? 'bg-white text-[#0A0A0C] font-semibold'
+                      : 'text-[#8E9299] hover:text-white'
+                  }`}
+                >
+                  Luna (4)
+                </button>
+                <button
+                  onClick={() => setFilter('Marte')}
+                  className={`px-3 py-1.5 rounded-md transition-colors ${
+                    filter === 'Marte'
+                      ? 'bg-white text-[#0A0A0C] font-semibold'
+                      : 'text-[#8E9299] hover:text-white'
+                  }`}
+                >
+                  Marte (4)
+                </button>
+              </div>
+            )}
 
             <button
               onClick={onClose}
@@ -90,19 +126,34 @@ export default function DatasetExtractionModal({
           </div>
         </div>
 
-        {/* Methodology Notice Banner */}
-        <div className="px-7 py-3 bg-[#111317] border-b border-white/[0.06] font-sans text-xs text-[#94A3B8] flex flex-wrap items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="text-white font-medium">Orígenes certificados:</span>
-            <span>NASA Solar System Treks · LRO LOLA · LRO Diviner (DLRE) · MGS MOLA · Mars Odyssey THEMIS · MGS TES</span>
+        {/* Methodology Notice Banner (only in Inspector mode) */}
+        {viewMode === 'inspector' && (
+          <div className="px-7 py-3 bg-[#111317] border-b border-white/[0.06] font-sans text-xs text-[#94A3B8] flex flex-wrap items-center justify-between gap-3 shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="text-white font-medium">Orígenes certificados:</span>
+              <span>NASA Solar System Treks · LRO LOLA · LRO Diviner (DLRE) · MGS MOLA · Mars Odyssey THEMIS · MGS TES</span>
+            </div>
+            <span className="text-[#8E9299] text-[11px] font-mono">8 series extraídas en CSV UTF-8</span>
           </div>
-          <span className="text-[#8E9299] text-[11px] font-mono">8 series extraídas en CSV UTF-8</span>
-        </div>
+        )}
 
-        {/* Content Body: Split view (List on Left, Inspector on Right) */}
-        <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-white/10">
-          {/* Left Column: Dataset List */}
-          <div className="md:col-span-5 p-5 md:p-6 space-y-2.5 overflow-y-auto">
+        {/* Content Body */}
+        {viewMode === 'vault' ? (
+          <div className="flex-1 overflow-y-auto p-7 md:p-9 font-sans text-sm leading-relaxed text-[#D1D5DB]">
+            <ScientificEvidenceVault
+              initialFilter={
+                initialTargetFilter === 'Luna'
+                  ? 'MOON-SHK'
+                  : initialTargetFilter === 'Marte'
+                  ? 'MARS-JEZ'
+                  : 'all'
+              }
+            />
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-white/10">
+            {/* Left Column: Dataset List */}
+            <div className="md:col-span-5 p-5 md:p-6 space-y-2.5 overflow-y-auto">
             <span className="font-sans text-[11px] text-[#8E9299] uppercase tracking-wider block mb-2 font-medium">
               Selecciona un dataset para inspeccionar
             </span>
@@ -213,6 +264,7 @@ export default function DatasetExtractionModal({
             </div>
           </div>
         </div>
+        )}
 
         {/* Modal Footer */}
         <div className="px-7 py-3.5 bg-[#0A0C10] border-t border-white/10 flex flex-wrap items-center justify-between text-xs font-sans text-[#8E9299] shrink-0">

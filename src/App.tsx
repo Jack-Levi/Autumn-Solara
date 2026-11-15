@@ -22,6 +22,7 @@ export function App() {
 
   // Global Mission Report Modal State
   const [isGlobalReportOpen, setIsGlobalReportOpen] = useState(false);
+  const [reportInitialTab, setReportInitialTab] = useState<'vault' | 'report'>('vault');
 
   // Active Target state (Default: Luna Shackleton)
   const [selectedTargetId, setSelectedTargetId] = useState<string>('MOON-SHK');
@@ -400,22 +401,33 @@ export function App() {
               Documentación científica oficial · NASA Space Apps Challenge
             </span>
             <h3 className="text-2xl md:text-3xl font-semibold text-white tracking-tight leading-snug mb-3">
-              Expediente técnico de validación análoga
+              Bóveda de evidencia científica y expedientes NASA
             </h3>
             <p className="text-[14px] text-[#A1A1AA] font-normal leading-[1.65] max-w-[65ch]">
-              Descarga o imprime el informe técnico completo cruzando las 8 dimensiones oficiales de la NASA para el sitio activo (<strong className="text-white">{selectedSite.name}</strong>) frente a la misión (<strong className="text-white">{activeTarget.name}</strong>). Incluye calibración TRL 6-8, firma espectral ASTER y mitigación de barreras planetarias.
+              Inspecciona la matriz de justificación geofísica de los 14 sitios análogos, accede a la descarga de los 8 datasets CSV de telemetría orbital NASA o genera el informe técnico escrito completo cruzando las 8 dimensiones oficiales para el sitio activo (<strong className="text-white">{selectedSite.name}</strong>) frente a la misión (<strong className="text-white">{activeTarget.name}</strong>).
             </p>
           </div>
 
-          <div className="shrink-0 flex items-center">
+          <div className="shrink-0 flex items-center gap-3 flex-wrap">
             <button
               onClick={() => {
                 playClickSound();
+                setReportInitialTab('vault');
                 setIsGlobalReportOpen(true);
               }}
               className="py-3 px-6 rounded-lg font-sans text-xs font-semibold bg-white hover:bg-white/90 text-[#0A0A0C] transition-all flex items-center gap-2"
             >
-              <span>Generar reporte científico escrito</span>
+              <span>Bóveda de evidencia y datasets NASA</span>
+            </button>
+            <button
+              onClick={() => {
+                playClickSound();
+                setReportInitialTab('report');
+                setIsGlobalReportOpen(true);
+              }}
+              className="py-3 px-5 rounded-lg font-sans text-xs font-medium bg-white/10 hover:bg-white/20 text-white border border-white/15 transition-all flex items-center gap-2"
+            >
+              <span>Generar reporte técnico (.md)</span>
             </button>
           </div>
         </div>
@@ -500,6 +512,7 @@ export function App() {
           pfi={selectedSitePFIData.pfi}
           weights={weights}
           isOpen={isGlobalReportOpen}
+          initialTab={reportInitialTab}
           onClose={() => setIsGlobalReportOpen(false)}
         />
       )}

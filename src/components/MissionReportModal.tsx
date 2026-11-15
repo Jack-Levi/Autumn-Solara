@@ -3,6 +3,7 @@ import type { EarthSite, ExtraTerrestrialTarget, PFIWeights } from '../data';
 import { NASA_PFI_DIMENSIONS, fidelityColor, fidelityLabel } from '../data';
 import { SITE_SCIENTIFIC_DATA, EARTH_PLANETARY_LIMITS } from '../scientificData';
 import { getTargetDatasetSummary } from '../data/nasaExtractedDatasets';
+import ScientificEvidenceVault from './ScientificEvidenceVault';
 
 interface MissionReportModalProps {
   site: EarthSite | null;
@@ -11,6 +12,7 @@ interface MissionReportModalProps {
   weights: PFIWeights;
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: 'vault' | 'report';
 }
 
 export default function MissionReportModal({
@@ -20,7 +22,9 @@ export default function MissionReportModal({
   weights,
   isOpen,
   onClose,
+  initialTab = 'vault',
 }: MissionReportModalProps) {
+  const [activeTab, setActiveTab] = useState<'vault' | 'report'>(initialTab);
   const [copied, setCopied] = useState<boolean>(false);
 
   const scientific = useMemo(() => {
@@ -172,7 +176,7 @@ ${datasetSummary.metrics.map((m) => `  * ${m.label}: ${m.value}`).join('\n')}
       {/* Click outside backdrop */}
       <div className="fixed inset-0" onClick={onClose} />
 
-      <div className="relative z-10 bg-[#0A0C14] border border-white/10 rounded-2xl max-w-4xl w-full text-[#E8E8EC] shadow-2xl overflow-hidden flex flex-col max-h-[88vh]">
+      <div className="relative z-10 bg-[#0A0C14] border border-white/10 rounded-2xl max-w-6xl w-full text-[#E8E8EC] shadow-2xl overflow-hidden flex flex-col max-h-[88vh]">
         {/* Top Action Header (flex-shrink: 0, fixed at top, never cuts body content) */}
         <div className="px-7 py-5 bg-[#0E0F12] border-b border-white/[0.08] flex flex-wrap items-center justify-between gap-4 shrink-0">
           <div>
@@ -180,39 +184,74 @@ ${datasetSummary.metrics.map((m) => `  * ${m.label}: ${m.value}`).join('\n')}
               NASA Space Apps Challenge · Documentación científica
             </span>
             <h3 className="font-sans text-sm md:text-base font-semibold text-white flex items-center gap-2 mt-0.5">
-              <span>Informe de Caracterización Analógica —</span>
-              <span className="text-white font-medium">{site.name}</span>
-              <span className="text-white/40">vs.</span>
-              <span className="text-white font-medium">{target.name}</span>
+              {activeTab === 'vault' ? (
+                <span>Bóveda de Evidencia Científica y Datasets NASA</span>
+              ) : (
+                <>
+                  <span>Informe de Caracterización Analógica —</span>
+                  <span className="text-white font-medium">{site.name}</span>
+                  <span className="text-white/40">vs.</span>
+                  <span className="text-white font-medium">{target.name}</span>
+                </>
+              )}
             </h3>
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap">
-            <button
-              onClick={handleCopy}
-              className={`py-2 px-3.5 rounded-lg font-sans text-xs font-medium transition-all flex items-center gap-1.5 ${
-                copied
-                  ? 'bg-white text-[#0A0A0C]'
-                  : 'bg-white/10 hover:bg-white/20 text-white border border-white/15'
-              }`}
-            >
-              <span>{copied ? 'Copiado al portapapeles' : 'Copiar texto'}</span>
-            </button>
+            {/* View Switcher Tabs */}
+            <div className="inline-flex p-1 rounded-lg bg-[#16171B] border border-white/10 font-sans text-xs">
+              <button
+                onClick={() => setActiveTab('vault')}
+                className={`px-3.5 py-1.5 rounded-md transition-colors font-medium ${
+                  activeTab === 'vault'
+                    ? 'bg-white text-[#0A0A0C] font-semibold'
+                    : 'text-[#8E9299] hover:text-white'
+                }`}
+              >
+                Bóveda de Evidencia y Datasets
+              </button>
+              <button
+                onClick={() => setActiveTab('report')}
+                className={`px-3.5 py-1.5 rounded-md transition-colors font-medium ${
+                  activeTab === 'report'
+                    ? 'bg-white text-[#0A0A0C] font-semibold'
+                    : 'text-[#8E9299] hover:text-white'
+                }`}
+              >
+                Reporte Escrito (.md)
+              </button>
+            </div>
 
-            <button
-              onClick={handleDownload}
-              className="py-2 px-4 rounded-lg font-sans text-xs font-semibold bg-white hover:bg-white/90 text-[#0A0A0C] transition-all flex items-center gap-1.5"
-            >
-              <span>Descargar informe (.md)</span>
-            </button>
+            {/* Actions for Written Report View */}
+            {activeTab === 'report' && (
+              <>
+                <button
+                  onClick={handleCopy}
+                  className={`py-2 px-3.5 rounded-lg font-sans text-xs font-medium transition-all flex items-center gap-1.5 ${
+                    copied
+                      ? 'bg-white text-[#0A0A0C]'
+                      : 'bg-white/10 hover:bg-white/20 text-white border border-white/15'
+                  }`}
+                >
+                  <span>{copied ? 'Copiado al portapapeles' : 'Copiar texto'}</span>
+                </button>
 
-            <button
-              onClick={handlePrint}
-              className="py-2 px-3.5 rounded-lg font-sans text-xs font-medium bg-white/10 hover:bg-white/20 text-white border border-white/15 transition-all"
-              title="Imprimir documento o guardar como PDF"
-            >
-              <span>Imprimir PDF</span>
-            </button>
+                <button
+                  onClick={handleDownload}
+                  className="py-2 px-4 rounded-lg font-sans text-xs font-semibold bg-white hover:bg-white/90 text-[#0A0A0C] transition-all flex items-center gap-1.5"
+                >
+                  <span>Descargar informe (.md)</span>
+                </button>
+
+                <button
+                  onClick={handlePrint}
+                  className="py-2 px-3.5 rounded-lg font-sans text-xs font-medium bg-white/10 hover:bg-white/20 text-white border border-white/15 transition-all"
+                  title="Imprimir documento o guardar como PDF"
+                >
+                  <span>Imprimir PDF</span>
+                </button>
+              </>
+            )}
 
             <button
               onClick={onClose}
@@ -226,8 +265,13 @@ ${datasetSummary.metrics.map((m) => `  * ${m.label}: ${m.value}`).join('\n')}
           </div>
         </div>
 
-        {/* Scrollable Report Body */}
-        <div className="flex-1 overflow-y-auto p-7 md:p-9 space-y-8 font-sans text-sm leading-relaxed text-[#D1D5DB] print:p-0 print:text-black">
+        {/* Scrollable Content Body */}
+        {activeTab === 'vault' ? (
+          <div className="flex-1 overflow-y-auto p-7 md:p-9 font-sans text-sm leading-relaxed text-[#D1D5DB]">
+            <ScientificEvidenceVault initialFilter={target.id as any} />
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto p-7 md:p-9 space-y-8 font-sans text-sm leading-relaxed text-[#D1D5DB] print:p-0 print:text-black">
           {/* Memorandum Top Strip */}
           <div className="py-4 border-b border-white/[0.08] flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
@@ -458,6 +502,7 @@ ${datasetSummary.metrics.map((m) => `  * ${m.label}: ${m.value}`).join('\n')}
             Autumn Solara · NASA International Space Apps Challenge · WGS-84 / Open Data
           </div>
         </div>
+        )}
       </div>
     </div>
   );
