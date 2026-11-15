@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { SITES, fidelityColor, fidelityLabel } from '../data';
+import { SITES, fidelityColor } from '../data';
 import type { RankedSite, EarthSite } from '../data';
 
 interface SiteGalleryProps {
@@ -20,6 +20,39 @@ const SiteCard = React.memo(function SiteCard({
 }) {
   const [imgFailed, setImgFailed] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  // Parallax window frame effect (Locomotive signature)
+  React.useEffect(() => {
+    const gsap = (window as any).gsap;
+    const ScrollTrigger = (window as any).ScrollTrigger;
+    const img = imgRef.current;
+    const card = cardRef.current;
+    if (!gsap || !ScrollTrigger || !img || !card) return;
+
+    const tween = gsap.fromTo(
+      img,
+      { yPercent: -12, scale: 1.18 },
+      {
+        yPercent: 12,
+        scale: 1.18,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: card,
+          start: 'top bottom',
+          end: 'bottom top',
+          scrub: true,
+        },
+      }
+    );
+
+    return () => {
+      if (tween.scrollTrigger) {
+        tween.scrollTrigger.kill();
+      }
+      tween.kill();
+    };
+  }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
@@ -51,12 +84,14 @@ const SiteCard = React.memo(function SiteCard({
       onMouseLeave={handleMouseLeave}
       onClick={onSelect}
     >
-      {/* Real High-Resolution Image Container */}
-      <div className="relative overflow-hidden bg-[#181B20] rounded-t-3xl" style={{ height: 340 }}>
+      {/* Real High-Resolution Image Container with Window Parallax */}
+      <div className="relative overflow-hidden bg-[#181B20] rounded-t-3xl parallax-frame" style={{ height: 340 }}>
         <img
+          ref={imgRef}
           src={site.photoEarth}
           alt={site.name}
-          className="gallery-card-img w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          className="gallery-card-img parallax-frame-img w-full h-full object-cover"
+          style={{ willChange: 'transform' }}
           onError={() => setImgFailed(true)}
           crossOrigin="anonymous"
           loading="lazy"
@@ -154,6 +189,7 @@ export default function SiteGallery({
               02 — LABORATORIO DE CAMPO TERRESTRE
             </span>
             <h2
+              className="editorial-reveal-title"
               style={{
                 fontFamily: "'Inter', sans-serif",
                 fontWeight: 700,

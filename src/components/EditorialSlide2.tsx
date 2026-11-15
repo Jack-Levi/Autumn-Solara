@@ -320,7 +320,7 @@ export default function EditorialSlide2() {
   // Morphing interpolation curves
   // Ease-out cubic for natural weight and inertia
   const easeOut = (x: number) => 1 - Math.pow(1 - x, 3);
-  const morphProgress = easeOut(Math.min(1, scrollProgress * 1.55));
+  const morphProgress = easeOut(Math.min(1, scrollProgress * 1.15));
 
   // Width: starts compact (42vw) -> expands to command the screen (92vw)
   const vidWidth = 42 + (92 - 42) * morphProgress;
@@ -341,8 +341,8 @@ export default function EditorialSlide2() {
       ? `perspective(1200px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(${translateY}px)`
       : 'none';
 
-  // Shooting star progresses across the first 75% of the scroll
-  const starProgress = Math.min(1, scrollProgress / 0.75);
+  // Shooting star progresses across the scroll
+  const starProgress = Math.min(1, scrollProgress / 0.85);
 
   // Verified NASA HiRISE Mars 3D Flyover + ISS Earth Observation videos
   const VIDEO_SOURCES = [
@@ -356,8 +356,8 @@ export default function EditorialSlide2() {
       ref={sectionRef}
       style={{
         position: 'relative',
-        minHeight: '250vh',
-        background: '#F4F4F6',
+        minHeight: '150vh',
+        background: 'linear-gradient(to bottom, #F4F4F6 82%, #050508 100%)',
         overflow: 'hidden',
       }}
     >
@@ -374,6 +374,7 @@ export default function EditorialSlide2() {
 
       {/* ── STICKY VIEWPORT CONTAINER ─────────────────────────────────── */}
       <div
+        id="editorial-slide-2-inner"
         style={{
           position: 'sticky',
           top: 0,
@@ -384,6 +385,8 @@ export default function EditorialSlide2() {
           justifyContent: 'center',
           overflow: 'hidden',
           padding: '24px 0',
+          willChange: 'transform, filter',
+          transformOrigin: 'center center',
         }}
       >
         {/* Shooting Star with pure white body and fine golden yellow borders */}
@@ -401,8 +404,9 @@ export default function EditorialSlide2() {
             marginBottom: 36,
             position: 'relative',
             zIndex: 5,
-            transition: 'opacity 0.4s ease',
-            opacity: morphProgress > 0.85 ? Math.max(0, 1 - (morphProgress - 0.85) * 5) : 1,
+            transition: 'opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+            opacity: morphProgress > 0.65 ? Math.max(0, 1 - (morphProgress - 0.65) * 2.8) : 1,
+            transform: morphProgress > 0.65 ? `translate3d(0, ${-(morphProgress - 0.65) * 30}px, 0)` : 'translate3d(0,0,0)',
           }}
         >
           {/* Left Column: Section tag + Colossal Title */}
@@ -421,6 +425,7 @@ export default function EditorialSlide2() {
               DIAPOSITIVA 02 // CAMPO DE PRUEBAS PLANETARIO
             </span>
             <h2
+              className="editorial-reveal-title"
               style={{
                 fontFamily: "'Inter', sans-serif",
                 fontWeight: 800,

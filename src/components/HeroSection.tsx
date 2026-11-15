@@ -223,9 +223,14 @@ export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
 
   return (
     <section
+      id="hero-section"
       ref={sectionRef}
       className="hero-interactive section-dark min-h-screen relative overflow-hidden flex flex-col justify-between select-none"
-      style={{ background: '#050508' }}
+      style={{
+        background: '#050508',
+        willChange: 'transform, filter',
+        transformOrigin: 'center center',
+      }}
     >
       {/* 1. Canvas 2D Depth Particle Field */}
       <canvas

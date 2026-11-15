@@ -30,9 +30,9 @@ export default function SpaceTunnel({ onEnterEditorial }: SpaceTunnelProps) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Compute text scale: from 1.0 to 14.0
-  const textScale = 1 + progress * 13;
-  const textOpacity = progress < 0.75 ? 1 : Math.max(0, 1 - (progress - 0.75) * 4);
+  // Compute text scale: from 1.0 to 12.0
+  const textScale = 1 + progress * 11;
+  const textOpacity = progress < 0.82 ? 1 : Math.max(0, 1 - (progress - 0.82) * 5.5);
 
   // Concentric geometric frame scales (4 frames)
   const frames = [1, 2, 3, 4, 5];
@@ -42,12 +42,19 @@ export default function SpaceTunnel({ onEnterEditorial }: SpaceTunnelProps) {
       ref={containerRef}
       className="relative w-full select-none"
       style={{
-        height: '180vh',
+        height: '125vh',
         background: '#050508',
       }}
     >
       {/* Sticky Fullscreen Viewport */}
-      <div className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden">
+      <div
+        id="space-tunnel-inner"
+        className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden"
+        style={{
+          willChange: 'transform, filter',
+          transformOrigin: 'center center',
+        }}
+      >
         {/* Concentric 3D Geometric Tunnel Frames */}
         <div
           className="absolute inset-0 flex items-center justify-center pointer-events-none"

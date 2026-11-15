@@ -359,6 +359,7 @@ export default function SatelliteMap({
               03 — EXPLORADOR SATELITAL // USGS & NASA OPEN DATA
             </span>
             <h2
+              className="editorial-reveal-title"
               style={{
                 fontFamily: "'Inter', sans-serif",
                 fontWeight: 700,
@@ -406,9 +407,9 @@ export default function SatelliteMap({
           </div>
         </div>
 
-        {/* Map Viewport Container */}
-        <div className="relative rounded-3xl overflow-hidden border border-[rgba(255,255,255,0.08)] bg-[#050508] shadow-2xl h-[75vh] min-h-[500px]">
-          <div ref={mapContainerRef} className="w-full h-full" style={{ zIndex: 1 }} />
+        {/* Map Viewport Container with data-lenis-prevent for wheel isolation */}
+        <div data-lenis-prevent="true" className="relative rounded-3xl overflow-hidden border border-[rgba(255,255,255,0.08)] bg-[#050508] shadow-2xl h-[75vh] min-h-[500px]">
+          <div ref={mapContainerRef} data-lenis-prevent="true" className="w-full h-full" style={{ zIndex: 1 }} />
 
           {/* HUD Overlay */}
           <div className="absolute top-6 left-6 z-10 pointer-events-none flex flex-col gap-3">

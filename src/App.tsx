@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { TARGETS, SITES as INITIAL_SITES, rankSites, calculatePFI } from './data';
 import type { BiomeType, EarthSite, PFIWeights } from './data';
 
@@ -52,6 +52,139 @@ export function App() {
 
   // Scroll progress (0 to 1) throttled with RAF
   const [scrollProgress, setScrollProgress] = useState<number>(0);
+
+  // Pillar 1 & 2 & 5: Locomotive Smooth Scroll Engine (Lenis + GSAP ScrollTrigger)
+  useEffect(() => {
+    const LenisClass = (window as any).Lenis;
+    const gsap = (window as any).gsap;
+    const ScrollTrigger = (window as any).ScrollTrigger;
+
+    let lenis: any = null;
+
+    if (LenisClass) {
+      lenis = new LenisClass({
+        lerp: 0.08,
+        smoothWheel: true,
+        wheelMultiplier: 1.05,
+        touchMultiplier: 1.6,
+        easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      });
+
+      (window as any).__lenis = lenis;
+
+      if (gsap && ScrollTrigger) {
+        gsap.registerPlugin(ScrollTrigger);
+
+        lenis.on('scroll', ScrollTrigger.update);
+
+        const tickerFn = (time: number) => {
+          lenis.raf(time * 1000);
+        };
+        gsap.ticker.add(tickerFn);
+        gsap.ticker.lagSmoothing(0);
+
+        // Pillar 2: Sticky Curtain progressive depth scrubbing (Clean unpinning)
+        // A. HeroSection is pinned ONLY while Slide 2 glides over it, unpinning immediately at top
+        const heroTrigger = ScrollTrigger.create({
+          trigger: '#hero-curtain-wrap',
+          start: 'top top',
+          endTrigger: '#slide2-curtain-wrap',
+          end: 'top top',
+          pin: true,
+          pinSpacing: false,
+          scrub: true,
+          onUpdate: (self: any) => {
+            gsap.set('#hero-section', {
+              scale: 1 - self.progress * 0.04,
+              filter: `brightness(${1 - self.progress * 0.35})`,
+            });
+          },
+        });
+
+        // B. Slide 2 inner viewport scales down and dims as SpaceTunnel glides over it
+        const slide2Tween = gsap.to('#editorial-slide-2-inner', {
+          scale: 0.96,
+          filter: 'brightness(0.65)',
+          ease: 'none',
+          scrollTrigger: {
+            trigger: '#spacetunnel-curtain-wrap',
+            start: 'top bottom',
+            end: 'top top',
+            scrub: true,
+          },
+        });
+
+        // C. SpaceTunnel inner viewport scales down and dims as MissionCards glides over it
+        const spaceTween = gsap.to('#space-tunnel-inner', {
+          scale: 0.96,
+          filter: 'brightness(0.65)',
+          ease: 'none',
+          scrollTrigger: {
+            trigger: '#missions-section',
+            start: 'top bottom',
+            end: 'top top',
+            scrub: true,
+          },
+        });
+
+        // Pillar 5: Trigger editorial reveal titles with luxury clip-path mask
+        ScrollTrigger.batch('.editorial-reveal-title', {
+          start: 'top 88%',
+          onEnter: (batch: Element[]) => {
+            batch.forEach((el) => el.classList.add('is-revealed'));
+          },
+          once: true,
+        });
+
+        return () => {
+          gsap.ticker.remove(tickerFn);
+          if (heroTrigger) heroTrigger.kill();
+          if (slide2Tween.scrollTrigger) slide2Tween.scrollTrigger.kill();
+          slide2Tween.kill();
+          if (spaceTween.scrollTrigger) spaceTween.scrollTrigger.kill();
+          spaceTween.kill();
+          if (lenis) {
+            lenis.destroy();
+            delete (window as any).__lenis;
+          }
+        };
+      } else {
+        let rafId: number;
+        const fallbackRaf = (time: number) => {
+          lenis.raf(time);
+          rafId = requestAnimationFrame(fallbackRaf);
+        };
+        rafId = requestAnimationFrame(fallbackRaf);
+
+        return () => {
+          cancelAnimationFrame(rafId);
+          if (lenis) {
+            lenis.destroy();
+            delete (window as any).__lenis;
+          }
+        };
+      }
+    }
+  }, []);
+
+  // IntersectionObserver backup for Editorial Mask Reveals
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-revealed');
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+
+    const elements = document.querySelectorAll('.editorial-reveal-title');
+    elements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     let ticking = false;
@@ -160,10 +293,14 @@ export function App() {
     [playClickSound]
   );
 
-  // Scroll to section helper
+  // Scroll to section helper with Lenis smooth inertia
   const scrollToSection = useCallback((sectionId: string) => {
+    const lenis = (window as any).__lenis;
     const el = document.getElementById(sectionId);
-    if (el) {
+    if (!el) return;
+    if (lenis) {
+      lenis.scrollTo(el, { duration: 1.2, easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) });
+    } else {
       el.scrollIntoView({ behavior: 'smooth' });
     }
   }, []);
@@ -190,17 +327,23 @@ export function App() {
         onOpenCalibration={() => setCalibrationOpen(true)}
       />
 
-      {/* 3. Hero Section (Deep Space Mode, 48px Signature Blue Spline, 3-Depth Particle Canvas) */}
-      <HeroSection scrollProgress={scrollProgress} />
+      {/* 3. Hero Section (Sticky Curtain Base Layer) */}
+      <div id="hero-curtain-wrap" className="sticky-curtain-section">
+        <HeroSection scrollProgress={scrollProgress} />
+      </div>
 
-      {/* 4. Editorial Slide 2 (Scrollytelling: 2-col header, shooting star, morphing video) */}
-      <EditorialSlide2 />
+      {/* 4. Editorial Slide 2 (Sticky Curtain Overlayer 1) */}
+      <div id="slide2-curtain-wrap" className="sticky-curtain-layer">
+        <EditorialSlide2 />
+      </div>
 
-      {/* 5. Scroll-Linked 3D Space Tunnel ("STEP INTO ANALOG WORLDS" scaling 1 to 14) */}
-      <SpaceTunnel />
+      {/* 5. Scroll-Linked 3D Space Tunnel (Sticky Curtain Overlayer 2) */}
+      <div id="spacetunnel-curtain-wrap" className="sticky-curtain-layer">
+        <SpaceTunnel />
+      </div>
 
-      {/* 6. Extraterrestrial Mission Selector (1 Single Row of 4 Columns, Blueprint Vector 3D Fan) */}
-      <div id="missions-section">
+      {/* 6. Extraterrestrial Mission Selector (Sticky Curtain Overlayer 3) */}
+      <div id="missions-section" className="sticky-curtain-layer">
         <MissionCards
           selectedTargetId={selectedTargetId}
           onSelectTarget={handleSelectTarget}
@@ -256,7 +399,14 @@ export function App() {
             <span>NASA EARTHDATA</span>
             <span>·</span>
             <button
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              onClick={() => {
+                const lenis = (window as any).__lenis;
+                if (lenis) {
+                  lenis.scrollTo(0, { duration: 1.4, easing: (t: number) => Math.min(1, 1.001 - Math.pow(2, -10 * t)) });
+                } else {
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
               className="text-white hover:text-[#2544FF] transition-colors"
             >
               ↑ VOLVER ARRIBA

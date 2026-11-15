@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useState, useMemo } from 'react';
+import React, { useRef, useCallback, useState, useMemo, useEffect } from 'react';
 import { TARGETS } from '../data';
 
 interface MissionCardsProps {
@@ -8,7 +8,45 @@ interface MissionCardsProps {
 
 export default function MissionCards({ selectedTargetId, onSelectTarget }: MissionCardsProps) {
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const gridRef = useRef<HTMLDivElement>(null);
   const [filterBody, setFilterBody] = useState<'Todos' | 'Luna' | 'Marte'>('Todos');
+
+  // Pillar 4: Locomotive kinetic velocity skew & tilt connected to Lenis
+  useEffect(() => {
+    let rafId: number;
+    let currentSkew = 0;
+    let targetSkew = 0;
+    let isRunning = true;
+
+    const updateSkew = () => {
+      if (!isRunning) return;
+      const lenis = (window as any).__lenis;
+      const velocity = lenis?.velocity || 0;
+
+      // Dynamic micro-deformation: skew proportional to velocity, clamped strictly to max ±3deg
+      targetSkew = Math.max(-3, Math.min(3, velocity * 0.1));
+
+      // Damped return to 0 with silky inertia
+      currentSkew += (targetSkew - currentSkew) * 0.12;
+
+      if (gridRef.current) {
+        if (Math.abs(currentSkew) > 0.005) {
+          gridRef.current.style.transform = `translate3d(0,0,0) skewY(${currentSkew.toFixed(3)}deg)`;
+        } else {
+          gridRef.current.style.transform = 'translate3d(0,0,0) skewY(0deg)';
+        }
+      }
+
+      rafId = requestAnimationFrame(updateSkew);
+    };
+
+    rafId = requestAnimationFrame(updateSkew);
+
+    return () => {
+      isRunning = false;
+      cancelAnimationFrame(rafId);
+    };
+  }, []);
 
   const filteredTargets = useMemo(() => {
     if (filterBody === 'Todos') return TARGETS;
@@ -53,6 +91,7 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
               01 — SELECCIÓN DE MISIÓN DESTINO // NASA TREK SITES
             </span>
             <h2
+              className="editorial-reveal-title"
               style={{
                 fontFamily: "'Inter', sans-serif",
                 fontWeight: 700,
@@ -91,8 +130,11 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
           </div>
         </div>
 
-        {/* Dynamic Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
+        {/* Dynamic Cards Grid with Kinetic Velocity Skew */}
+        <div
+          ref={gridRef}
+          className="kinetic-skew-wrap grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch"
+        >
           {filteredTargets.map((target, index) => {
             const isSelected = target.id === selectedTargetId;
             const fanRot = fanAngles[index % fanAngles.length];
@@ -110,7 +152,7 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
                 }`}
                 style={{
                   transform: `rotate(${fanRot}deg)`,
-                  transition: 'transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.45s ease',
+                  transition: 'transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1)',
                 }}
                 onMouseMove={(e) => handleMouseMove(e, index)}
                 onMouseLeave={() => handleMouseLeave(index)}

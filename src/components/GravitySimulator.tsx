@@ -257,7 +257,7 @@ export default function GravitySimulator() {
 
         {/* Colossal Central Typography */}
         <h2
-          className="text-white font-extrabold uppercase tracking-tight leading-[0.95] mb-6"
+          className="editorial-reveal-title text-white font-extrabold uppercase tracking-tight leading-[0.95] mb-6"
           style={{
             fontFamily: "'Inter', sans-serif",
             fontSize: 'clamp(32px, 5.5vw, 76px)',
@@ -301,9 +301,10 @@ export default function GravitySimulator() {
           </button>
         </div>
 
-        {/* Canvas Physics Container */}
+        {/* Canvas Physics Container with data-lenis-prevent */}
         <div
           ref={containerRef}
+          data-lenis-prevent="true"
           className="relative max-w-[1200px] mx-auto rounded-3xl overflow-hidden bg-[#203BD4] border border-white/20 shadow-2xl"
           style={{ height: '480px' }}
         >
