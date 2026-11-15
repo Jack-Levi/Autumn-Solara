@@ -248,93 +248,79 @@ export function GeologicalSiteImage({ site }: { site: EarthSite }) {
   );
 }
 
-// ─── Lusion Cyber/Matrix Scramble Text Decode Component ─────────────────────
-const SCRAMBLE_GLYPHS = 'ABCDEFGHJKLMNOPQRSTUVWXYZ0123456789!@#$%&*+=-_~?';
-
-export function ScrambleText({
+// ─── Fast Letter-by-Letter Reveal Component (Lusion Editorial Typography) ───
+export function FastLetterReveal({
   text,
-  isHovered = false,
-  duration = 650,
+  speed = 12,
+  delay = 50,
   className = '',
   as: Component = 'span',
 }: {
   text: string;
-  isHovered?: boolean;
-  duration?: number;
+  speed?: number;
+  delay?: number;
   className?: string;
   as?: any;
 }) {
-  const [display, setDisplay] = useState(text);
-  const elemRef = useRef<HTMLElement>(null);
-  const rafRef = useRef<number | null>(null);
-  const hasAnimatedInitial = useRef(false);
+  const [visibleCount, setVisibleCount] = useState(0);
+  const containerRef = useRef<HTMLElement>(null);
+  const hasTriggered = useRef(false);
 
-  const scramble = useCallback(
-    (customDuration?: number) => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      const totalTime = customDuration || duration;
-      const startTime = performance.now();
-      const chars = text.split('');
-
-      const tick = (now: number) => {
-        const elapsed = now - startTime;
-        const progress = Math.min(1, elapsed / totalTime);
-        const revealIdx = Math.floor(progress * chars.length);
-
-        const result = chars
-          .map((c, i) => {
-            if (c === ' ' || c === '·' || c === '•' || c === '/' || c === '(' || c === ')' || c === ',' || c === '-') return c;
-            if (i < revealIdx) return c;
-            return SCRAMBLE_GLYPHS[Math.floor(Math.random() * SCRAMBLE_GLYPHS.length)];
-          })
-          .join('');
-
-        setDisplay(result);
-
-        if (progress < 1) {
-          rafRef.current = requestAnimationFrame(tick);
-        } else {
-          setDisplay(text);
-        }
-      };
-
-      rafRef.current = requestAnimationFrame(tick);
-    },
-    [text, duration]
-  );
-
-  // Trigger scramble when entering viewport (Lusion scroll text decode)
   useEffect(() => {
-    const el = elemRef.current;
-    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setVisibleCount(text.length);
+      return;
+    }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !hasAnimatedInitial.current) {
-          hasAnimatedInitial.current = true;
-          scramble(duration);
+        if (entry.isIntersecting && !hasTriggered.current) {
+          hasTriggered.current = true;
+          let count = 0;
+          const total = text.length;
+
+          const timer = setTimeout(() => {
+            const interval = setInterval(() => {
+              count += 1;
+              setVisibleCount(count);
+              if (count >= total) {
+                clearInterval(interval);
+              }
+            }, speed);
+          }, delay);
+
+          return () => clearTimeout(timer);
         }
       },
-      { threshold: 0.15 }
+      { threshold: 0.1 }
     );
 
     observer.observe(el);
-    return () => {
-      observer.disconnect();
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, [scramble, duration]);
+    return () => observer.disconnect();
+  }, [text, speed, delay]);
 
-  // Trigger quick scramble wave on card hover
-  useEffect(() => {
-    if (isHovered && hasAnimatedInitial.current) {
-      scramble(420);
-    }
-  }, [isHovered, scramble]);
+  const chars = text.split('');
 
   return (
-    <Component ref={elemRef} className={className}>
-      {display}
+    <Component ref={containerRef} className={className}>
+      {chars.map((char, i) => {
+        const isVisible = i < visibleCount;
+        return (
+          <span
+            key={i}
+            style={{
+              opacity: isVisible ? 1 : 0,
+              transform: isVisible ? 'translateY(0)' : 'translateY(3px)',
+              transition: 'opacity 0.14s ease-out, transform 0.14s ease-out',
+              display: char === ' ' ? 'inline' : 'inline-block',
+              whiteSpace: 'pre',
+            }}
+          >
+            {char}
+          </span>
+        );
+      })}
     </Component>
   );
 }
@@ -350,7 +336,6 @@ const SiteCard = React.memo(function SiteCard({
   const { site, pfi } = rankedSite;
   const cardRef = useRef<HTMLDivElement>(null);
   const imgFrameRef = useRef<HTMLDivElement>(null);
-  const [isHovered, setIsHovered] = useState(false);
 
   // Parallax window frame effect (Locomotive / GSAP ScrollTrigger)
   useEffect(() => {
@@ -389,9 +374,9 @@ const SiteCard = React.memo(function SiteCard({
     const rect = cardRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
-    const rotateY = (x - 0.5) * 9;
-    const rotateX = (0.5 - y) * 9;
-    cardRef.current.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-5px)`;
+    const rotateY = (x - 0.5) * 8;
+    const rotateX = (0.5 - y) * 8;
+    cardRef.current.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-4px)`;
   }, []);
 
   const handleMouseLeave = useCallback(() => {
@@ -405,12 +390,8 @@ const SiteCard = React.memo(function SiteCard({
     <div
       ref={cardRef}
       className="lusion-card group cursor-pointer flex flex-col justify-between"
-      onMouseEnter={() => setIsHovered(true)}
       onMouseMove={handleMouseMove}
-      onMouseLeave={() => {
-        setIsHovered(false);
-        handleMouseLeave();
-      }}
+      onMouseLeave={handleMouseLeave}
       onClick={onSelect}
     >
       {/* ── 1. Hero Media Frame (Full-bleed 28px rounded with glass badges) ── */}
@@ -458,17 +439,17 @@ const SiteCard = React.memo(function SiteCard({
       {/* ── 2. Editorial Typography & Kinetic Arrow (Lusion Design) ── */}
       <div className="flex-1 flex flex-col justify-between px-1">
         <div>
-          {/* Uppercase Mono Micro-label with Lusion Scramble Reveal */}
+          {/* Uppercase Mono Micro-label with Fast Letter-by-Letter Reveal */}
           <div className="flex items-center gap-2 font-mono text-[11px] text-[#8E9299] uppercase tracking-[0.14em] mb-1.5 overflow-hidden whitespace-nowrap">
-            <ScrambleText
+            <FastLetterReveal
               text={`${site.biome.toUpperCase()} • ${site.nasaDatasets || 'NASA SRTM 30M'} • ANALOGÍA NASA`}
-              isHovered={isHovered}
-              duration={700}
+              speed={10}
+              delay={30}
               className="truncate"
             />
           </div>
 
-          {/* Title Row with Lusion Expanding Kinetic Arrow & Character Scramble */}
+          {/* Title Row with Lusion Expanding Kinetic Arrow & Fast Letter Reveal */}
           <div className="lusion-arrow-wrap mb-1.5">
             <span
               className="lusion-arrow group-hover:w-[26px] group-hover:opacity-100 group-hover:translate-x-0 group-hover:mr-2"
@@ -479,36 +460,54 @@ const SiteCard = React.memo(function SiteCard({
                 <polyline points="13 5 20 12 13 19"></polyline>
               </svg>
             </span>
-            <ScrambleText
+            <FastLetterReveal
               as="h3"
               text={site.name}
-              isHovered={isHovered}
-              duration={650}
+              speed={11}
+              delay={50}
               className="lusion-card-title text-2xl md:text-[28px] font-bold text-[#0A0A0E] tracking-tight leading-tight font-sans group-hover:translate-x-1 transition-transform"
             />
           </div>
 
-          {/* Geographic Subtitle */}
-          <p className="font-sans text-xs text-[#71717A] mb-4">
-            {site.country} · {site.region}
-          </p>
+          {/* Geographic Subtitle with Fast Letter-by-Letter Reveal */}
+          <FastLetterReveal
+            as="p"
+            text={`${site.country} · ${site.region}`}
+            speed={9}
+            delay={100}
+            className="font-sans text-xs text-[#71717A] mb-4"
+          />
 
           {/* Clean Editorial Micro-Details (Micro-escala & Proceso activo) */}
           <div className="pt-3 border-t border-[#E5E7EB] mb-4 text-xs font-sans space-y-2">
             <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 sm:gap-4">
               <span className="text-[#71717A] font-medium shrink-0">Proceso activo:</span>
-              <span className="text-[#18181B] truncate text-left sm:text-right font-normal">{site.activeProcess}</span>
+              <FastLetterReveal
+                text={site.activeProcess}
+                speed={8}
+                delay={150}
+                className="text-[#18181B] truncate text-left sm:text-right font-normal"
+              />
             </div>
             <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 sm:gap-4">
               <span className="text-[#71717A] font-medium shrink-0">Micro-escala:</span>
-              <span className="text-[#18181B] truncate text-left sm:text-right font-normal">{site.microScale}</span>
+              <FastLetterReveal
+                text={site.microScale}
+                speed={8}
+                delay={180}
+                className="text-[#18181B] truncate text-left sm:text-right font-normal"
+              />
             </div>
           </div>
 
           {/* Summary */}
-          <p className="text-[13px] text-[#4B5563] leading-[1.65] line-clamp-2 font-normal font-sans mb-4">
-            {site.summary}
-          </p>
+          <FastLetterReveal
+            as="p"
+            text={site.summary}
+            speed={7}
+            delay={220}
+            className="text-[13px] text-[#4B5563] leading-[1.65] line-clamp-2 font-normal font-sans mb-4"
+          />
         </div>
 
         {/* Bottom CTA Link: Explorar caso de estudio geológico → */}
@@ -642,9 +641,10 @@ export default function SiteGallery({
 
   // Effective velocity combines internal physics engine and external prop
   const effectiveVelocity = Math.abs(internalVelocity) > Math.abs(scrollVelocity) ? internalVelocity : scrollVelocity;
-  // Lusion Flexion Skew: between -4.8deg and +4.8deg with vertical elastic stretch
-  const skewDeg = Math.min(Math.max(-effectiveVelocity * 0.15, -4.8), 4.8);
-  const stretchY = 1 + Math.min(Math.abs(effectiveVelocity) * 0.0018, 0.048);
+  // Lusion 3D Perspective Pitch Roll: when scrolling down, cards roll forward/backward along X axis in 3D
+  // Clamped between -4.5deg and +4.5deg. Pure vertical 3D depth roll, ZERO left/right skew.
+  const pitchX = Math.min(Math.max(-effectiveVelocity * 0.12, -4.5), 4.5);
+  const scaleDepth = 1 - Math.min(Math.abs(effectiveVelocity) * 0.001, 0.025);
 
   return (
     <section
@@ -731,14 +731,14 @@ export default function SiteGallery({
           </div>
         </div>
 
-        {/* ── 2-Column Spacious Editorial Grid with Lusion Velocity Flexion ── */}
+        {/* ── 2-Column Spacious Editorial Grid with Lusion 3D Perspective Roll ── */}
         <div
           className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-16 items-start"
           style={{
             willChange: 'transform',
             transform: Math.abs(effectiveVelocity) > 0.08
-              ? `skewY(${skewDeg.toFixed(2)}deg) scaleY(${stretchY.toFixed(3)})`
-              : 'none',
+              ? `perspective(1200px) rotateX(${pitchX.toFixed(2)}deg) scale(${scaleDepth.toFixed(3)})`
+              : 'perspective(1200px) rotateX(0deg) scale(1)',
             transformOrigin: 'center center',
             transition: Math.abs(effectiveVelocity) <= 0.08 ? 'transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
           }}
