@@ -57,7 +57,7 @@ export default function MissionReportModal({
     const dateStr = new Date().toISOString().split('T')[0];
     const datasetSummary = getTargetDatasetSummary(target.id);
 
-    return `# EXPEDIENTE TÉCNICO DE MISIÓN ANÁLOGA — NASA SPACE APPS CHALLENGE
+    return `# EXPEDIENTE TÉCNICO DE MISIÓN ANÁLOGA: NASA SPACE APPS CHALLENGE
 **Documento**: AUTUMN-SOLARA-REP-${site.id}-${target.id}
 **Fecha de Generación**: ${dateStr}
 **Objetivo Planetario**: ${target.name} (${target.body})
@@ -68,7 +68,7 @@ export default function MissionReportModal({
 
 ## 1. RESUMEN EJECUTIVO E IDENTIFICACIÓN DEL SITIO
 * **Identificador de Catálogo**: ${site.id}
-* **Ubicación Geográfica**: ${site.country} — ${site.region}
+* **Ubicación Geográfica**: ${site.country}, ${site.region}
 * **Coordenadas Geodésicas**: ${site.dms} (Lat: ${site.lat}°, Lng: ${site.lng}°)
 * **Elevación Topográfica SRTM**: ${site.elevM} m s.n.m.
 * **Bioma Terrestre**: ${site.biome}
@@ -182,14 +182,14 @@ ${datasetSummary.metrics.map((m) => `  * ${m.label}: ${m.value}`).join('\n')}
         <div className="px-7 py-5 bg-[#0E0F12] border-b border-white/[0.08] flex flex-wrap items-center justify-between gap-4 shrink-0">
           <div>
             <span className="font-sans text-[11px] tracking-wider uppercase text-[#8E9299] block font-medium">
-              NASA Space Apps Challenge — Documentación científica
+              NASA Space Apps Challenge: Documentación científica
             </span>
             <h3 className="font-sans text-sm md:text-base font-semibold text-white flex items-center gap-2 mt-0.5">
               {activeTab === 'vault' ? (
                 <span>Bóveda de Evidencia Científica y Datasets NASA</span>
               ) : (
                 <>
-                  <span>Informe de Caracterización Analógica —</span>
+                  <span>Informe de Caracterización Analógica:</span>
                   <span className="text-white font-medium">{site.name}</span>
                   <span className="text-white/40">vs.</span>
                   <span className="text-white font-medium">{target.name}</span>
@@ -281,7 +281,7 @@ ${datasetSummary.metrics.map((m) => `  * ${m.label}: ${m.value}`).join('\n')}
               </span>
               <h2 className="text-2xl font-semibold text-white">{site.name}</h2>
               <p className="font-mono text-xs text-[#8E929F] mt-1">
-                {site.country} — {site.region}   {site.dms}   {site.elevM} m s.n.m.
+                {site.country}, {site.region}, {site.dms}, {site.elevM} m s.n.m.
               </p>
             </div>
 
@@ -499,7 +499,7 @@ ${datasetSummary.metrics.map((m) => `  * ${m.label}: ${m.value}`).join('\n')}
 
           {/* Footer Sign-off */}
           <div className="pt-6 border-t border-white/10 text-center font-sans text-xs text-[#8E9299]">
-            Autumn Solara — NASA International Space Apps Challenge — WGS-84 / Open Data
+            Autumn Solara, NASA International Space Apps Challenge, WGS-84, Open Data
           </div>
         </div>
         )}

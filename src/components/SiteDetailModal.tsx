@@ -426,7 +426,7 @@ export default function SiteDetailModal({
                 {site.id}
               </span>
               <span className="font-sans text-xs uppercase tracking-wider text-[#686B75]">
-                Caso de estudio geológico · NASA Space Apps
+                Caso de estudio geológico: NASA Space Apps
               </span>
               {site.isCandidate && (
                 <span className="font-sans text-xs px-2.5 py-0.5 rounded-full font-medium bg-[#18181B] text-white">
@@ -468,7 +468,7 @@ export default function SiteDetailModal({
           </h1>
 
           <p className="font-mono text-sm text-[#686B75] max-w-4xl leading-relaxed mb-6">
-            {site.country} · {site.region} · Coordenadas: <strong className="text-[#0A0A0E]">{site.dms}</strong> ({site.lat}°, {site.lng}°) · Elevación: <strong className="text-[#0A0A0E]">{site.elevM.toLocaleString()} m s.n.m.</strong>
+            {site.country}, {site.region.replace(/\//g, ',')}, Coordenadas: <strong className="text-[#0A0A0E]">{site.dms}</strong> ({site.lat}°, {site.lng}°), Elevación: <strong className="text-[#0A0A0E]">{site.elevM.toLocaleString()} m s.n.m.</strong>
           </p>
 
           {/* 2 Prominent Pills: Micro-Escala & Proceso Activo */}
@@ -563,7 +563,7 @@ export default function SiteDetailModal({
               <div className="relative flex-1 overflow-hidden bg-[#181B20]">
                 <GeologicalSiteImage site={site} />
                 <div className="absolute top-4 left-4 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-full font-mono text-xs text-white font-bold">
-                  LÁMINA 01 · FOTOGRAFÍA GEOLÓGICA DE CAMPO (SUPERFICIE)
+                  LÁMINA 01: FOTOGRAFÍA GEOLÓGICA DE CAMPO (SUPERFICIE)
                 </div>
               </div>
               <div className="p-4 bg-white border-t border-[#E2E4EC]">
@@ -586,11 +586,11 @@ export default function SiteDetailModal({
                   roughnessRms={site.roughnessRms}
                 />
                 <div className="absolute top-4 left-4 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-full font-mono text-xs text-white font-bold">
-                  LÁMINA 02 · ESCANEO ORBITAL TOPOGRÁFICO (VISTA CENITAL)
+                  LÁMINA 02: ESCANEO ORBITAL TOPOGRÁFICO (VISTA CENITAL)
                 </div>
               </div>
               <div className="p-4 bg-white border-t border-[#E2E4EC]">
-                <h4 className="font-bold text-sm text-[#0A0A0E] mb-0.5">Escaneo Orbital Topográfico y Pendientes · USGS SRTM 30m</h4>
+                <h4 className="font-bold text-sm text-[#0A0A0E] mb-0.5">Escaneo Orbital Topográfico y Pendientes, USGS SRTM 30m</h4>
                 <p className="font-mono text-xs text-[#686B75] line-clamp-1">Mosaico satelital de relieve y vectores de pendiente desde órbita sin cielo ni nubes</p>
               </div>
             </div>
@@ -607,11 +607,11 @@ export default function SiteDetailModal({
                   meanTempC={site.meanTempC}
                 />
                 <div className="absolute top-4 left-4 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-full font-mono text-xs text-white font-bold">
-                  LÁMINA 03 · ORTOIMAGEN SATELITAL Y ALBEDO (VISTA CENITAL)
+                  LÁMINA 03: ORTOIMAGEN SATELITAL Y ALBEDO (VISTA CENITAL)
                 </div>
               </div>
               <div className="p-4 bg-white border-t border-[#E2E4EC]">
-                <h4 className="font-bold text-sm text-[#0A0A0E] mb-0.5">Ortoimagen Espectral y Albedo Superficial · MODIS LST / ASTER</h4>
+                <h4 className="font-bold text-sm text-[#0A0A0E] mb-0.5">Ortoimagen Espectral y Albedo Superficial, MODIS LST y ASTER</h4>
                 <p className="font-mono text-xs text-[#686B75] line-clamp-1">Retícula de coordenadas orbitales y distribución radiométrica en Kelvin</p>
               </div>
             </div>
@@ -625,7 +625,7 @@ export default function SiteDetailModal({
                   className="w-full h-full object-cover pointer-events-none"
                 />
                 <div className="absolute top-4 left-4 bg-black/75 backdrop-blur-md px-3.5 py-1.5 rounded-full font-mono text-xs text-white font-bold">
-                  LÁMINA 04 · TERRENO HOMÓLOGO NASA (VISTA ORBITAL {target.body.toUpperCase()})
+                  LÁMINA 04: TERRENO HOMÓLOGO NASA (VISTA ORBITAL {target.body.toUpperCase()})
                 </div>
                 {/* Metric Scale Badge */}
                 <div className="absolute bottom-4 right-4 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 flex items-center gap-2.5 font-mono text-[10px] text-white pointer-events-none tabular-nums shadow-lg">
@@ -663,7 +663,7 @@ export default function SiteDetailModal({
             targetBody={target.body}
             earthCaption={site.photoEarthCaption}
             spaceCaption={target.subtitle}
-            earthTelemetry={`${site.id} · Temp: ${site.meanTempC}°C · Presión: ${site.pressureHpa} hPa · Gravedad: 9.81 m/s²`}
+            earthTelemetry={`${site.id}, Temp: ${site.meanTempC}°C, Presión: ${site.pressureHpa} hPa, Gravedad: 9.81 m/s²`}
             earthTopo={site.topo}
             targetTopo={target.topo}
             earthSiteName={site.name}
@@ -683,7 +683,7 @@ export default function SiteDetailModal({
             <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
                 <span className="font-sans text-xs uppercase tracking-wider text-[#8E9299] block mb-2 font-medium">
-                  Matriz cuantitativa multi-dataset · 8 dimensiones oficiales NASA
+                  Matriz cuantitativa multi-dataset, 8 dimensiones oficiales NASA
                 </span>
                 <h2 className="text-3xl font-semibold text-white tracking-tight">
                   Correlación paramétrica frente a {target.name}
@@ -813,7 +813,7 @@ export default function SiteDetailModal({
           <div className="max-w-[1400px] mx-auto">
             <div className="mb-10 text-center md:text-left">
               <span className="font-sans text-xs uppercase tracking-wider text-[#8E9299] block mb-2 font-medium">
-                Evaluación crítica de la analogía planetaria · NASA Space Apps
+                Evaluación crítica de la analogía planetaria, NASA Space Apps
               </span>
               <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
                 ¿Por qué coincide y dónde se rompe la analogía?

@@ -65,8 +65,8 @@ export const ANALOG_SCIENTIFIC_MATRIX: AnalogJustificationEntry[] = [
     targetId: 'MARS-JEZ',
     targetName: 'Cráter Jezero',
     mission: 'Mars Sample Return / Perseverance',
-    earthSensors: 'SRTM 30m · TERRA/ASTER TIR · MODIS LST',
-    nasaSensors: 'MGS MOLA · TES / THEMIS · MRO CRISM',
+    earthSensors: 'SRTM 30m, TERRA/ASTER TIR, MODIS LST',
+    nasaSensors: 'MGS MOLA, TES / THEMIS, MRO CRISM',
     fidelityCriterion:
       'Preservación de sales higroscópicas (percloratos, cloruros y sulfatos), suelo coluvial hiperárido sin horizonte orgánico y oxidación fotoquímica UV extrema idéntica a Marte.',
     criticalLimit:
@@ -85,8 +85,8 @@ export const ANALOG_SCIENTIFIC_MATRIX: AnalogJustificationEntry[] = [
     targetId: 'MOON-COP',
     targetName: 'Cráter Copernicus',
     mission: 'Artemis III / Programa Lunar de Impactos Complejos',
-    earthSensors: 'ArcticDEM 2m · Radarsat InSAR · Landsat 8/9',
-    nasaSensors: 'LRO LOLA DEM · LRO Diviner · Mini-RF SAR',
+    earthSensors: 'ArcticDEM 2m, Radarsat InSAR, Landsat 8/9',
+    nasaSensors: 'LRO LOLA DEM, LRO Diviner, Mini-RF SAR',
     fidelityCriterion:
       'Astroblema de impacto complejo de 23 km en rocas sedimentarias carbonatadas con permafrost continuo; mantos de brecha polimíctica y fusión hidrotermal residual.',
     criticalLimit:
@@ -105,8 +105,8 @@ export const ANALOG_SCIENTIFIC_MATRIX: AnalogJustificationEntry[] = [
     targetId: 'MARS-ALB',
     targetName: 'Alba Mons',
     mission: 'Artemis Basecamp / ESA PANGAEA / Subsurface Mars',
-    earthSensors: 'Terrestrial LiDAR · GPR Terrestre · Sentinel-2 MSI',
-    nasaSensors: 'MGS MOLA · LRO LROC NAC · Mars Odyssey THEMIS IR',
+    earthSensors: 'Terrestrial LiDAR, GPR Terrestre, Sentinel-2 MSI',
+    nasaSensors: 'MGS MOLA, LRO LROC NAC, Mars Odyssey THEMIS IR',
     fidelityCriterion:
       'Conductos de lava basáltica pahoehoe con claraboyas de colapso cenital (skylights), terrazas de flujo petrificadas y aislamiento térmico subterráneo análogo a tubos de lava de Tharsis.',
     criticalLimit:
@@ -125,8 +125,8 @@ export const ANALOG_SCIENTIFIC_MATRIX: AnalogJustificationEntry[] = [
     targetId: 'MOON-COP',
     targetName: 'Cráter Copernicus',
     mission: 'Entrenamiento Geológico Apollo / Artemis EVA Mobility',
-    earthSensors: 'SRTM 30m DEM · ASTER TIR · Landsat 9 OLI-2',
-    nasaSensors: 'LRO LOLA DEM · LRO Diviner · MGS MOLA',
+    earthSensors: 'SRTM 30m DEM, ASTER TIR, Landsat 9 OLI-2',
+    nasaSensors: 'LRO LOLA DEM, LRO Diviner, MGS MOLA',
     fidelityCriterion:
       'Cráteres de explosión freatomagmática tipo maar (Cráter Elegante) con morfología análoga a cráteres de impacto de fondo plano, depósitos de tefra y campos de bombas piroclásticas basálticas.',
     criticalLimit:
@@ -145,8 +145,8 @@ export const ANALOG_SCIENTIFIC_MATRIX: AnalogJustificationEntry[] = [
     targetId: 'MOON-SHK',
     targetName: 'Cráter Shackleton',
     mission: 'Artemis III / VIPER South Pole Ice Mission',
-    earthSensors: 'REMA DEM 8m · Landsat 8 LST · IceBridge LiDAR',
-    nasaSensors: 'LRO LOLA Polar DEM · LRO Diviner DLRE · LAMP UV',
+    earthSensors: 'REMA DEM 8m, Landsat 8 LST, IceBridge LiDAR',
+    nasaSensors: 'LRO LOLA Polar DEM, LRO Diviner DLRE, LAMP UV',
     fidelityCriterion:
       'Hiperaridez polar extrema, temperaturas medias subcero (-20 °C a -50 °C), permafrost seco sin hielo de poro superficial y confinamiento de hielo fósil relicto en trampas geomorfológicas.',
     criticalLimit:
@@ -165,8 +165,8 @@ export const ANALOG_SCIENTIFIC_MATRIX: AnalogJustificationEntry[] = [
     targetId: 'MARS-ALB',
     targetName: 'Alba Mons',
     mission: 'Mars Exploration Rovers / Artemis Mobility Trials',
-    earthSensors: 'SRTM 30m DEM · Sentinel-2 MSI · MODIS AOD',
-    nasaSensors: 'MGS MOLA · Mars Odyssey THEMIS · MGS TES',
+    earthSensors: 'SRTM 30m DEM, Sentinel-2 MSI, MODIS AOD',
+    nasaSensors: 'MGS MOLA, Mars Odyssey THEMIS, MGS TES',
     fidelityCriterion:
       'Manto ignimbrítico de tefra y pómez blanca modelado por vientos catabáticos hiperbáricos en mega-yardangs; sustrato de ultra-baja inercia térmica y regolito poroso compresible.',
     criticalLimit:
@@ -185,8 +185,8 @@ export const ANALOG_SCIENTIFIC_MATRIX: AnalogJustificationEntry[] = [
     targetId: 'MARS-ALB',
     targetName: 'Alba Mons',
     mission: 'Apollo Geology Field Training / Mars Sample Return Test',
-    earthSensors: 'TanDEM-X DEM · Sentinel-1 InSAR · Landsat 8/9',
-    nasaSensors: 'MGS MOLA · Mars Odyssey THEMIS · MRO HiRISE',
+    earthSensors: 'TanDEM-X DEM, Sentinel-1 InSAR, Landsat 8/9',
+    nasaSensors: 'MGS MOLA, Mars Odyssey THEMIS, MRO HiRISE',
     fidelityCriterion:
       'Coladas de basalto toleítico prístino sin meteorización biológica, lavas cordadas rugosas a-a y pahoehoe, y desgasificación en caldera de subsidencia volcánica masiva.',
     criticalLimit:
@@ -205,8 +205,8 @@ export const ANALOG_SCIENTIFIC_MATRIX: AnalogJustificationEntry[] = [
     targetId: 'MARS-ALB',
     targetName: 'Alba Mons',
     mission: 'Mars 2020 Astrobiology / Early Mars Hydrothermal Systems',
-    earthSensors: 'SRTM 30m · ASTER TIR · MODIS LST',
-    nasaSensors: 'MGS MOLA · TES / THEMIS · MRO CRISM',
+    earthSensors: 'SRTM 30m, ASTER TIR, MODIS LST',
+    nasaSensors: 'MGS MOLA, TES / THEMIS, MRO CRISM',
     fidelityCriterion:
       'Sistemas hidrotermales hiperácidos (pH < 0), hipersalinos y anóxicos enriquecidos en hierro y azufre; análogo geoquímico del vulcanismo Noeico temprano marciano.',
     criticalLimit:
@@ -225,8 +225,8 @@ export const ANALOG_SCIENTIFIC_MATRIX: AnalogJustificationEntry[] = [
     targetId: 'MARS-ALB',
     targetName: 'Alba Mons',
     mission: 'Mars Robotic Reconnaissance / Volcanic Field Navigation',
-    earthSensors: 'SRTM 30m DEM · Sentinel-2 MSI · ALOS PALSAR',
-    nasaSensors: 'MGS MOLA · Mars Odyssey THEMIS · MRO SHARAD',
+    earthSensors: 'SRTM 30m DEM, Sentinel-2 MSI, ALOS PALSAR',
+    nasaSensors: 'MGS MOLA, Mars Odyssey THEMIS, MRO SHARAD',
     fidelityCriterion:
       'Densidad superior a 800 conos basálticos monogenéticos y vastos mantos de arenas piroclásticas negras (lapilli); gradientes de pendiente mínimos y escorrentía superficial nula.',
     criticalLimit:
@@ -245,8 +245,8 @@ export const ANALOG_SCIENTIFIC_MATRIX: AnalogJustificationEntry[] = [
     targetId: 'MARS-JEZ',
     targetName: 'Cráter Jezero',
     mission: 'Mars 2020 Perseverance / Delta Sedimentology Calibration',
-    earthSensors: 'Landsat 9 OLI-2 · Sentinel-2 MSI · SRTM 30m',
-    nasaSensors: 'MGS MOLA · MRO CRISM · Mars 2020 Mastcam-Z / SuperCam',
+    earthSensors: 'Landsat 9 OLI-2, Sentinel-2 MSI, SRTM 30m',
+    nasaSensors: 'MGS MOLA, MRO CRISM, Mars 2020 Mastcam-Z / SuperCam',
     fidelityCriterion:
       'Único lago terrestre conocido con estromatolitos modernos y precipitados de hidromagnesita biocatalizada; idéntica firma espectral de carbonatos y arcillas detectada en el borde de Jezero.',
     criticalLimit:
@@ -265,8 +265,8 @@ export const ANALOG_SCIENTIFIC_MATRIX: AnalogJustificationEntry[] = [
     targetId: 'MARS-JEZ',
     targetName: 'Cráter Jezero',
     mission: 'ICESat-2 Orbital Altimetry / Autonomous Rover Pathfinding',
-    earthSensors: 'ICESat-2 ATLAS · SRTM 30m DEM · Sentinel-2 MSI',
-    nasaSensors: 'MGS MOLA DEM · Mars 2020 Navcam / Hazcam',
+    earthSensors: 'ICESat-2 ATLAS, SRTM 30m DEM, Sentinel-2 MSI',
+    nasaSensors: 'MGS MOLA DEM, Mars 2020 Navcam / Hazcam',
     fidelityCriterion:
       'Superficie evaporítica salina hiperplana con desniveles altimétricos inferiores a 1 m en 10,000 km²; albedo espectral uniforme (>0.70) y sustrato de halita y litio.',
     criticalLimit:
@@ -285,8 +285,8 @@ export const ANALOG_SCIENTIFIC_MATRIX: AnalogJustificationEntry[] = [
     targetId: 'MOON-SHK',
     targetName: 'Cráter Shackleton',
     mission: 'High-Altitude Planetary Simulation / Cryogenic System Tests',
-    earthSensors: 'SRTM 30m · ASTER GDEM · MODIS Terra LST',
-    nasaSensors: 'LRO LOLA DEM · LRO Diviner DLRE · MGS MOLA',
+    earthSensors: 'SRTM 30m, ASTER GDEM, MODIS Terra LST',
+    nasaSensors: 'LRO LOLA DEM, LRO Diviner DLRE, MGS MOLA',
     fidelityCriterion:
       'Cuerpo de agua líquida/congelada en cráter más alto de la Tierra (6,390 m), radiación solar UV extrema, hipoxia barométrica (450 hPa) y ciclos térmicos diurnos de congelamiento radical.',
     criticalLimit:
@@ -305,8 +305,8 @@ export const ANALOG_SCIENTIFIC_MATRIX: AnalogJustificationEntry[] = [
     targetId: 'MOON-COP',
     targetName: 'Cráter Copernicus',
     mission: 'Apollo Astronaut EVA Training / Artemis Impact Mechanics',
-    earthSensors: 'USGS 3DEP 1m LiDAR · SRTM 30m · ASTER TIR',
-    nasaSensors: 'LRO LOLA DEM 5m · LRO LROC NAC · Diviner DLRE',
+    earthSensors: 'USGS 3DEP 1m LiDAR, SRTM 30m, ASTER TIR',
+    nasaSensors: 'LRO LOLA DEM 5m, LRO LROC NAC, Diviner DLRE',
     fidelityCriterion:
       'Cráter de impacto meteorítico simple prístino de 1.2 km ø en calizas y areniscas; manto de eyección invertido (overturned flap), cuarzo chocado (coesita y stishovita) y escarpes de 45°.',
     criticalLimit:
@@ -325,8 +325,8 @@ export const ANALOG_SCIENTIFIC_MATRIX: AnalogJustificationEntry[] = [
     targetId: 'MARS-JEZ',
     targetName: 'Cráter Jezero',
     mission: 'Mars 2020 / ExoMars Rover Subsurface Life Detection',
-    earthSensors: 'Sentinel-2 MSI · ASTER TIR · Airborne HyMap',
-    nasaSensors: 'MGS MOLA · MRO CRISM · Mars Odyssey THEMIS',
+    earthSensors: 'Sentinel-2 MSI, ASTER TIR, Airborne HyMap',
+    nasaSensors: 'MGS MOLA, MRO CRISM, Mars Odyssey THEMIS',
     fidelityCriterion:
       'Meteorización oxidativa ácida de sulfuros masivos de hierro (pirita) produciendo jarosita, goethita y hematita; pH ácido (1.5 a 2.5) controlado por bacterias quimiolitotróficas del hierro.',
     criticalLimit:
@@ -347,7 +347,7 @@ export const DATASETS_VAULT: VaultDatasetEntry[] = [
     targetName: 'Cráter Shackleton',
     body: 'Luna',
     instrument: 'LRO LOLA Global DEM (256 ppd)',
-    resolution: 'Altímetro Láser LOLA · Precisión vertical sub-métrica',
+    resolution: 'Altímetro Láser LOLA, Precisión vertical sub-métrica',
     description:
       'Transecto topográfico polar LRO LOLA cruzando el borde iluminado y el fondo en sombra permanente (PSR a 4.2 km de profundidad).',
     previewHeaders: [
@@ -388,7 +388,7 @@ export const DATASETS_VAULT: VaultDatasetEntry[] = [
     targetName: 'Cráter Shackleton',
     body: 'Luna',
     instrument: 'LRO Diviner Lunar Radiometer Experiment (DLRE)',
-    resolution: 'Canales térmicos 7 y 8 · 500 m de resolución espacial',
+    resolution: 'Canales térmicos 7 y 8, 500 m de resolución espacial',
     description:
       'Telemetría radiométrica LRO Diviner con temperaturas criogénicas de 38 K en trampas frías PSR y borde con insolación rasante.',
     previewHeaders: [
@@ -794,7 +794,7 @@ export default function ScientificEvidenceVault({
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
           <div>
             <span className="font-mono text-[10px] tracking-wider uppercase text-[#8E9299] block mb-1">
-              Catálogo de Validación · NASA Space Apps Challenge
+              Catálogo de Validación, NASA Space Apps Challenge
             </span>
             <h3 className="text-xl md:text-2xl font-semibold text-white tracking-tight">
               Matriz de Justificación Científica de los 14 Sitios Análogos
@@ -885,7 +885,7 @@ export default function ScientificEvidenceVault({
                       {item.name}
                     </span>
                     <span className="text-[11px] text-[#8E9299] block font-mono mt-0.5">
-                      {item.country} · {item.elevM} m s.n.m.
+                      {item.country}, {item.elevM} m s.n.m.
                     </span>
                   </td>
 
@@ -941,7 +941,7 @@ export default function ScientificEvidenceVault({
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
           <div>
             <span className="font-mono text-[10px] tracking-wider uppercase text-[#8E9299] block mb-1">
-              Repositorio de Datos Abiertos · NASA PDS / Treks
+              Repositorio de Datos Abiertos, NASA PDS / Treks
             </span>
             <h3 className="text-xl md:text-2xl font-semibold text-white tracking-tight">
               Bóveda de Datasets CSV Procesados
@@ -1040,7 +1040,7 @@ export default function ScientificEvidenceVault({
                           <div className="space-y-3">
                             <div className="flex items-center justify-between text-xs">
                               <span className="font-mono text-[11px] text-[#8E9299]">
-                                Muestra tabular de los primeros 6 registros de {ds.totalRows} · {ds.csvFileName}
+                                Muestra tabular de los primeros 6 registros de {ds.totalRows}, {ds.csvFileName}
                               </span>
                               <span className="font-mono text-[10px] text-[#52525B]">
                                 Formato: UTF-8 con encabezados estándar

@@ -390,7 +390,7 @@ export default function PhotoComparator({
           <div className="px-6 py-2.5 border-b border-white/[0.06] flex items-center justify-between">
             <span className="font-mono text-[11px] font-bold text-[#F4F4F6] uppercase tracking-wider flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-              <span>Guía de Lectura Visual · Comparación Cenital Orbital (Tierra vs. {targetBody})</span>
+              <span>Guía de Lectura Visual: Comparación Cenital Orbital (Tierra vs. {targetBody})</span>
             </span>
             <span className="font-mono text-[10px] text-[#8E9299]">
               Escala Orbital Homogénea desde el Espacio
@@ -401,7 +401,7 @@ export default function PhotoComparator({
             <div className="p-4 md:p-5">
               <div className="font-mono text-[10px] text-[#8E9299] uppercase tracking-wider mb-1.5 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-white inline-block" />
-                <span>Qué observar a la izquierda (Tierra — {earthSiteName})</span>
+                <span>Qué observar a la izquierda: Tierra ({earthSiteName})</span>
               </div>
               <p className="font-sans text-xs text-[#F4F4F6] leading-relaxed">
                 {effectiveVisualGuide.earthObservation}
@@ -412,7 +412,7 @@ export default function PhotoComparator({
             <div className="p-4 md:p-5">
               <div className="font-mono text-[10px] text-[#8E9299] uppercase tracking-wider mb-1.5 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#A1A1AA] inline-block" />
-                <span>Qué observar a la derecha (NASA — {targetName})</span>
+                <span>Qué observar a la derecha: NASA ({targetName})</span>
               </div>
               <p className="font-sans text-xs text-[#F4F4F6] leading-relaxed">
                 {effectiveVisualGuide.targetObservation}
@@ -501,10 +501,10 @@ export default function PhotoComparator({
         {/* Top Badges */}
         <div className="absolute top-4 left-4 z-10 flex items-center gap-2 pointer-events-none">
           <span className="font-sans text-xs px-3.5 py-1.5 rounded-full font-semibold uppercase tracking-wider bg-black/80 backdrop-blur-md text-[#F4F4F6] border border-white/[0.1]">
-            Tierra · Vista Orbital Cenital
+            Tierra, Vista Orbital Cenital
           </span>
           <span className="font-mono text-[10px] px-2.5 py-1 rounded-full bg-black/60 text-[#8E9299] border border-white/[0.08] hidden sm:inline tabular-nums">
-            9.81 m/s² · 1 atm
+            9.81 m/s², 1 atm
           </span>
         </div>
 
@@ -513,14 +513,14 @@ export default function PhotoComparator({
             {targetBody === 'Luna' ? '1.62 m/s² (0.16g)' : '3.72 m/s² (0.38g)'}
           </span>
           <span className="font-sans text-xs px-3.5 py-1.5 rounded-full font-semibold uppercase tracking-wider text-[#F4F4F6] border border-white/[0.1] bg-black/80 backdrop-blur-md">
-            {targetName} ({targetBody}) · Vista Orbital Cenital
+            {targetName} ({targetBody}), Vista Orbital Cenital
           </span>
         </div>
 
         {/* Bottom Captions positioned above scale bars */}
         <div className="absolute bottom-14 left-4 z-10 font-sans text-xs text-[#F4F4F6] bg-black/80 backdrop-blur-md px-3.5 py-2 rounded-xl max-w-[44%] border border-white/[0.08] pointer-events-none">
           <span className="text-[#8E9299] block text-[10px] uppercase font-medium">Terreno análogo cenital:</span>
-          <span className="line-clamp-1">{earthSiteName} · Esri World Imagery ({effectiveLat.toFixed(3)}°, {effectiveLng.toFixed(3)}°)</span>
+          <span className="line-clamp-1">{earthSiteName}, Esri World Imagery ({effectiveLat.toFixed(3)}°, {effectiveLng.toFixed(3)}°)</span>
         </div>
 
         <div className="absolute bottom-14 right-4 z-10 font-sans text-xs text-[#F4F4F6] bg-black/80 backdrop-blur-md px-3.5 py-2 rounded-xl text-right max-w-[44%] border border-white/[0.08] pointer-events-none">
@@ -536,7 +536,7 @@ export default function PhotoComparator({
             Dossier Científico: Altimetría Cruzada, Inercia Térmica y Ciclo Diurno de 24 Horas
           </span>
           <span className="hidden sm:inline font-mono text-[10px] px-2 py-0.5 rounded bg-white/[0.06] text-[#8E9299]">
-            LOLA/MOLA DEM · Diviner DLRE · TES/THEMIS · MODIS LST
+            LOLA/MOLA DEM, Diviner DLRE, TES/THEMIS, MODIS LST
           </span>
         </div>
 
@@ -556,7 +556,7 @@ export default function PhotoComparator({
           <div className="flex flex-wrap items-center justify-between mb-4 gap-3">
             <div>
               <span className="font-sans text-xs font-bold text-[#F4F4F6] uppercase tracking-wider block">
-                Sección 3 — Perfil Topográfico Morfológico Normalizado y Panel de Inercia Térmica · {datasetSummary.instrumentBadge}
+                Perfil Topográfico Morfológico Normalizado y Panel de Inercia Térmica ({datasetSummary.instrumentBadge})
               </span>
               <span className="font-sans text-[11px] text-[#8E9299]">
                 Transecto morfológico real (100 puntos): USGS SRTM 30m vs. {datasetSummary.demCsvName}
@@ -580,14 +580,14 @@ export default function PhotoComparator({
             <div>
               <span className="text-[10px] text-[#8E9299] uppercase tracking-wider block mb-0.5">Distancia</span>
               <span className="text-[#F4F4F6] font-bold">
-                {hoverSvgX !== null ? `${liveTelemetry.distKm.toFixed(2)} km` : `0.00 — ${targetMaxDist.toFixed(1)} km`}
+                {hoverSvgX !== null ? `${liveTelemetry.distKm.toFixed(2)} km` : `0.00 a ${targetMaxDist.toFixed(1)} km`}
               </span>
             </div>
             <div>
               <span className="text-[10px] text-[#8E9299] uppercase tracking-wider block mb-0.5">Tierra (SRTM 30m)</span>
               <span className="text-[#F4F4F6] font-bold">
                 {hoverSvgX !== null
-                  ? `${liveTelemetry.earthElev} m · ${liveTelemetry.earthSlope.toFixed(1)}°`
+                  ? `${liveTelemetry.earthElev} m, ${liveTelemetry.earthSlope.toFixed(1)}°`
                   : `${Math.round(earthMinElev)} a ${Math.round(earthMaxElev)} m`}
               </span>
             </div>
@@ -595,7 +595,7 @@ export default function PhotoComparator({
               <span className="text-[10px] text-[#8E9299] uppercase tracking-wider block mb-0.5">Destino NASA DEM</span>
               <span className="text-[#A1A1AA] font-bold">
                 {hoverSvgX !== null
-                  ? `${liveTelemetry.targetElev} m · ${liveTelemetry.targetSlope.toFixed(1)}°`
+                  ? `${liveTelemetry.targetElev} m, ${liveTelemetry.targetSlope.toFixed(1)}°`
                   : `${Math.round(targetMinElev)} a ${Math.round(targetMaxElev)} m`}
               </span>
             </div>
@@ -847,7 +847,7 @@ export default function PhotoComparator({
                 <div>
                   <div className="flex items-center justify-between text-xs font-mono mb-1.5">
                     <span className="text-[#A1A1AA] font-semibold">
-                      {targetName} ({targetBody} · {targetThermal.instrumentBadge})
+                      {targetName} ({targetBody}, {targetThermal.instrumentBadge})
                     </span>
                     <span className="text-[#F4F4F6] font-bold tabular-nums">
                       ΔT = {targetDeltaT.toFixed(1)} K ({targetThermal.deltaTC.toFixed(1)} °C)
@@ -903,7 +903,7 @@ export default function PhotoComparator({
                 <div className="pt-3 border-t border-white/[0.06]">
                   <div className="flex items-center justify-between text-xs font-mono mb-1.5">
                     <span className="text-[#F4F4F6] font-semibold">
-                      {earthSiteName} (Tierra · Estación SRTM / Clima)
+                      {earthSiteName} (Tierra, Estación SRTM, Clima)
                     </span>
                     <span className="text-[#F4F4F6] font-bold tabular-nums">
                       ΔT = {earthDeltaT.toFixed(1)} K ({earthDeltaT.toFixed(1)} °C)

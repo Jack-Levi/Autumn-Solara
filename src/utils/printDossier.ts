@@ -41,7 +41,7 @@ export function printDossierIframe(elementId = 'technical-dossier-print-section'
     <html lang="es">
     <head>
       <meta charset="utf-8" />
-      <title>EXPEDIENTE TÉCNICO DE VALIDACIÓN ANÁLOGA — AUTUMN SOLARA</title>
+      <title>EXPEDIENTE TÉCNICO DE VALIDACIÓN ANÁLOGA: AUTUMN SOLARA</title>
       <style>
         @page {
           size: A4 portrait;

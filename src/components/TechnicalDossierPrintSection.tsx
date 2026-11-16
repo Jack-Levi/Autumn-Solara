@@ -61,13 +61,13 @@ export default function TechnicalDossierPrintSection({
         <div className="flex justify-between items-start gap-4">
           <div>
             <span className="text-[10px] uppercase font-mono tracking-widest text-neutral-600 block">
-              NASA International Space Apps Challenge — Documentación Científica Oficial
+              NASA International Space Apps Challenge: Documentación Científica Oficial
             </span>
             <h1 className="text-2xl font-bold font-serif tracking-tight text-black mt-1">
               Expediente Técnico de Validación Análoga
             </h1>
             <p className="text-xs text-neutral-700 mt-1">
-              Evaluación geocientífica y física de fidelidad — {site.name} ({site.id}) vs. {activeTarget.name} ({activeTarget.body})
+              Evaluación geocientífica y física de fidelidad: {site.name} ({site.id}) vs. {activeTarget.name} ({activeTarget.body})
             </p>
           </div>
           <div className="text-right font-mono text-[10px] text-neutral-600 shrink-0 space-y-0.5">
@@ -86,7 +86,7 @@ export default function TechnicalDossierPrintSection({
         <div className="grid grid-cols-2 gap-x-6 gap-y-1 font-mono text-[10px] text-neutral-700 mb-3 bg-neutral-50 p-3 border border-neutral-300">
           <div><strong className="text-black">Identificador de Catálogo:</strong> {site.id}</div>
           <div><strong className="text-black">Bioma Terrestre:</strong> {site.biome}</div>
-          <div><strong className="text-black">Ubicación Geográfica:</strong> {site.country} — {site.region}</div>
+          <div><strong className="text-black">Ubicación Geográfica:</strong> {site.country}, {site.region}</div>
           <div><strong className="text-black">Micro-Escala Morfológica:</strong> {site.microScale}</div>
           <div><strong className="text-black">Coordenadas Geodésicas:</strong> {site.dms} (Lat: {site.lat}°, Lng: {site.lng}°)</div>
           <div><strong className="text-black">Proceso Geofísico Activo:</strong> {site.activeProcess}</div>
@@ -230,8 +230,8 @@ export default function TechnicalDossierPrintSection({
 
       {/* ── 8. Official Certification Footer ── */}
       <footer className="print-block border-t border-black/40 pt-3 text-[9px] font-mono text-neutral-600 flex justify-between items-center">
-        <span>AUTUMN SOLARA · NASA INTERNATIONAL SPACE APPS CHALLENGE</span>
-        <span>DATOS ABIERTOS NASA EARTHDATA · USGS · ARTEMIS · MARS 2020</span>
+        <span>AUTUMN SOLARA, NASA INTERNATIONAL SPACE APPS CHALLENGE</span>
+        <span>DATOS ABIERTOS NASA EARTHDATA, USGS, ARTEMIS, MARS 2020</span>
         <span>CERTIFICACIÓN CIENTÍFICA V2</span>
       </footer>
     </section>

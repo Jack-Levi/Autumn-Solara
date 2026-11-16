@@ -5,7 +5,7 @@ const DEFAULT_SCENARIOS: CraterScenario[] = [
   // ─── LUNA (NASA LRO LOLA DEM) ───────────────────────────────────────────────
   {
     id: 'SHK-01',
-    name: 'Polo Sur — Cráter Shackleton (Artemis III)',
+    name: 'Polo Sur: Cráter Shackleton (Artemis III)',
     category: 'LUNA',
     targetBody: 'Luna',
     gravity: 1.62,
@@ -114,7 +114,7 @@ const DEFAULT_SCENARIOS: CraterScenario[] = [
   // ─── MARTE (NASA MGS MOLA DEM) ──────────────────────────────────────────────
   {
     id: 'JEZ-05',
-    name: 'Cráter Jezero — Delta Fluvial (Perseverance)',
+    name: 'Cráter Jezero: Delta Fluvial (Perseverance)',
     category: 'MARTE',
     targetBody: 'Marte',
     gravity: 3.72,
@@ -176,7 +176,7 @@ const DEFAULT_SCENARIOS: CraterScenario[] = [
   },
   {
     id: 'GUS-07',
-    name: 'Cráter Gusev — Colinas Columbia (Rover Spirit)',
+    name: 'Cráter Gusev: Colinas Columbia (Rover Spirit)',
     category: 'MARTE',
     targetBody: 'Marte',
     gravity: 3.72,
@@ -1015,7 +1015,7 @@ export default function GravitySimulator({ externalScenario }: GravitySimulatorP
           ctx.textAlign = flipX ? 'right' : 'left';
           const eSign = displayPitchDeg >= 0 ? '+' : '';
           ctx.fillText(
-            `ANÁLOGO TIERRA · PITCH: ${eSign}${displayPitchDeg.toFixed(1)}°`,
+            `ANÁLOGO TIERRA, PITCH: ${eSign}${displayPitchDeg.toFixed(1)}°`,
             flipX ? glEndX : glMidX + 4,
             glMidY - 3.5
           );
@@ -1340,17 +1340,17 @@ export default function GravitySimulator({ externalScenario }: GravitySimulatorP
           <img
             ref={printSnapshotRef}
             className="print-only-canvas-snapshot"
-            alt={`Transecto topográfico escalado y dinámica de rover — ${activeScenario.name}`}
+            alt={`Transecto topográfico escalado y dinámica de rover: ${activeScenario.name}`}
             style={{ display: 'none' }}
           />
 
           {/* Technical Drawing Metadata Footer */}
           <div className="mt-4 pt-3 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between text-[10px] font-mono text-white/40 gap-2">
             <span>
-              FIG. 04A · TRANSECTO TOPOGRÁFICO CONTINUO ESCALADO · EXTENSIÓN: {activeScenario.lengthKm.toFixed(1)} KM
+              FIG. 04A, TRANSECTO TOPOGRÁFICO CONTINUO ESCALADO, EXTENSIÓN: {activeScenario.lengthKm.toFixed(1)} KM
             </span>
             <span>
-              LÍNEA CONTINUA: PERFIL EXTRATERRESTRE · LÍNEA DISCONTINUA: ANÁLOGO TERRESTRE
+              LÍNEA CONTINUA: PERFIL EXTRATERRESTRE, LÍNEA DISCONTINUA: ANÁLOGO TERRESTRE
             </span>
           </div>
         </div>

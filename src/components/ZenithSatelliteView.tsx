@@ -231,10 +231,10 @@ export default function ZenithSatelliteView({
           <div className="absolute bottom-0 inset-x-0 bg-black/80 backdrop-blur-md px-4 py-2 border-t border-white/10 flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-white tabular-nums">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-              <span>USGS SRTM 30m DEM · Elevación base: {elevM.toLocaleString()} m</span>
+              <span>USGS SRTM 30m DEM, Elevación base: {elevM.toLocaleString()} m</span>
             </div>
             <div className="text-[#8E9299]">
-              Pendiente media: <strong className="text-white">{slopeDeg}°</strong> · Rugosidad RMS:{' '}
+              Pendiente media: <strong className="text-white">{slopeDeg}°</strong>, Rugosidad RMS:{' '}
               <strong className="text-white">{roughnessRms}</strong>
             </div>
           </div>

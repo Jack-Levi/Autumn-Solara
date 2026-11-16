@@ -828,7 +828,7 @@ export default function SatelliteMap({
               <span>
                 Sitio seleccionado:{' '}
                 <strong className="text-white">
-                  {selectedSite.id} — {selectedSite.name}
+                  {selectedSite.id}: {selectedSite.name}
                 </strong>
               </span>
               <span className="text-[#6B6F7B]">|</span>

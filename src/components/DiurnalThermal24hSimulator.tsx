@@ -252,10 +252,10 @@ export default function DiurnalThermal24hSimulator({
       <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
         <div>
           <h4 className="font-sans text-sm font-bold text-[#F4F4F6] tracking-tight">
-            Sección 4 — Simulador Interactivo del Ciclo Térmico Diurno de 24 Horas
+            Simulador Interactivo del Ciclo Térmico Diurno de 24 Horas
           </h4>
           <p className="font-sans text-xs text-[#8E9299]">
-            Comparativa radiométrica horaria entre telemetría orbital NASA (LRO Diviner / TES-THEMIS) y superficie terrestre (MODIS LST).
+            Comparativa radiométrica horaria entre telemetría orbital NASA (LRO Diviner, TES-THEMIS) y superficie terrestre (MODIS LST).
           </p>
         </div>
 
@@ -308,7 +308,7 @@ export default function DiurnalThermal24hSimulator({
         <div className="flex items-center justify-between text-xs font-mono text-[#8E9299] mb-2.5">
           <span className="text-[11px] uppercase tracking-wider">Control Temporal de Hora Solar</span>
           <span className="text-[#F4F4F6] font-bold tabular-nums">
-            {activeData.hourStr} h · {activeData.phaseLabel}
+            {activeData.hourStr} h, {activeData.phaseLabel}
           </span>
         </div>
 
@@ -331,7 +331,7 @@ export default function DiurnalThermal24hSimulator({
         {/* 5 Clean Hourly Tick Labels Every 6 Hours */}
         <div className="flex justify-between items-center text-[10px] font-mono text-[#8E9299] mt-2 pt-1 border-t border-white/[0.06] tabular-nums">
           <span>00:00 Medianoche</span>
-          <span className="hidden sm:inline">06:00 Terminador / Alba</span>
+          <span className="hidden sm:inline">06:00 Terminador, Alba</span>
           <span>12:00 Mediodía solar</span>
           <span className="hidden sm:inline">18:00 Ocaso</span>
           <span>23:00 Noche</span>
@@ -342,7 +342,7 @@ export default function DiurnalThermal24hSimulator({
       <div className="w-full overflow-x-auto p-4 rounded-xl bg-[#121316] border border-white/[0.08] mb-5">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-2 text-xs font-sans">
           <span className="font-mono text-[11px] text-[#8E9299] uppercase tracking-wider">
-            Onda Térmica Diurna (40 K — 400 K)
+            Onda Térmica Diurna (40 K a 400 K)
           </span>
           <div className="flex items-center gap-5 text-xs font-sans">
             <span className="flex items-center gap-2 text-[#F4F4F6]">
@@ -351,7 +351,7 @@ export default function DiurnalThermal24hSimulator({
             </span>
             <span className="flex items-center gap-2 text-[#A1A1AA]">
               <span className="w-4 h-0.5 border-t border-dashed border-[#A1A1AA] inline-block" />
-              {targetName} ({targetId === 'MOON-SHK' && shackletonMode === 'psr' ? 'PSR Diviner' : 'Diviner / TES-THEMIS'})
+              {targetName} ({targetId === 'MOON-SHK' && shackletonMode === 'psr' ? 'PSR Diviner' : 'Diviner, TES-THEMIS'})
             </span>
           </div>
         </div>

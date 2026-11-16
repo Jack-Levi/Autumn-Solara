@@ -65,8 +65,8 @@ export default function PlanetaryThermalSimulator({
           <div className="flex items-center gap-2 mb-1">
             <span className="font-sans text-[11px] font-medium tracking-wider uppercase text-[#8E9299]">
               {isMoon
-                ? 'LRO Diviner Lunar Radiometer (DLRE) — Ciclo diurno 24 horas'
-                : 'MGS TES y Mars Odyssey THEMIS — Inercia térmica y emisión IR'}
+                ? 'LRO Diviner Lunar Radiometer (DLRE): Ciclo diurno 24 horas'
+                : 'MGS TES y Mars Odyssey THEMIS: Inercia térmica y emisión IR'}
             </span>
           </div>
           <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">
@@ -268,7 +268,7 @@ export default function PlanetaryThermalSimulator({
       {!isMoon && (
         <div className="p-5 rounded-2xl bg-[#121316] border border-white/10 space-y-2 text-xs font-mono">
           <div className="flex items-center gap-2 text-white font-bold tracking-wide uppercase">
-            <span>Evaluación de mecánica de suelos — TES Thermal Inertia</span>
+            <span>Evaluación de mecánica de suelos: TES Thermal Inertia</span>
           </div>
           <p className="text-[#CBD5E1] text-xs leading-relaxed font-sans">
             {isAlbaMons ? (
@@ -288,7 +288,7 @@ export default function PlanetaryThermalSimulator({
       {isMoon && (
         <div className="p-5 rounded-2xl bg-[#121316] border border-white/10 space-y-2 text-xs font-mono">
           <div className="flex items-center gap-2 text-white font-bold tracking-wide uppercase">
-            <span>Física del vacío lunar — LRO Diviner DLRE</span>
+            <span>Física del vacío lunar: LRO Diviner DLRE</span>
           </div>
           <p className="text-[#CBD5E1] text-xs leading-relaxed font-sans">
             Al no existir atmósfera, la temperatura lunar está gobernada exclusivamente por balance radiativo puro de Stefan-Boltzmann: <strong className="text-white">oscilación de delta 290 K (+112 °C al cenit solar vs -178 °C en la noche lunar)</strong>. Esta fatiga térmica extrema es el principal factor de fractura en juntas mecánicas y degradación de sellos elastoméricos en trajes de astronautas y rovers de Artemis.

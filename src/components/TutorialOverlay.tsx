@@ -102,7 +102,7 @@ export default function TutorialOverlay({
           </div>
 
           <span className="font-sans text-[11px] uppercase tracking-wider text-[#8E9299] block mb-2 font-medium">
-            Onboarding científico — NASA Space Apps
+            Onboarding científico: NASA Space Apps
           </span>
 
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 tracking-tight">

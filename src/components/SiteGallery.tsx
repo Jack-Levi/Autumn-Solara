@@ -690,7 +690,7 @@ const SiteCard = React.memo(function SiteCard({
         {/* Bottom Coordinates & Fidelity HUD */}
         <div className="absolute bottom-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
           <span className="font-mono text-[10px] text-white/90 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/15 tabular-nums">
-            {site.dms} · {site.elevM.toLocaleString()} m s.n.m.
+            {site.dms}, {site.elevM.toLocaleString()} m s.n.m.
           </span>
           <span className="font-sans text-[10px] text-white/85 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/15 font-medium">
             {fidelityLabel(pfiDisplay)}
@@ -704,7 +704,7 @@ const SiteCard = React.memo(function SiteCard({
           {/* Uppercase Mono Micro-label with Fast Letter-by-Letter Reveal */}
           <div className="flex items-center gap-2 font-mono text-[11px] text-[#8E9299] uppercase tracking-[0.14em] mb-1.5 overflow-hidden whitespace-nowrap">
             <FastLetterReveal
-              text={`${site.biome.toUpperCase()} • ${site.nasaDatasets || 'NASA SRTM 30M'} • ANALOGÍA NASA`}
+              text={`${site.biome.toUpperCase()}, ${site.nasaDatasets || 'NASA SRTM 30M'}, ANALOGÍA NASA`}
               speed={10}
               delay={30}
               className="truncate"
@@ -732,7 +732,7 @@ const SiteCard = React.memo(function SiteCard({
           {/* Geographic Subtitle with Fast Letter-by-Letter Reveal */}
           <FastLetterReveal
             as="p"
-            text={`${site.country} · ${site.region}`}
+            text={`${site.country}, ${site.region}`}
             speed={9}
             delay={90}
             className="font-sans text-xs text-[#71717A] mb-4"

@@ -41,7 +41,7 @@ export default function DatasetExtractionModal({
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="font-sans text-[11px] font-medium text-[#8E9299] tracking-wider uppercase">
-                Repositorio científico oficial — NASA Space Apps Challenge
+                Repositorio científico oficial: NASA Space Apps Challenge
               </span>
             </div>
             <h2 className="text-xl md:text-2xl font-semibold tracking-tight text-white">
@@ -130,7 +130,7 @@ export default function DatasetExtractionModal({
           <div className="px-7 py-3 bg-[#111317] border-b border-white/[0.06] font-sans text-xs text-[#94A3B8] flex flex-wrap items-center justify-between gap-3 shrink-0">
             <div className="flex items-center gap-2">
               <span className="text-white font-medium">Orígenes certificados:</span>
-              <span>NASA Solar System Treks · LRO LOLA · LRO Diviner (DLRE) · MGS MOLA · Mars Odyssey THEMIS · MGS TES</span>
+              <span>NASA Solar System Treks, LRO LOLA, LRO Diviner (DLRE), MGS MOLA, Mars Odyssey THEMIS, MGS TES</span>
             </div>
             <span className="text-[#8E9299] text-[11px] font-mono">8 series extraídas en CSV UTF-8</span>
           </div>
@@ -172,7 +172,7 @@ export default function DatasetExtractionModal({
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-mono text-[10px] font-medium px-2 py-0.5 rounded-md bg-white/10 text-white/90 border border-white/15">
-                      {ds.body} — {ds.id}
+                      {ds.body}: {ds.id}
                     </span>
                     <span className="font-mono text-[10px] text-[#8E9299]">.CSV</span>
                   </div>
