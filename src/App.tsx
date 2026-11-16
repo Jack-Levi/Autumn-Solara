@@ -88,9 +88,6 @@ export function App() {
   // External calibrated CSV scenario for Section 04 Topography Simulator
   const [externalScenario, setExternalScenario] = useState<CraterScenario | null>(null);
 
-  // Scroll progress (0 to 1) throttled with RAF
-  const [scrollProgress, setScrollProgress] = useState<number>(0);
-
   // Space Tunnel active state (hides FloatingNav during the transition)
   const [isTunnelActive, setIsTunnelActive] = useState<boolean>(false);
 
@@ -136,32 +133,38 @@ export function App() {
           onUpdate: (self: any) => {
             gsap.set('#hero-section', {
               scale: 1 - self.progress * 0.04,
-              filter: `brightness(${1 - self.progress * 0.35})`,
+            });
+            gsap.set('#hero-curtain-dimmer', {
+              opacity: self.progress * 0.35,
             });
           },
         });
 
         const slide2Tween = gsap.to('#editorial-slide-2-inner', {
           scale: 0.96,
-          filter: 'brightness(0.65)',
           ease: 'none',
           scrollTrigger: {
             trigger: '#spacetunnel-curtain-wrap',
             start: 'top bottom',
             end: 'top top',
             scrub: true,
+            onUpdate: (self: any) => {
+              gsap.set('#slide2-curtain-dimmer', { opacity: self.progress * 0.35 });
+            },
           },
         });
 
         const spaceTween = gsap.to('#space-tunnel-inner', {
           scale: 0.96,
-          filter: 'brightness(0.65)',
           ease: 'none',
           scrollTrigger: {
             trigger: '#missions-section',
             start: 'top bottom',
             end: 'top top',
             scrub: true,
+            onUpdate: (self: any) => {
+              gsap.set('#tunnel-curtain-dimmer', { opacity: self.progress * 0.35 });
+            },
           },
         });
 
@@ -234,25 +237,6 @@ export function App() {
     elements.forEach((el) => observer.observe(el));
 
     return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    let ticking = false;
-    const onScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
-          const currentScroll = window.scrollY;
-          setScrollProgress(totalScroll > 0 ? Math.min(1, currentScroll / totalScroll) : 0);
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   // Web Audio subtle click sound
@@ -436,18 +420,21 @@ export function App() {
       />
 
       {/* 3. Hero Section (Sticky Curtain Base Layer) */}
-      <div id="hero-curtain-wrap" className="sticky-curtain-section">
-        <HeroSection scrollProgress={scrollProgress} />
+      <div id="hero-curtain-wrap" className="sticky-curtain-section relative">
+        <HeroSection />
+        <div id="hero-curtain-dimmer" className="absolute inset-0 bg-black pointer-events-none opacity-0 z-20" style={{ willChange: 'opacity' }} />
       </div>
 
       {/* 4. Editorial Slide 2 (Sticky Curtain Overlayer 1) */}
-      <div id="slide2-curtain-wrap" className="sticky-curtain-layer" style={{ willChange: 'transform', contain: 'paint' }}>
+      <div id="slide2-curtain-wrap" className="sticky-curtain-layer relative" style={{ willChange: 'transform', contain: 'paint' }}>
         <EditorialSlide2 />
+        <div id="slide2-curtain-dimmer" className="absolute inset-0 bg-black pointer-events-none opacity-0 z-20" style={{ willChange: 'opacity' }} />
       </div>
 
       {/* 5. Scroll-Linked 3D Space Tunnel (Sticky Curtain Overlayer 2) */}
-      <div id="spacetunnel-curtain-wrap" className="sticky-curtain-layer" style={{ willChange: 'transform', contain: 'paint' }}>
+      <div id="spacetunnel-curtain-wrap" className="sticky-curtain-layer relative" style={{ willChange: 'transform', contain: 'paint' }}>
         <SpaceTunnel />
+        <div id="tunnel-curtain-dimmer" className="absolute inset-0 bg-black pointer-events-none opacity-0 z-20" style={{ willChange: 'opacity' }} />
       </div>
 
       {/* 6. Extraterrestrial Mission Selector (Sticky Curtain Overlayer 3) */}

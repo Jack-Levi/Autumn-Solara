@@ -38,18 +38,32 @@ export default function FloatingNav({
   };
 
   useEffect(() => {
-    const handleScroll = () => {
+    let ticking = false;
+    let isScrolledVal = false;
+    let isVisibleVal = true;
+    let isLightSectionVal = false;
+
+    const updateNav = () => {
       const currentY = window.scrollY;
       const prevY = lastScrollYRef.current;
       const dy = currentY - prevY;
 
-      setIsScrolled(currentY > 40);
+      const newScrolled = currentY > 40;
+      if (newScrolled !== isScrolledVal) {
+        isScrolledVal = newScrolled;
+        setIsScrolled(newScrolled);
+      }
 
       // Auto-hide when scrolling down continuously past 180px, reveal immediately when scrolling up
+      let newVisible = isVisibleVal;
       if (currentY > 180 && dy > 6) {
-        setIsVisible(false);
+        newVisible = false;
       } else if (dy < -4 || currentY <= 180) {
-        setIsVisible(true);
+        newVisible = true;
+      }
+      if (newVisible !== isVisibleVal) {
+        isVisibleVal = newVisible;
+        setIsVisible(newVisible);
       }
       lastScrollYRef.current = currentY;
 
@@ -58,17 +72,30 @@ export default function FloatingNav({
       let overLight = false;
       const navY = 44; // Vertical position in viewport where nav sits
 
-      lightSections.forEach((sec) => {
-        const rect = sec.getBoundingClientRect();
+      for (let i = 0; i < lightSections.length; i++) {
+        const rect = lightSections[i].getBoundingClientRect();
         if (rect.top <= navY && rect.bottom >= navY) {
           overLight = true;
+          break;
         }
-      });
-      setIsLightSection(overLight);
+      }
+      if (overLight !== isLightSectionVal) {
+        isLightSectionVal = overLight;
+        setIsLightSection(overLight);
+      }
+
+      ticking = false;
+    };
+
+    const handleScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(updateNav);
+      }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
+    updateNav();
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 

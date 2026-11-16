@@ -812,7 +812,7 @@ export default function SiteGallery({
   }, []);
 
   // ── High-Performance Scroll Velocity & Flexion Physics Engine ─────────────
-  const [internalVelocity, setInternalVelocity] = useState(0);
+  const gridContainerRef = useRef<HTMLDivElement>(null);
   const targetVelocityRef = useRef(0);
   const currentVelocityRef = useRef(0);
   const lastScrollYRef = useRef(typeof window !== 'undefined' ? window.scrollY : 0);
@@ -820,6 +820,41 @@ export default function SiteGallery({
   const rafVelocityRef = useRef<number | null>(null);
 
   useEffect(() => {
+    const tick = () => {
+      targetVelocityRef.current *= 0.82;
+      currentVelocityRef.current += (targetVelocityRef.current - currentVelocityRef.current) * 0.18;
+
+      const v = currentVelocityRef.current;
+      const effectiveVelocity = Math.abs(v) > Math.abs(scrollVelocity) ? v : scrollVelocity;
+
+      if (gridContainerRef.current) {
+        if (Math.abs(effectiveVelocity) > 0.08) {
+          const pitchX = Math.min(Math.max(-effectiveVelocity * 0.12, -4.5), 4.5);
+          const scaleDepth = 1 - Math.min(Math.abs(effectiveVelocity) * 0.001, 0.025);
+          gridContainerRef.current.style.transform = `perspective(1200px) rotateX(${pitchX.toFixed(2)}deg) scale(${scaleDepth.toFixed(3)})`;
+          gridContainerRef.current.style.transition = 'none';
+        } else {
+          gridContainerRef.current.style.transform = 'perspective(1200px) rotateX(0deg) scale(1)';
+          gridContainerRef.current.style.transition = 'transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)';
+        }
+      }
+
+      // If velocity has settled to zero, stop the RAF loop until next scroll
+      if (Math.abs(v) < 0.04 && Math.abs(targetVelocityRef.current) < 0.04) {
+        currentVelocityRef.current = 0;
+        rafVelocityRef.current = null;
+        return;
+      }
+
+      rafVelocityRef.current = requestAnimationFrame(tick);
+    };
+
+    const startTick = () => {
+      if (!rafVelocityRef.current) {
+        rafVelocityRef.current = requestAnimationFrame(tick);
+      }
+    };
+
     const handleScroll = () => {
       const now = performance.now();
       const dt = Math.max(1, now - lastTimeRef.current);
@@ -831,6 +866,7 @@ export default function SiteGallery({
 
       lastScrollYRef.current = sy;
       lastTimeRef.current = now;
+      startTick();
     };
 
     const lenis = (window as any).__lenis;
@@ -838,6 +874,7 @@ export default function SiteGallery({
       lenis.on('scroll', (e: any) => {
         if (typeof e.velocity === 'number') {
           targetVelocityRef.current = Math.min(Math.max(e.velocity * 1.2, -60), 60);
+          startTick();
         } else {
           handleScroll();
         }
@@ -845,30 +882,11 @@ export default function SiteGallery({
     }
     window.addEventListener('scroll', handleScroll, { passive: true });
 
-    // Inertial physics loop: smooth lerp with rapid decay to flat when scrolling stops
-    const tick = () => {
-      targetVelocityRef.current *= 0.82;
-      currentVelocityRef.current += (targetVelocityRef.current - currentVelocityRef.current) * 0.18;
-
-      const v = currentVelocityRef.current;
-      if (Math.abs(v) < 0.04) {
-        if (currentVelocityRef.current !== 0) {
-          currentVelocityRef.current = 0;
-          setInternalVelocity(0);
-        }
-      } else {
-        setInternalVelocity(v);
-      }
-      rafVelocityRef.current = requestAnimationFrame(tick);
-    };
-
-    rafVelocityRef.current = requestAnimationFrame(tick);
-
     return () => {
       window.removeEventListener('scroll', handleScroll);
       if (rafVelocityRef.current) cancelAnimationFrame(rafVelocityRef.current);
     };
-  }, []);
+  }, [scrollVelocity]);
 
   // Calculate sliding magnetic bubble position
   const updatePillPosition = useCallback(() => {
@@ -921,13 +939,6 @@ export default function SiteGallery({
       return rs.site.biome === activeFilter;
     });
   }, [isPrinting, rankedSites, activeFilter]);
-
-  // Effective velocity combines internal physics engine and external prop
-  const effectiveVelocity = Math.abs(internalVelocity) > Math.abs(scrollVelocity) ? internalVelocity : scrollVelocity;
-  // Lusion 3D Perspective Pitch Roll: when scrolling down, cards roll forward/backward along X axis in 3D
-  // Clamped between -4.5deg and +4.5deg. Pure vertical 3D depth roll, ZERO left/right skew.
-  const pitchX = Math.min(Math.max(-effectiveVelocity * 0.12, -4.5), 4.5);
-  const scaleDepth = 1 - Math.min(Math.abs(effectiveVelocity) * 0.001, 0.025);
 
   return (
     <section
@@ -1011,14 +1022,12 @@ export default function SiteGallery({
 
         {/* ── 2-Column Spacious Editorial Grid with Lusion 3D Perspective Roll ── */}
         <div
+          ref={gridContainerRef}
           className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-16 items-start"
           style={{
             willChange: 'transform',
-            transform: Math.abs(effectiveVelocity) > 0.08
-              ? `perspective(1200px) rotateX(${pitchX.toFixed(2)}deg) scale(${scaleDepth.toFixed(3)})`
-              : 'perspective(1200px) rotateX(0deg) scale(1)',
+            transform: 'perspective(1200px) rotateX(0deg) scale(1)',
             transformOrigin: 'center center',
-            transition: Math.abs(effectiveVelocity) <= 0.08 ? 'transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)' : 'none',
           }}
         >
           {filteredRankedSites.map((rs) => (

@@ -77,10 +77,12 @@ export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    let cachedGradient: CanvasGradient | null = null;
+
     const resize = () => {
       const section = sectionRef.current;
       if (!section) return;
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const w = section.clientWidth || window.innerWidth;
       const h = section.clientHeight || window.innerHeight;
 
@@ -89,6 +91,12 @@ export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
       canvas.style.width = '100%';
       canvas.style.height = '100%';
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const grad = ctx.createRadialGradient(w / 2, -100, 50, w / 2, h * 0.5, w * 0.7);
+      grad.addColorStop(0, 'rgba(255, 255, 255, 0.08)');
+      grad.addColorStop(0.4, 'rgba(255, 255, 255, 0.02)');
+      grad.addColorStop(1, 'transparent');
+      cachedGradient = grad;
 
       if (particlesRef.current.length === 0) {
         initParticles(w, h);
@@ -162,13 +170,11 @@ export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
         titleBlockRef.current.style.opacity = `${op}`;
       }
 
-      // 1. Vertical Zenith Lunar Light Beam
-      const gradient = ctx.createRadialGradient(w / 2, -100, 50, w / 2, h * 0.5, w * 0.7);
-      gradient.addColorStop(0, 'rgba(255, 255, 255, 0.08)');
-      gradient.addColorStop(0.4, 'rgba(255, 255, 255, 0.02)');
-      gradient.addColorStop(1, 'transparent');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, w, h);
+      // 1. Vertical Zenith Lunar Light Beam (using cached gradient to prevent GC thrashing)
+      if (cachedGradient) {
+        ctx.fillStyle = cachedGradient;
+        ctx.fillRect(0, 0, w, h);
+      }
 
       const rect = section.getBoundingClientRect();
       const scaleX = rect.width / (w || 1);
