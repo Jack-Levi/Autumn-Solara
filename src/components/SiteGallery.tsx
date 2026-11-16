@@ -334,58 +334,66 @@ export function FastLetterReveal({
 
 // ─── Casino Slot Machine / Rolling Tumbler Title Reveal Component ────────────
 function getSlotReelChars(targetChar: string): string[] {
+  // Safe buffer character right above target (strictly no descenders below baseline)
+  let safePreChar = 'o';
+
   // Narrow characters (i, l, j, t, f, r, 1, punctuation)
   if (/[iljtfr()[\],.·•\-1!:]/.test(targetChar)) {
-    const pool = 'iltjrf1!';
+    const pool = 'iltrf1';
+    safePreChar = 'l';
     return [
       pool[Math.floor(Math.random() * pool.length)],
       pool[Math.floor(Math.random() * pool.length)],
       pool[Math.floor(Math.random() * pool.length)],
-      pool[Math.floor(Math.random() * pool.length)],
+      safePreChar,
       targetChar,
     ];
   }
   // Wide lowercase letters (m, w)
   if (/[mw]/.test(targetChar)) {
-    const pool = 'mwqhbkd';
+    const pool = 'mwhkd';
+    safePreChar = 'm';
     return [
       pool[Math.floor(Math.random() * pool.length)],
       pool[Math.floor(Math.random() * pool.length)],
       pool[Math.floor(Math.random() * pool.length)],
-      pool[Math.floor(Math.random() * pool.length)],
+      safePreChar,
       targetChar,
     ];
   }
   // Standard lowercase letters
   if (/[a-záéíóúñ]/.test(targetChar)) {
-    const pool = 'acegkopsuvxz';
+    const pool = 'acekosvxz';
+    safePreChar = 'e';
     return [
       pool[Math.floor(Math.random() * pool.length)],
       pool[Math.floor(Math.random() * pool.length)],
       pool[Math.floor(Math.random() * pool.length)],
-      pool[Math.floor(Math.random() * pool.length)],
+      safePreChar,
       targetChar,
     ];
   }
   // Uppercase letters
   if (/[A-ZÁÉÍÓÚÑ]/.test(targetChar)) {
-    const pool = 'ABCDEFGHJKLNPQRSTUVXYZ';
+    const pool = 'ABCDEFHKLNOSTXZ';
+    safePreChar = 'T';
     return [
       pool[Math.floor(Math.random() * pool.length)],
       pool[Math.floor(Math.random() * pool.length)],
       pool[Math.floor(Math.random() * pool.length)],
-      pool[Math.floor(Math.random() * pool.length)],
+      safePreChar,
       targetChar,
     ];
   }
   // Digits
   if (/[0-9]/.test(targetChar)) {
-    const pool = '0123456789';
+    const pool = '0123578';
+    safePreChar = '0';
     return [
       pool[Math.floor(Math.random() * pool.length)],
       pool[Math.floor(Math.random() * pool.length)],
       pool[Math.floor(Math.random() * pool.length)],
-      pool[Math.floor(Math.random() * pool.length)],
+      safePreChar,
       targetChar,
     ];
   }
@@ -405,6 +413,8 @@ function getCharWidth(char: string): number | null {
   }
 }
 
+const SLOT_ROW_HEIGHT_EM = 1.55;
+
 export function CasinoSlotTitle({
   text,
   isHovered = false,
@@ -416,6 +426,7 @@ export function CasinoSlotTitle({
 }) {
   const containerRef = useRef<HTMLHeadingElement>(null);
   const [isSpinning, setIsSpinning] = useState(false);
+  const [hasSettled, setHasSettled] = useState(false);
   const isVisibleRef = useRef(false);
 
   // Group characters by word so letters within words have tight natural kerning
@@ -429,11 +440,22 @@ export function CasinoSlotTitle({
     });
   }, [text]);
 
+  const triggerSpin = useCallback(() => {
+    setHasSettled(false);
+    setIsSpinning(false);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsSpinning(true);
+      });
+    });
+  }, []);
+
   // Viewport trigger: plays in synchrony on initial view and replays whenever scrolling back into view (subes/bajas)
   useEffect(() => {
     const el = containerRef.current;
     if (!el || typeof IntersectionObserver === 'undefined') {
       setIsSpinning(true);
+      setHasSettled(true);
       return;
     }
 
@@ -442,18 +464,13 @@ export function CasinoSlotTitle({
         if (entry.isIntersecting) {
           if (!isVisibleRef.current) {
             isVisibleRef.current = true;
-            // Prime at top of reel instantly, then trigger synchronized roll
-            setIsSpinning(false);
-            requestAnimationFrame(() => {
-              requestAnimationFrame(() => {
-                setIsSpinning(true);
-              });
-            });
+            triggerSpin();
           }
         } else {
           // When card scrolls out of view (whether scrolling up or down), reset so next entry triggers spin
           isVisibleRef.current = false;
           setIsSpinning(false);
+          setHasSettled(false);
         }
       },
       { threshold: 0.15 }
@@ -461,21 +478,23 @@ export function CasinoSlotTitle({
 
     observer.observe(el);
     return () => observer.disconnect();
-  }, [text]);
+  }, [text, triggerSpin]);
 
   // Re-spin reels on card hover (Slot machine lever pull)
   const prevHoverRef = useRef(false);
   useEffect(() => {
     if (isHovered && !prevHoverRef.current) {
-      setIsSpinning(false);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setIsSpinning(true);
-        });
-      });
+      triggerSpin();
     }
     prevHoverRef.current = isHovered;
-  }, [isHovered]);
+  }, [isHovered, triggerSpin]);
+
+  // Clean transition end handler: smoothly lock to pure native text once reel stops
+  const handleTransitionEnd = (e: React.TransitionEvent) => {
+    if (e.propertyName === 'transform') {
+      setHasSettled(true);
+    }
+  };
 
   return (
     <h3
@@ -502,50 +521,59 @@ export function CasinoSlotTitle({
               className="inline-block relative overflow-hidden align-baseline select-none"
               style={{
                 width: item.width ? `${item.width}px` : 'auto',
-                height: '1.18em',
-                lineHeight: '1.18em',
+                height: '1.22em',
+                lineHeight: '1.22em',
                 verticalAlign: 'baseline',
                 margin: 0,
                 padding: 0,
               }}
             >
-              {/* Invisible native character locks exact font metrics & fallback */}
+              {/* Native target character: visible when settled, invisible space reservation while spinning */}
               <span
-                className="invisible opacity-0 select-none pointer-events-none"
-                aria-hidden="true"
-                style={{ display: 'inline', margin: 0, padding: 0 }}
+                className="select-none pointer-events-none"
+                aria-hidden={!hasSettled}
+                style={{
+                  display: 'inline',
+                  margin: 0,
+                  padding: 0,
+                  opacity: hasSettled ? 1 : 0,
+                  visibility: hasSettled ? 'visible' : 'hidden',
+                }}
               >
                 {item.char}
               </span>
 
-              {/* 100% Synchronous Rolling Tumbler Reel (zero stagger delay, all letters spin together) */}
-              <span
-                className="absolute inset-0 flex flex-col items-center justify-start pointer-events-none select-none"
-                style={{
-                  transform: isSpinning
-                    ? `translateY(-${(item.rollChars.length - 1) * 1.18}em)`
-                    : 'translateY(0)',
-                  transition: isSpinning
-                    ? 'transform 0.52s cubic-bezier(0.12, 0.9, 0.28, 1) 0s'
-                    : 'none',
-                  willChange: 'transform',
-                }}
-              >
-                {item.rollChars.map((c, rIdx) => (
-                  <span
-                    key={rIdx}
-                    style={{
-                      height: '1.18em',
-                      lineHeight: '1.18em',
-                      display: 'block',
-                      textAlign: 'center',
-                      width: '100%',
-                    }}
-                  >
-                    {c}
-                  </span>
-                ))}
-              </span>
+              {/* 100% Synchronous Rolling Tumbler Reel: visible ONLY while rolling, unmounts on settle to prevent bleed */}
+              {!hasSettled && (
+                <span
+                  onTransitionEnd={handleTransitionEnd}
+                  className="absolute inset-0 flex flex-col items-center justify-start pointer-events-none select-none"
+                  style={{
+                    transform: isSpinning
+                      ? `translateY(-${(item.rollChars.length - 1) * SLOT_ROW_HEIGHT_EM}em)`
+                      : 'translateY(0)',
+                    transition: isSpinning
+                      ? 'transform 0.52s cubic-bezier(0.12, 0.9, 0.28, 1) 0s'
+                      : 'none',
+                    willChange: 'transform',
+                  }}
+                >
+                  {item.rollChars.map((c, rIdx) => (
+                    <span
+                      key={rIdx}
+                      style={{
+                        height: `${SLOT_ROW_HEIGHT_EM}em`,
+                        lineHeight: `${SLOT_ROW_HEIGHT_EM}em`,
+                        display: 'block',
+                        textAlign: 'center',
+                        width: '100%',
+                      }}
+                    >
+                      {c}
+                    </span>
+                  ))}
+                </span>
+              )}
             </span>
           ))}
         </span>
