@@ -426,7 +426,7 @@ export default function SiteDetailModal({
                 {site.id}
               </span>
               <span className="font-sans text-xs uppercase tracking-wider text-[#686B75]">
-                Sección 1 — Caso de estudio geológico · NASA Space Apps
+                Caso de estudio geológico · NASA Space Apps
               </span>
               {site.isCandidate && (
                 <span className="font-sans text-xs px-2.5 py-0.5 rounded-full font-medium bg-[#18181B] text-white">
@@ -513,7 +513,7 @@ export default function SiteDetailModal({
           <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
             <div>
               <span className="font-mono text-xs uppercase tracking-widest text-[#686B75] block">
-                SECCIÓN 2 — GALERÍA MULTICAPA DE INSPECCIÓN GEOLÓGICA (4 LÁMINAS)
+                GALERÍA MULTICAPA DE INSPECCIÓN GEOLÓGICA (4 LÁMINAS)
               </span>
               <h3 className="text-2xl font-bold text-[#0A0A0E] tracking-tight">
                 Muestreo Espectral, Topografía y Terreno Homólogo
@@ -648,7 +648,7 @@ export default function SiteDetailModal({
         <div className="max-w-[1400px] mx-auto px-6 md:px-12 mb-16">
           <div className="mb-4">
             <span className="font-mono text-xs uppercase tracking-widest text-[#686B75] block">
-              SECCIÓN 3 Y 4 — COMPARADOR INTERACTIVO, ALTIMETRÍA CRUZADA Y CICLO TÉRMICO DIURNO
+              COMPARADOR INTERACTIVO, ALTIMETRÍA CRUZADA Y CICLO TÉRMICO DIURNO
             </span>
             <h3 className="text-2xl font-bold text-[#0A0A0E] tracking-tight">
               Inspección Fotográfica, Topografía Morfológica y Onda Térmica de 24 Horas
@@ -683,7 +683,7 @@ export default function SiteDetailModal({
             <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div>
                 <span className="font-sans text-xs uppercase tracking-wider text-[#8E9299] block mb-2 font-medium">
-                  Sección 5 — Matriz cuantitativa multi-dataset · 8 dimensiones oficiales NASA
+                  Matriz cuantitativa multi-dataset · 8 dimensiones oficiales NASA
                 </span>
                 <h2 className="text-3xl font-semibold text-white tracking-tight">
                   Correlación paramétrica frente a {target.name}
@@ -813,7 +813,7 @@ export default function SiteDetailModal({
           <div className="max-w-[1400px] mx-auto">
             <div className="mb-10 text-center md:text-left">
               <span className="font-sans text-xs uppercase tracking-wider text-[#8E9299] block mb-2 font-medium">
-                Sección 6 — Evaluación crítica de la analogía planetaria · NASA Space Apps
+                Evaluación crítica de la analogía planetaria · NASA Space Apps
               </span>
               <h2 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
                 ¿Por qué coincide y dónde se rompe la analogía?
@@ -904,7 +904,7 @@ export default function SiteDetailModal({
           <div className="max-w-[1400px] mx-auto">
             <div className="mb-10">
               <span className="font-sans text-xs uppercase tracking-wider text-[#8E9299] block mb-2 font-medium">
-                Sección 7 — Protocolos de Ensayo Operacional (Preparación de Misiones Artemis y Marte)
+                Protocolos de Ensayo Operacional (Preparación de Misiones Artemis y Marte)
               </span>
               <h2 className="text-3xl font-semibold text-white tracking-tight">
                 Ensayos Críticos e Instrumentación de Vuelo

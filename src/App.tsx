@@ -495,9 +495,6 @@ export function App() {
       <section className="border-t border-b border-white/12 py-12 px-6 bg-transparent">
         <div className="max-w-[1400px] mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-8">
           <div className="max-w-2xl">
-            <span className="font-mono text-[10px] uppercase tracking-widest text-white/40 block mb-2">
-              05 / DOCUMENTACIÓN CIENTÍFICA OFICIAL
-            </span>
             <h3 className="text-2xl md:text-3xl font-semibold text-white tracking-tight leading-snug mb-3">
               Bóveda de evidencia científica y expedientes NASA
             </h3>
@@ -557,7 +554,8 @@ export function App() {
         <div className="max-w-[1400px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
           <div>
             <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
-              <strong className="text-white text-sm font-sans">Autumn Solara — Catálogo de validación planetaria</strong>
+              <strong className="text-white text-sm font-sans">Autumn Solara</strong>
+              <span className="text-[#8E9299] text-xs font-sans">Catálogo de validación planetaria</span>
             </div>
             <p className="max-w-md text-xs text-[#8E929F]">
               Plataforma cartográfica y geomorfológica para validación de sitios análogos a la Luna y Marte con datos abiertos de NASA JPL.

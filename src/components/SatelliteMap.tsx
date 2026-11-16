@@ -716,12 +716,6 @@ export default function SatelliteMap({
         {/* Section Header */}
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8">
           <div>
-            <span
-              className="font-mono uppercase tracking-widest block mb-3 text-[#6B6F7B]"
-              style={{ fontSize: '11px', letterSpacing: '0.12em' }}
-            >
-              03 — Explorador cartográfico — NASA GIBS y Esri multi-dataset
-            </span>
             <h2
               className="editorial-reveal-title"
               style={{

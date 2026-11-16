@@ -127,7 +127,6 @@ export default function FloatingNav({
             }`}
             title="Subir datos altimétricos CSV (LOLA o MOLA)"
           >
-            <span className={`w-1.5 h-1.5 rounded-full ${isLightSection ? 'bg-[#0A0A0E]/70' : 'bg-white/70'}`} />
             <span>Calibrar CSV</span>
           </button>
 

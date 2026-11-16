@@ -298,12 +298,6 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
         {/* Section Header */}
         <div className="mb-8 md:mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
-            <span
-              className="font-mono uppercase tracking-widest block mb-2 text-[#9A9891]"
-              style={{ fontSize: '11px', letterSpacing: '0.14em' }}
-            >
-              01 — SELECCIÓN DE MISIÓN DESTINO — 4 OBJETIVOS DE REFERENCIA
-            </span>
             <h2
               className="editorial-reveal-title font-sans font-semibold tracking-tight"
               style={{

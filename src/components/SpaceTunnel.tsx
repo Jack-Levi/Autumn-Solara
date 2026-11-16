@@ -591,9 +591,6 @@ export default function SpaceTunnel({
             AND LET YOUR<br />
             EXPLORATION RUN WILD
           </h2>
-          <span className="font-sans text-xs text-[#8E9299] mt-3 tracking-wide">
-            Datos satelitales NASA LRO / MRO / USGS SRTM
-          </span>
         </div>
 
         {/* Destello Óptico de Singularidad hacia MissionCards */}

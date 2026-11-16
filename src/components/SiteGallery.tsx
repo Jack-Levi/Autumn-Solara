@@ -944,12 +944,6 @@ export default function SiteGallery({
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div>
-            <span
-              className="font-sans uppercase tracking-wider block mb-3 text-[#686B75]"
-              style={{ fontSize: '11px', letterSpacing: '0.12em' }}
-            >
-              02 — Laboratorio de campo terrestre — 14 sitios análogos
-            </span>
             <h2
               className="editorial-reveal-title"
               style={{

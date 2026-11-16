@@ -772,37 +772,12 @@ export default function EditorialSlide2() {
               left: 24,
               right: 24,
               display: 'flex',
-              justifyContent: 'space-between',
+              justifyContent: 'flex-end',
               alignItems: 'flex-end',
               zIndex: 3,
               pointerEvents: 'none',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: '50%',
-                  background: '#FFFFFF',
-                  display: 'inline-block',
-                  opacity: 0.8,
-                }}
-              />
-              <span
-                style={{
-                  fontFamily: "'Inter', sans-serif",
-                  fontSize: 11,
-                  color: 'rgba(255, 255, 255, 0.8)',
-                  letterSpacing: '0.02em',
-                }}
-              >
-                {videoLoaded && !videoError
-                  ? 'NASA HiRISE — Modelo digital de elevación orbital'
-                  : 'LOLA LiDAR — Altímetro láser de precisión 1064 nm'}
-              </span>
-            </div>
-
             <span
               ref={zoomHudRef}
               style={{

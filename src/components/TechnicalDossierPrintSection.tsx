@@ -230,8 +230,8 @@ export default function TechnicalDossierPrintSection({
 
       {/* ── 8. Official Certification Footer ── */}
       <footer className="print-block border-t border-black/40 pt-3 text-[9px] font-mono text-neutral-600 flex justify-between items-center">
-        <span>AUTUMN SOLARA // NASA INTERNATIONAL SPACE APPS CHALLENGE</span>
-        <span>DATOS ABIERTOS NASA EARTHDATA / USGS / ARTEMIS / MARS 2020</span>
+        <span>AUTUMN SOLARA · NASA INTERNATIONAL SPACE APPS CHALLENGE</span>
+        <span>DATOS ABIERTOS NASA EARTHDATA · USGS · ARTEMIS · MARS 2020</span>
         <span>CERTIFICACIÓN CIENTÍFICA V2</span>
       </footer>
     </section>

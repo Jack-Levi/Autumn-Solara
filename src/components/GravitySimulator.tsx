@@ -634,8 +634,8 @@ export default function GravitySimulator({ externalScenario }: GravitySimulatorP
       ctx.textAlign = 'left';
       const targetTitle =
         activeScenario.category === 'CUSTOM'
-          ? `DATASET // ${activeScenario.name.toUpperCase()}`
-          : `${activeScenario.targetBody.toUpperCase()} // ${activeScenario.name.toUpperCase()}`;
+          ? `DATASET: ${activeScenario.name.toUpperCase()}`
+          : `${activeScenario.targetBody.toUpperCase()}: ${activeScenario.name.toUpperCase()}`;
       ctx.fillText(targetTitle, 0, 0);
       ctx.restore();
 
@@ -658,7 +658,7 @@ export default function GravitySimulator({ externalScenario }: GravitySimulatorP
       ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
       ctx.textAlign = 'left';
       ctx.fillText(
-        `ANÁLOGO TIERRA // ${activeScenario.earthAnalogName.toUpperCase()}`,
+        `ANÁLOGO TIERRA: ${activeScenario.earthAnalogName.toUpperCase()}`,
         0,
         0
       );
@@ -966,7 +966,7 @@ export default function GravitySimulator({ externalScenario }: GravitySimulatorP
           ctx.fillStyle = '#F2F0EA';
           ctx.textAlign = flipX ? 'right' : 'left';
           const sign = displayPitchDeg >= 0 ? '+' : '';
-          const pitchText = `PITCH: ${sign}${displayPitchDeg.toFixed(1)}° // ${isCriticalSlope ? 'CRITICAL LIMIT' : 'NOMINAL'}`;
+          const pitchText = `PITCH: ${sign}${displayPitchDeg.toFixed(1)}° (${isCriticalSlope ? 'CRITICAL LIMIT' : 'NOMINAL'})`;
           ctx.fillText(pitchText, flipX ? l1EndX : l1MidX + 4, l1MidY - 3.5);
 
           // Traction Callout (offset safely below wheels)
@@ -992,7 +992,7 @@ export default function GravitySimulator({ externalScenario }: GravitySimulatorP
           ctx.font = '500 9px "JetBrains Mono", monospace';
           ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
           ctx.textAlign = flipX ? 'right' : 'left';
-          const tracText = `TRACTION: ${pTarget.toFixed(0)} W // BOGIE ACTIVE`;
+          const tracText = `TRACTION: ${pTarget.toFixed(0)} W (BOGIE ACTIVE)`;
           ctx.fillText(tracText, flipX ? l2EndX : l2MidX + 4, l2MidY - 3.5);
         } else {
           // Ghost Rover Earth Callout
@@ -1015,7 +1015,7 @@ export default function GravitySimulator({ externalScenario }: GravitySimulatorP
           ctx.textAlign = flipX ? 'right' : 'left';
           const eSign = displayPitchDeg >= 0 ? '+' : '';
           ctx.fillText(
-            `ANÁLOGO TIERRA // PITCH: ${eSign}${displayPitchDeg.toFixed(1)}°`,
+            `ANÁLOGO TIERRA · PITCH: ${eSign}${displayPitchDeg.toFixed(1)}°`,
             flipX ? glEndX : glMidX + 4,
             glMidY - 3.5
           );
@@ -1205,9 +1205,6 @@ export default function GravitySimulator({ externalScenario }: GravitySimulatorP
         {/* Minimalist Cartographic Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 pb-6 border-b border-white/10">
           <div>
-            <span className="font-mono text-[11px] uppercase tracking-widest text-white/45 block mb-2">
-              04 / DINÁMICA DE TERRENO Y MOVILIDAD DE ROVERS
-            </span>
             <h2
               className="text-[#F2F0EA] font-serif font-light tracking-tight leading-[1.1]"
               style={{
@@ -1350,10 +1347,10 @@ export default function GravitySimulator({ externalScenario }: GravitySimulatorP
           {/* Technical Drawing Metadata Footer */}
           <div className="mt-4 pt-3 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between text-[10px] font-mono text-white/40 gap-2">
             <span>
-              FIG. 04-A // TRANSECTO TOPOGRÁFICO CONTINUO ESCALADO // EXTENSIÓN: {activeScenario.lengthKm.toFixed(1)} KM
+              FIG. 04A · TRANSECTO TOPOGRÁFICO CONTINUO ESCALADO · EXTENSIÓN: {activeScenario.lengthKm.toFixed(1)} KM
             </span>
             <span>
-              LÍNEA CONTINUA = PERFIL EXTRATERRESTRE // LÍNEA DISCONTINUA = ANÁLOGO TERRESTRE
+              LÍNEA CONTINUA: PERFIL EXTRATERRESTRE · LÍNEA DISCONTINUA: ANÁLOGO TERRESTRE
             </span>
           </div>
         </div>
@@ -1365,7 +1362,7 @@ export default function GravitySimulator({ externalScenario }: GravitySimulatorP
           <div className="border-l border-white/15 pl-6 flex flex-col justify-between">
             <div>
               <span className="font-mono text-[10px] uppercase tracking-widest text-white/40 block mb-2">
-                01 / COTA ALTIMÉTRICA
+                COTA ALTIMÉTRICA
               </span>
               <div className="font-mono text-2xl font-light text-[#F2F0EA] tracking-tight mb-1">
                 <span ref={targetElevTextRef}>0 m</span>
@@ -1390,7 +1387,7 @@ export default function GravitySimulator({ externalScenario }: GravitySimulatorP
           <div className="border-l border-white/15 pl-6 flex flex-col justify-between">
             <div>
               <span className="font-mono text-[10px] uppercase tracking-widest text-white/40 block mb-2">
-                02 / INCLINACIÓN Y ESTABILIDAD
+                INCLINACIÓN Y ESTABILIDAD
               </span>
               <div className="font-mono text-2xl font-light text-[#F2F0EA] tracking-tight mb-1">
                 <span ref={slopeTextRef}>+0.0°</span>
@@ -1415,7 +1412,7 @@ export default function GravitySimulator({ externalScenario }: GravitySimulatorP
           <div className="border-l border-white/15 pl-6 flex flex-col justify-between">
             <div>
               <span className="font-mono text-[10px] uppercase tracking-widest text-white/40 block mb-2">
-                03 / ESFUERZO DE TRACCIÓN
+                ESFUERZO DE TRACCIÓN
               </span>
               <div className="font-mono text-2xl font-light text-[#F2F0EA] tracking-tight mb-1">
                 <span ref={powerTextRef}>140 W</span>
@@ -1440,7 +1437,7 @@ export default function GravitySimulator({ externalScenario }: GravitySimulatorP
           <div className="border-l border-white/15 pl-6 flex flex-col justify-between">
             <div>
               <span className="font-mono text-[10px] uppercase tracking-widest text-white/40 block mb-2">
-                04 / CONDICIÓN DE CONTORNO
+                CONDICIÓN DE CONTORNO
               </span>
               <h4 className="font-sans text-xs font-normal text-[#F2F0EA] leading-relaxed mb-2">
                 {activeScenario.breakdownTitle}
