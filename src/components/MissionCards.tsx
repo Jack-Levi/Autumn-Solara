@@ -1,19 +1,282 @@
-import React, { useRef, useCallback, useState, useMemo } from 'react';
+import React, { useRef, useCallback, useState, useEffect } from 'react';
+import * as THREE from 'three';
 import { TARGETS } from '../data';
+import type { ExtraTerrestrialTarget } from '../data';
+import { getTargetDatasetSummary } from '../data/nasaExtractedDatasets';
+import DatasetExtractionModal from './DatasetExtractionModal';
 
 interface MissionCardsProps {
   selectedTargetId: string;
   onSelectTarget: (id: string) => void;
 }
 
-export default function MissionCards({ selectedTargetId, onSelectTarget }: MissionCardsProps) {
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [filterBody, setFilterBody] = useState<'Todos' | 'Luna' | 'Marte'>('Todos');
+// 4 Primary NASA Flagship Reference Targets corresponding to extracted CSV datasets
+const FLAGSHIP_TARGET_IDS = ['MOON-SHK', 'MOON-COP', 'MARS-JEZ', 'MARS-ALB'];
 
-  const filteredTargets = useMemo(() => {
-    if (filterBody === 'Todos') return TARGETS;
-    return TARGETS.filter((t) => t.body === filterBody);
-  }, [filterBody]);
+/**
+ * High-speed Warp Starfield Background
+ * Extends the SpaceTunnel starfield at reduced opacity (0.28)
+ * for seamless visual continuity into Section 01.
+ */
+function MissionStarfieldBackground() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    // Mini star texture with 4 diffraction spikes (identical to SpaceTunnel)
+    const createMiniStarTexture = () => {
+      const c = document.createElement('canvas');
+      c.width = 64;
+      c.height = 64;
+      const ctx = c.getContext('2d');
+      if (!ctx) return new THREE.Texture();
+      const cx = 32;
+      const cy = 32;
+
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 30);
+      grad.addColorStop(0, 'rgba(255,255,255,1.0)');
+      grad.addColorStop(0.18, 'rgba(210,240,255,0.75)');
+      grad.addColorStop(0.5, 'rgba(0,180,255,0.22)');
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 64, 64);
+
+      // Diffraction cross
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fillRect(cx - 1, 4, 2, 56);
+      ctx.fillRect(4, cy - 1, 56, 2);
+
+      const texture = new THREE.CanvasTexture(c);
+      texture.needsUpdate = true;
+      return texture;
+    };
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x08090c, 0.0016);
+
+    const camera = new THREE.PerspectiveCamera(65, 1, 0.1, 1000);
+    camera.position.z = 0;
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+      alpha: true,
+      antialias: false,
+      powerPreference: 'high-performance',
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+    const STAR_COUNT = 4800;
+    const starPositions = new Float32Array(STAR_COUNT * 3);
+    const starSpeeds = new Float32Array(STAR_COUNT);
+    const starColors = new Float32Array(STAR_COUNT * 3);
+
+    for (let s = 0; s < STAR_COUNT; s++) {
+      const angle = Math.random() * Math.PI * 2;
+      const rad = 2.0 + Math.pow(Math.random(), 0.72) * 80.0;
+
+      starPositions[s * 3] = Math.cos(angle) * rad;
+      starPositions[s * 3 + 1] = Math.sin(angle) * rad;
+      starPositions[s * 3 + 2] = -Math.random() * 650;
+
+      starSpeeds[s] = 2.4 + Math.random() * 4.6;
+
+      const cRand = Math.random();
+      if (cRand < 0.72) {
+        starColors[s * 3] = 1.0;
+        starColors[s * 3 + 1] = 1.0;
+        starColors[s * 3 + 2] = 1.0;
+      } else if (cRand < 0.90) {
+        starColors[s * 3] = 0.0;
+        starColors[s * 3 + 1] = 0.9;
+        starColors[s * 3 + 2] = 1.0;
+      } else {
+        starColors[s * 3] = 0.2;
+        starColors[s * 3 + 1] = 0.5;
+        starColors[s * 3 + 1] = 1.0;
+      }
+    }
+
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    starGeo.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+
+    const starTexture = createMiniStarTexture();
+    const starMat = new THREE.PointsMaterial({
+      size: 0.62,
+      map: starTexture,
+      vertexColors: true,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+
+    const starSystem = new THREE.Points(starGeo, starMat);
+    scene.add(starSystem);
+
+    const handleResize = () => {
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      const width = parent.clientWidth;
+      const height = parent.clientHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height, false);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    let isVisible = true;
+    let animationFrameId: number;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const wasVisible = isVisible;
+        isVisible = entry.isIntersecting;
+        if (isVisible && !wasVisible) {
+          animationFrameId = requestAnimationFrame(animate);
+        }
+      },
+      { rootMargin: '120px' }
+    );
+    observer.observe(canvas);
+
+    const animate = () => {
+      if (!isVisible) return;
+
+      const posArr = starGeo.attributes.position.array as Float32Array;
+      for (let s = 0; s < STAR_COUNT; s++) {
+        posArr[s * 3 + 2] += starSpeeds[s];
+        if (posArr[s * 3 + 2] > camera.position.z + 5) {
+          posArr[s * 3 + 2] = camera.position.z - 650;
+          const angle = Math.random() * Math.PI * 2;
+          const rad = 2.0 + Math.pow(Math.random(), 0.72) * 80.0;
+          posArr[s * 3] = Math.cos(angle) * rad;
+          posArr[s * 3 + 1] = Math.sin(angle) * rad;
+        }
+      }
+      starGeo.attributes.position.needsUpdate = true;
+
+      renderer.render(scene, camera);
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    animationFrameId = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      observer.disconnect();
+      window.removeEventListener('resize', handleResize);
+      renderer.dispose();
+      starGeo.dispose();
+      starMat.dispose();
+      starTexture.dispose();
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        zIndex: 0,
+        opacity: 0.28,
+      }}
+    />
+  );
+}
+
+export default function MissionCards({ selectedTargetId, onSelectTarget }: MissionCardsProps) {
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [hasEntered, setHasEntered] = useState(false);
+  const [isDatasetModalOpen, setIsDatasetModalOpen] = useState(false);
+
+  // Locomotive kinetic velocity skew & tilt connected to Lenis
+  useEffect(() => {
+    let rafId: number | null = null;
+    let currentSkew = 0;
+    let targetSkew = 0;
+    let isRunning = true;
+
+    const updateSkew = () => {
+      if (!isRunning) return;
+      const lenis = (window as any).__lenis;
+      const velocity = lenis?.velocity || 0;
+
+      // Dynamic micro-deformation: skew proportional to velocity, clamped strictly to max ±3deg
+      targetSkew = Math.max(-3, Math.min(3, velocity * 0.08));
+
+      // Damped return to 0 with silky inertia
+      currentSkew += (targetSkew - currentSkew) * 0.12;
+
+      if (gridRef.current) {
+        if (Math.abs(currentSkew) > 0.005) {
+          gridRef.current.style.transform = `translate3d(0,0,0) skewY(${currentSkew.toFixed(3)}deg)`;
+        } else {
+          gridRef.current.style.transform = 'translate3d(0,0,0) skewY(0deg)';
+        }
+      }
+
+      if (Math.abs(currentSkew) <= 0.005 && Math.abs(targetSkew) <= 0.005) {
+        rafId = null;
+        return;
+      }
+
+      rafId = requestAnimationFrame(updateSkew);
+    };
+
+    const startSkew = () => {
+      if (!rafId && isRunning) {
+        rafId = requestAnimationFrame(updateSkew);
+      }
+    };
+
+    const lenis = (window as any).__lenis;
+    if (lenis) {
+      lenis.on('scroll', startSkew);
+    }
+    window.addEventListener('scroll', startSkew, { passive: true });
+
+    return () => {
+      isRunning = false;
+      if (rafId) cancelAnimationFrame(rafId);
+      window.removeEventListener('scroll', startSkew);
+    };
+  }, []);
+
+  // Filter down to the 4 reference destinations
+  const referenceTargets: ExtraTerrestrialTarget[] = FLAGSHIP_TARGET_IDS.map(
+    (id) => TARGETS.find((t) => t.id === id) || TARGETS[0]
+  );
+
+  // Initial fan angles in degrees
+  const initialFanAngles = [-6, -2, 2, 6];
+
+  // IntersectionObserver to trigger fan unfurl animation when entering viewport
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setHasEntered(true);
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>, index: number) => {
     const card = cardRefs.current[index];
@@ -23,79 +286,85 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
 
-    const rotateY = (x - 0.5) * 16;
-    const rotateX = (0.5 - y) * 16;
+    // Smooth tilt: rotateX from vertical motion, rotateY from horizontal
+    const rotateY = (x - 0.5) * 14;
+    const rotateX = (0.5 - y) * 14;
 
-    card.style.transform = `perspective(1000px) rotateY(${rotateY}deg) rotateX(${rotateX}deg) translateY(-8px)`;
-    card.style.setProperty('--mouse-x', `${x * 100}%`);
-    card.style.setProperty('--mouse-y', `${y * 100}%`);
+    card.style.transform = `perspective(1000px) rotateY(${rotateY}deg) rotateX(${rotateX}deg) translateY(-6px)`;
   }, []);
 
   const handleMouseLeave = useCallback((index: number) => {
     const card = cardRefs.current[index];
     if (!card) return;
-    card.style.transform = '';
+    card.style.transform = 'perspective(1000px) rotateY(0deg) rotateX(0deg) translateY(0px)';
   }, []);
 
-  // Fan angles for initial rest state
-  const fanAngles = [-3, -1, 1, 3];
-
   return (
-    <section className="section-light cross-grid py-28 px-6 relative select-none">
-      <div className="max-w-[1400px] mx-auto">
+    <section
+      ref={sectionRef}
+      className="pt-8 pb-24 md:pt-10 md:pb-28 px-6 relative select-none overflow-hidden text-[#ECEAE4]"
+      style={{
+        backgroundColor: '#08090C',
+      }}
+    >
+      {/* 1. Continuous High-Speed Warp Starfield Background */}
+      <MissionStarfieldBackground />
+
+      <div className="max-w-[1400px] mx-auto relative z-10">
         {/* Section Header */}
-        <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="mb-8 md:mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
-            <span
-              className="font-mono uppercase tracking-widest block mb-3 text-[#686B75]"
-              style={{ fontSize: '11px', letterSpacing: '0.12em' }}
-            >
-              01 — SELECCIÓN DE MISIÓN DESTINO // NASA TREK SITES
-            </span>
             <h2
+              className="editorial-reveal-title font-sans font-semibold tracking-tight"
               style={{
-                fontFamily: "'Inter', sans-serif",
-                fontWeight: 700,
-                fontSize: 'clamp(32px, 4vw, 48px)',
-                color: '#0A0A0E',
+                fontSize: 'clamp(30px, 3.5vw, 44px)',
+                color: '#ECEAE4',
                 lineHeight: 1.15,
                 margin: 0,
+                letterSpacing: '-0.03em',
               }}
             >
               Elige tu destino extraterrestre
             </h2>
-            <p className="text-[#686B75] text-base mt-2 max-w-xl font-light">
-              12 ubicaciones estratégicas caracterizadas con LRO LOLA (Luna) y MGS MOLA (Marte). Selecciona un destino para recalcular en tiempo real el Índice de Fidelidad Planetaria (PFI).
+            <p className="text-[#9A9891] text-[15px] mt-3 max-w-[65ch] font-normal leading-[1.65]">
+              Selecciona uno de los 4 destinos espaciales de referencia para recalcular en tiempo real el Índice de Fidelidad Planetaria (PFI) sobre las 8 dimensiones oficiales de la NASA.
             </p>
           </div>
 
-          {/* Filter Pills: TODOS | LUNA | MARTE */}
-          <div className="flex items-center gap-2 bg-[#EAEAED] p-1.5 rounded-full border border-black/5 self-start md:self-end">
-            {(['Todos', 'Luna', 'Marte'] as const).map((b) => {
-              const active = filterBody === b;
-              const count = b === 'Todos' ? TARGETS.length : TARGETS.filter((t) => t.body === b).length;
-              return (
-                <button
-                  key={b}
-                  onClick={() => setFilterBody(b)}
-                  className={`font-mono text-xs px-4 py-1.5 rounded-full transition-all duration-200 ${
-                    active
-                      ? 'bg-[#2544FF] text-white font-bold shadow-sm'
-                      : 'text-[#686B75] hover:text-[#0A0A0E]'
-                  }`}
-                >
-                  {b.toUpperCase()} ({count})
-                </button>
-              );
-            })}
+          {/* Technical Plain Monospace Indicators (Zero Pills, Zero AI Dashboard Badges) */}
+          <div className="flex items-center gap-3 font-mono text-xs text-[#9A9891]">
+            <button
+              onClick={() => setIsDatasetModalOpen(true)}
+              className="hover:text-[#ECEAE4] transition-colors underline-offset-4 hover:underline cursor-pointer"
+              title="Abrir panel de datasets extraídos de NASA Trek"
+            >
+              DATASETS REALES (6 ARCHIVOS CSV)
+            </button>
+            <span className="text-white/20">|</span>
+            <span className="tracking-wider">4 DESTINOS DE REFERENCIA</span>
           </div>
         </div>
 
-        {/* Dynamic Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-stretch">
-          {filteredTargets.map((target, index) => {
+        {/* Strict 4-Column Single Row Grid with Kinetic Velocity Skew */}
+        <div
+          ref={gridRef}
+          className="kinetic-skew-wrap lg:grid-cols-4"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+            gap: '20px',
+            alignItems: 'stretch',
+          }}
+        >
+          {referenceTargets.map((target, index) => {
             const isSelected = target.id === selectedTargetId;
-            const fanRot = fanAngles[index % fanAngles.length];
+            const fanAngle = initialFanAngles[index % initialFanAngles.length];
+            const summary = getTargetDatasetSummary(target.id);
+
+            // Initial transition from fan angle to 0deg
+            const baseTransform = hasEntered
+              ? 'perspective(1000px) rotateY(0deg) rotateX(0deg) translateY(0px)'
+              : `perspective(1000px) rotate(${fanAngle}deg) translateY(12px)`;
 
             return (
               <div
@@ -103,144 +372,151 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
                 ref={(el) => {
                   cardRefs.current[index] = el;
                 }}
-                className={`mission-card group cursor-pointer transition-all duration-300 w-full min-h-[480px] flex flex-col justify-between p-6 rounded-2xl relative overflow-hidden border ${
-                  isSelected
-                    ? 'bg-white text-[#0A0A0E] border-[#2544FF] shadow-2xl shadow-[#2544FF]/25'
-                    : 'bg-[#2544FF] text-white border-transparent hover:shadow-xl hover:shadow-[#2544FF]/30'
-                }`}
+                className="mission-card group cursor-pointer transition-all duration-300 w-full min-h-[520px] flex flex-col justify-between p-7 relative overflow-hidden"
                 style={{
-                  transform: `rotate(${fanRot}deg)`,
-                  transition: 'transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.45s ease',
+                  borderRadius: '0px',
+                  boxShadow: 'none',
+                  background: isSelected ? 'rgba(255, 255, 255, 0.06)' : 'rgba(14, 15, 19, 0.72)',
+                  backdropFilter: 'blur(6px)',
+                  WebkitBackdropFilter: 'blur(6px)',
+                  border: isSelected ? '1px solid rgba(255, 255, 255, 0.18)' : '1px solid rgba(255, 255, 255, 0.12)',
+                  borderTop: isSelected ? '2px solid #ECEAE4' : '1px solid rgba(255, 255, 255, 0.12)',
+                  transform: baseTransform,
+                  transition: 'transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), background 0.3s ease, border-color 0.3s ease',
+                  willChange: 'transform',
                 }}
                 onMouseMove={(e) => handleMouseMove(e, index)}
                 onMouseLeave={() => handleMouseLeave(index)}
                 onClick={() => onSelectTarget(target.id)}
               >
-                {/* Intricate Aerospace Blueprint SVG Vector Overlay */}
+                {/* Technical Blueprint Vector Overlay */}
                 <svg
-                  className="absolute inset-0 w-full h-full pointer-events-none opacity-20"
-                  viewBox="0 0 300 450"
+                  className="absolute inset-0 w-full h-full pointer-events-none"
+                  viewBox="0 0 320 500"
                   fill="none"
-                  stroke={isSelected ? '#2544FF' : '#FFFFFF'}
+                  stroke="#FFFFFF"
                   strokeWidth="0.8"
+                  style={{ opacity: isSelected ? 0.09 : 0.04 }}
                 >
-                  <circle cx="150" cy="180" r="110" strokeDasharray="3,3" />
-                  <circle cx="150" cy="180" r="70" />
-                  <circle cx="150" cy="180" r="25" />
-                  <line x1="20" y1="180" x2="280" y2="180" strokeDasharray="4,4" />
-                  <line x1="150" y1="50" x2="150" y2="310" strokeDasharray="4,4" />
-                  <rect x="30" y="30" width="240" height="390" strokeDasharray="6,6" />
-                  <path d="M 40,40 L 60,40 L 40,60 Z" fill={isSelected ? '#2544FF' : '#FFFFFF'} fillOpacity="0.2" />
+                  <circle cx="160" cy="220" r="130" strokeDasharray="3,3" />
+                  <circle cx="160" cy="220" r="90" />
+                  <circle cx="160" cy="220" r="40" strokeDasharray="4,2" />
+                  <line x1="20" y1="220" x2="300" y2="220" strokeDasharray="4,4" />
+                  <line x1="160" y1="60" x2="160" y2="380" strokeDasharray="4,4" />
+                  <rect x="25" y="25" width="270" height="450" strokeDasharray="6,6" />
                 </svg>
 
-                {/* Top Bar: Number & Body */}
+                {/* Top Row: Number 01-04 & Flat Celestial Body Label */}
                 <div className="relative z-10 flex items-start justify-between">
                   <span
-                    className="font-extralight text-5xl leading-none select-none opacity-40 font-sans"
-                    style={{ color: isSelected ? '#2544FF' : 'white' }}
+                    className="font-extralight text-5xl leading-none select-none font-sans"
+                    style={{
+                      color: isSelected ? 'rgba(236, 234, 228, 0.45)' : 'rgba(255, 255, 255, 0.18)',
+                    }}
                   >
                     {(index + 1).toString().padStart(2, '0')}
                   </span>
-                  <div
-                    className={`font-mono text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider border ${
-                      isSelected
-                        ? 'bg-[#2544FF]/10 text-[#2544FF] border-[#2544FF]/30'
-                        : 'bg-white/15 text-white border-white/30'
-                    }`}
-                  >
-                    {target.body}
-                  </div>
+                  <span className="font-mono text-xs uppercase tracking-widest text-[#9A9891]">
+                    {target.body.toUpperCase()}
+                  </span>
                 </div>
 
-                {/* Center: Technical Aerospace Vector & Title */}
-                <div className="relative z-10 my-4">
-                  <div className="mb-3 flex items-center gap-2">
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.8"
-                      className="opacity-90"
+                {/* Center Content: Title, Mission Code, Single-Line Sensors & Real Metrics */}
+                <div className="relative z-10 my-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span
+                      className="font-mono text-[11px] font-bold tracking-wider"
+                      style={{ color: isSelected ? '#ECEAE4' : '#C2C0B8' }}
                     >
-                      {target.body === 'Luna' ? (
-                        <>
-                          <circle cx="12" cy="12" r="9" strokeDasharray="3 2" />
-                          <circle cx="12" cy="12" r="4" fill="currentColor" fillOpacity="0.25" />
-                        </>
-                      ) : (
-                        <>
-                          <circle cx="12" cy="12" r="8" />
-                          <ellipse cx="12" cy="12" rx="11" ry="4" strokeDasharray="2 2" />
-                        </>
-                      )}
-                    </svg>
-                    <span className="font-mono text-[11px] font-bold tracking-widest opacity-70">
                       {target.id}
                     </span>
+                    <span className="font-mono text-[10px] tracking-wider text-[#9A9891] uppercase">
+                      DESTINO DE REFERENCIA
+                    </span>
                   </div>
+
                   <h3
-                    className="text-xl font-bold tracking-tight leading-snug"
-                    style={{ color: isSelected ? '#0A0A0E' : 'white' }}
+                    className="text-lg font-semibold tracking-tight leading-snug"
+                    style={{
+                      fontFamily: "'Inter', sans-serif",
+                      color: '#ECEAE4',
+                    }}
                   >
                     {target.name}
                   </h3>
-                  <p
-                    className="text-xs mt-2 leading-relaxed font-light line-clamp-3"
-                    style={{ color: isSelected ? '#686B75' : 'rgba(255,255,255,0.85)' }}
-                  >
+
+                  <p className="text-xs mt-2 leading-relaxed font-light line-clamp-2 text-[#9A9891]">
                     {target.subtitle}
                   </p>
-                  {target.missionRef && (
-                    <span
-                      className="inline-block mt-3 font-mono text-[10px] px-2 py-0.5 rounded opacity-80"
-                      style={{
-                        backgroundColor: isSelected ? 'rgba(37,68,255,0.08)' : 'rgba(255,255,255,0.15)',
-                        color: isSelected ? '#2544FF' : 'white',
-                      }}
-                    >
-                      {target.missionRef}
-                    </span>
-                  )}
+
+                  {/* Clean Single-Line Sensors List Separated by Diagonals */}
+                  <div className="font-mono text-[10px] text-[#8E9299] uppercase tracking-wider mt-3 mb-2">
+                    {target.body === 'Luna'
+                      ? 'SENSORES: LRO-LOLA / LRO-DIVINER / M3'
+                      : 'SENSORES: MGS-MOLA / TES / CRISM'}
+                  </div>
+
+                  {/* 4 Real Extracted Metrics Grid */}
+                  <div
+                    className="grid grid-cols-2 gap-2 my-2.5 pt-2.5 pb-2 border-y"
+                    style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}
+                  >
+                    {summary.metrics.map((m, idx) => (
+                      <div key={idx} className="font-mono leading-tight">
+                        <span className="block text-[8.5px] uppercase font-medium tracking-wider mb-0.5 text-[#8E9299]">
+                          {m.label}
+                        </span>
+                        <strong className="text-[11px] text-[#ECEAE4]">
+                          {m.value}
+                        </strong>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
-                {/* Bottom: Metrics Specs & Select CTA */}
-                <div className="relative z-10 pt-3 border-t border-current/15">
-                  <div className="flex justify-between items-center font-mono text-[11px] mb-2">
-                    <span className="opacity-70">GRAVEDAD:</span>
-                    <strong>{target.gravity} m/s²</strong>
-                  </div>
-                  <div className="flex justify-between items-center font-mono text-[11px] mb-3">
-                    <span className="opacity-70">COORDENADAS:</span>
-                    <strong className="text-[10px]">{target.coords}</strong>
+                {/* Bottom Row: Physical Specs & Integrated Flat Bottom Strip */}
+                <div className="relative z-10 pt-3 border-t border-white/10">
+                  <div className="flex justify-between items-center font-mono text-[11px] mb-1 text-[#8E9299]">
+                    <span>GRAVEDAD:</span>
+                    <strong className="text-[#ECEAE4]">
+                      {target.gravity} m/s²
+                    </strong>
                   </div>
 
-                  {/* Active / Select Pill Button */}
-                  <button
-                    className={`w-full py-2.5 px-4 rounded-full font-mono text-xs font-bold uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 ${
-                      isSelected
-                        ? 'bg-[#2544FF] text-white shadow-md'
-                        : 'bg-white text-[#2544FF] hover:bg-white/90 shadow-sm'
-                    }`}
+                  <div className="flex justify-between items-center font-mono text-[11px] mb-4 text-[#8E9299]">
+                    <span>COORDENADAS:</span>
+                    <strong className="text-[10px] text-[#ECEAE4]">
+                      {target.coords}
+                    </strong>
+                  </div>
+
+                  {/* Integrated Full-Width Flat Strip Button (Zero Rounded Corners, Zero Bright AI Glow) */}
+                  <div
+                    className="-mx-7 -mb-7 py-3 px-4 font-mono text-xs uppercase tracking-wider text-center transition-colors select-none"
+                    style={{
+                      borderTop: '1px solid rgba(255, 255, 255, 0.14)',
+                      borderRadius: 0,
+                      backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                      color: isSelected ? '#ECEAE4' : '#9A9891',
+                    }}
                   >
-                    <span className="flex items-center gap-2">
-                      {isSelected ? (
-                        <>
-                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                          <span>DESTINO ACTIVO</span>
-                        </>
-                      ) : (
-                        <span>ACTIVAR MISIÓN →</span>
-                      )}
-                    </span>
-                  </button>
+                    {isSelected ? '[ DESTINO ACTIVO ]' : 'ACTIVAR MISIÓN →'}
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
       </div>
+
+      {/* Real NASA Datasets Extraction Modal */}
+      {isDatasetModalOpen && (
+        <DatasetExtractionModal
+          isOpen={isDatasetModalOpen}
+          onClose={() => setIsDatasetModalOpen(false)}
+          initialTargetFilter="all"
+        />
+      )}
     </section>
   );
 }

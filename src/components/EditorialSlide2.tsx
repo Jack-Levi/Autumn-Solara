@@ -1,354 +1,552 @@
 import React, { useRef, useEffect, useState } from 'react';
 
-// ─── High-Fidelity Planetary Flyover Canvas (Procedural Fallback) ─────────────
-function PlanetaryCanvas() {
-  const ref = useRef<HTMLCanvasElement>(null);
+// ─── High-Fidelity 3D Planetary Crater Flyover Canvas (LOLA / SRTM LIDAR) ────
+// Bulletproof 60fps orbital flyover over a lunar/martian crater with real-time
+// laser elevation scanning beam and orbital mission telemetry (Luxury Monochrome).
+function PlanetaryCanvas3D() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
 
   useEffect(() => {
-    const c = ref.current;
-    if (!c) return;
-    const ctx = c.getContext('2d');
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    type Star = { x: number; y: number; r: number; phase: number; speed: number };
-    const stars: Star[] = Array.from({ length: 180 }, () => ({
-      x: Math.random(),
-      y: Math.random() * 0.65,
-      r: 0.4 + Math.random() * 1.2,
-      phase: Math.random() * Math.PI * 2,
-      speed: 0.4 + Math.random() * 0.8,
-    }));
+    let time = 0;
+    const ROWS = 42;
+    const COLS = 46;
 
-    type Crater = { cx: number; cy: number; r: number; depth: number };
-    const craters: Crater[] = Array.from({ length: 22 }, () => ({
-      cx: Math.random(),
-      cy: 0.65 + Math.random() * 0.3,
-      r: 0.015 + Math.random() * 0.05,
-      depth: 0.4 + Math.random() * 0.5,
-    }));
+    const getCraterElevation = (x: number, z: number) => {
+      const dist = Math.sqrt(x * x + z * z);
+      let elev = 0;
 
-    let t = 0;
+      const rimDist = Math.abs(dist - 0.48);
+      if (rimDist < 0.22) {
+        elev += Math.cos((rimDist / 0.22) * (Math.PI / 2)) * 68;
+      }
+      if (dist < 0.44) {
+        elev -= Math.cos((dist / 0.44) * (Math.PI / 2)) * 52;
+      }
+      if (dist < 0.12) {
+        elev += Math.cos((dist / 0.12) * (Math.PI / 2)) * 36;
+      }
+      elev += Math.sin(x * 4.2 + z * 3.1) * 9 + Math.cos(x * 8.5) * 5;
+      return elev;
+    };
 
     const draw = () => {
-      t += 0.01;
-      const W = c.offsetWidth;
-      const H = c.offsetHeight;
-      if (!W || !H) {
+      time += 0.014;
+      const width = canvas.offsetWidth;
+      const height = canvas.offsetHeight;
+      if (!width || !height) {
         rafRef.current = requestAnimationFrame(draw);
         return;
       }
 
-      // Deep space gradient
-      const sky = ctx.createLinearGradient(0, 0, 0, H * 0.7);
-      sky.addColorStop(0, '#030408');
-      sky.addColorStop(0.5, '#070A14');
-      sky.addColorStop(1, '#0C1224');
-      ctx.fillStyle = sky;
-      ctx.fillRect(0, 0, W, H);
+      ctx.clearRect(0, 0, width, height);
 
-      // Starfield
-      for (const s of stars) {
-        const flicker = 0.55 + 0.45 * Math.sin(t * s.speed + s.phase);
-        ctx.globalAlpha = flicker * 0.85;
-        ctx.fillStyle = '#E2EAFF';
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
+      skyGrad.addColorStop(0, '#020306');
+      skyGrad.addColorStop(0.45, '#05070F');
+      skyGrad.addColorStop(1, '#090D1A');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, width, height);
+
+      ctx.fillStyle = '#E8EEFF';
+      for (let s = 0; s < 50; s++) {
+        const sx = ((s * 197 + Math.sin(s) * 40) % width + width) % width;
+        const sy = (s * 83) % (height * 0.42);
+        const sr = s % 3 === 0 ? 1.4 : 0.8;
+        const sa = 0.3 + 0.6 * Math.abs(Math.sin(time * 0.5 + s));
+        ctx.globalAlpha = sa;
         ctx.beginPath();
-        ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+        ctx.arc(sx, sy, sr, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.globalAlpha = 1;
 
-      // Martian / Lunar surface terrain scrolling
-      const surfaceScroll = -(t * 22) % W;
-      for (let pass = 0; pass < 2; pass++) {
-        const ox = surfaceScroll + pass * W;
-        ctx.beginPath();
-        ctx.moveTo(ox, H);
-        for (let x = 0; x <= W + 20; x += 6) {
-          const ny =
-            H * 0.68 +
-            Math.sin((x + ox) * 0.0035 + t * 0.06) * H * 0.065 +
-            Math.sin((x + ox) * 0.011 + t * 0.12) * H * 0.028 +
-            Math.sin((x + ox) * 0.028) * H * 0.012;
-          ctx.lineTo(ox + x, ny);
-        }
-        ctx.lineTo(ox + W + 20, H);
-        ctx.closePath();
+      const fov = 340;
+      const camY = -120;
+      const camZ = -260;
+      const horizonY = height * 0.46;
+      const centerX = width / 2;
 
-        const surf = ctx.createLinearGradient(0, H * 0.65, 0, H);
-        surf.addColorStop(0, '#2D1F1A');
-        surf.addColorStop(0.3, '#1F1410');
-        surf.addColorStop(1, '#0D0705');
-        ctx.fillStyle = surf;
-        ctx.fill();
+      const laserCycle = (time * 0.42) % 2;
+      const laserZNorm = laserCycle < 1 ? -0.8 + laserCycle * 1.6 : 0.8 - (laserCycle - 1) * 1.6;
+
+      const points: { sx: number; sy: number; zWorld: number; elev: number; isLaser: boolean }[][] = [];
+
+      for (let r = 0; r < ROWS; r++) {
+        const rowArr: { sx: number; sy: number; zWorld: number; elev: number; isLaser: boolean }[] = [];
+        const zNorm = -1.0 + (r / (ROWS - 1)) * 2.0;
+        const zWorld = zNorm * 380 + ((time * 42) % 30);
+
+        for (let c = 0; c < COLS; c++) {
+          const xNorm = -1.1 + (c / (COLS - 1)) * 2.2;
+          const xWorld = xNorm * 460;
+          const craterCenterZ = Math.sin(time * 0.15) * 0.2;
+          const elev = getCraterElevation(xNorm * 0.75, zNorm * 0.85 - craterCenterZ);
+
+          const depth = zWorld - camZ;
+          const scale = depth > 10 ? fov / depth : 0;
+          const sx = centerX + xWorld * scale;
+          const sy = horizonY + (camY - elev) * scale;
+          const isLaser = Math.abs(zNorm - laserZNorm) < 0.055;
+          rowArr.push({ sx, sy, zWorld, elev, isLaser });
+        }
+        points.push(rowArr);
       }
 
-      // Craters
-      for (const cr of craters) {
-        const cx = ((cr.cx * W - t * 22) % (W * 1.1) + W * 1.1) % (W * 1.1);
-        const cy = cr.cy * H;
-        const r = cr.r * W;
+      for (let r = 0; r < ROWS; r++) {
+        const row = points[r];
+        if (row.length < 2) continue;
 
         ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(10, 5, 4, ${cr.depth * 0.85})`;
-        ctx.fill();
+        ctx.moveTo(row[0].sx, row[0].sy);
+        for (let c = 1; c < COLS; c++) {
+          ctx.lineTo(row[c].sx, row[c].sy);
+        }
 
+        const depthFactor = r / ROWS;
+        const isLaserRow = row.some((p) => p.isLaser);
+
+        if (isLaserRow) {
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 2.0;
+          ctx.shadowColor = '#FFFFFF';
+          ctx.shadowBlur = 8;
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+        } else {
+          ctx.strokeStyle = `rgba(255, 255, 255, ${0.08 + depthFactor * 0.28})`;
+          ctx.lineWidth = 0.8 + depthFactor * 0.5;
+          ctx.stroke();
+        }
+      }
+
+      for (let c = 0; c < COLS; c += 2) {
         ctx.beginPath();
-        ctx.arc(cx - r * 0.15, cy - r * 0.15, r * 1.05, 0, Math.PI * 2);
-        ctx.strokeStyle = `rgba(180, 110, 80, ${cr.depth * 0.4})`;
-        ctx.lineWidth = Math.max(1, r * 0.12);
+        ctx.moveTo(points[0][c].sx, points[0][c].sy);
+        for (let r = 1; r < ROWS; r++) {
+          ctx.lineTo(points[r][c].sx, points[r][c].sy);
+        }
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.lineWidth = 0.6;
         ctx.stroke();
       }
 
-      // Atmospheric limb glow
-      const limb = ctx.createLinearGradient(0, H * 0.6, 0, H * 0.74);
-      limb.addColorStop(0, 'transparent');
-      limb.addColorStop(0.5, 'rgba(196, 92, 54, 0.12)');
-      limb.addColorStop(1, 'transparent');
-      ctx.fillStyle = limb;
-      ctx.fillRect(0, H * 0.6, W, H * 0.14);
+      const laserRowIdx = Math.floor(((laserZNorm + 1.0) / 2.0) * (ROWS - 1));
+      if (laserRowIdx >= 0 && laserRowIdx < ROWS) {
+        const targetPt = points[laserRowIdx][Math.floor(COLS / 2)];
+        if (targetPt) {
+          ctx.beginPath();
+          ctx.moveTo(centerX, -10);
+          ctx.lineTo(targetPt.sx, targetPt.sy);
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+          ctx.lineWidth = 1.4;
+          ctx.stroke();
 
+          ctx.beginPath();
+          ctx.arc(targetPt.sx, targetPt.sy, 5, 0, Math.PI * 2);
+          ctx.fillStyle = '#FFFFFF';
+          ctx.shadowColor = '#FFFFFF';
+          ctx.shadowBlur = 12;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+      }
+
+      if (!isVisible) {
+        rafRef.current = 0;
+        return;
+      }
       rafRef.current = requestAnimationFrame(draw);
     };
 
     const resize = () => {
-      c.width = c.offsetWidth * window.devicePixelRatio;
-      c.height = c.offsetHeight * window.devicePixelRatio;
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = canvas.offsetWidth * dpr;
+      canvas.height = canvas.offsetHeight * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     resize();
     window.addEventListener('resize', resize);
 
+    // Performance Optimization: Pause crater flyover canvas when off-screen
+    let isVisible = true;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const wasVisible = isVisible;
+        isVisible = entry.isIntersecting;
+        if (isVisible && !wasVisible && !rafRef.current) {
+          rafRef.current = requestAnimationFrame(draw);
+        } else if (!isVisible && rafRef.current) {
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = 0;
+        }
+      },
+      { rootMargin: '150px' }
+    );
+    observer.observe(canvas);
+
     rafRef.current = requestAnimationFrame(draw);
     return () => {
-      cancelAnimationFrame(rafRef.current);
+      observer.disconnect();
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
       window.removeEventListener('resize', resize);
     };
   }, []);
 
-  return <canvas ref={ref} style={{ width: '100%', height: '100%', display: 'block' }} />;
+  return <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />;
 }
 
-// ─── Grand Shooting Star (Lusion-Style Scroll Curve) ─────────────────────────
-// A majestic cosmic trajectory curving across the full viewport.
-// Solid pure white body (#FFFFFF) with finely glowing golden yellow borders (#FFE066 / #FFD700).
-// Traveling starburst nucleus with golden diffraction flare.
-function ShootingStar({ progress }: { progress: number }) {
-  const p = Math.max(0, Math.min(1, progress));
+// ─── Mathematical S-Curve Spline Evaluator ──────────────────────────────────
+// Continuous C^1 Bezier curve across the 100vh viewport:
+// Enters upper-left (-3% W, 16% H) -> behind title & initial video (38% W, 74% H) -> exits right (105% W, 82% H)
+function getSplinePointWithTangent(u: number, W: number, H: number) {
+  const clampU = Math.min(Math.max(u, 0), 1);
+  const P0 = { x: -0.03 * W, y: 0.16 * H };
+  const C1 = { x: 0.24 * W, y: 0.22 * H };
+  const C2 = { x: 0.13 * W, y: 0.74 * H };
+  const P1 = { x: 0.38 * W, y: 0.74 * H };
+  const C3 = { x: 0.64 * W, y: 0.72 * H };
+  const C4 = { x: 0.78 * W, y: 0.35 * H };
+  const P2 = { x: 1.05 * W, y: 0.82 * H };
 
-  // Trajectory in normalized 1600x1000 viewport coordinates
-  const W = 1600;
-  const H = 1000;
-
-  // Natural cosmic S-curve: starts top-left, curves between header, dips around video card, swoops right
-  const sx = -60;
-  const sy = 160;
-  const c1x = 420;
-  const c1y = 40;
-  const c2x = 760;
-  const c2y = 380;
-  const midX = 940;
-  const midY = 320;
-  const c3x = 1180;
-  const c3y = 240;
-  const c4x = 1380;
-  const c4y = 680;
-  const ex = 1680;
-  const ey = 600;
-
-  const pathD = `M ${sx},${sy} C ${c1x},${c1y} ${c2x},${c2y} ${midX},${midY} C ${c3x},${c3y} ${c4x},${c4y} ${ex},${ey}`;
-  const totalLength = 1920;
-  const currentLength = p * totalLength;
-
-  // Approximate position of star nucleus along the 2-segment cubic bezier
-  const t = p;
-  let nx = sx;
-  let ny = sy;
-  if (t <= 0.5) {
-    const tSeg = t / 0.5;
-    const mt = 1 - tSeg;
-    nx =
-      mt * mt * mt * sx +
-      3 * mt * mt * tSeg * c1x +
-      3 * mt * tSeg * tSeg * c2x +
-      tSeg * tSeg * tSeg * midX;
-    ny =
-      mt * mt * mt * sy +
-      3 * mt * mt * tSeg * c1y +
-      3 * mt * tSeg * tSeg * c2y +
-      tSeg * tSeg * tSeg * midY;
+  let t = 0;
+  let pA = P0, cA = C1, cB = C2, pB = P1;
+  if (clampU <= 0.5) {
+    t = clampU / 0.5;
+    pA = P0; cA = C1; cB = C2; pB = P1;
   } else {
-    const tSeg = (t - 0.5) / 0.5;
-    const mt = 1 - tSeg;
-    nx =
-      mt * mt * mt * midX +
-      3 * mt * mt * tSeg * c3x +
-      3 * mt * tSeg * tSeg * c4x +
-      tSeg * tSeg * tSeg * ex;
-    ny =
-      mt * mt * mt * midY +
-      3 * mt * mt * tSeg * c3y +
-      3 * mt * tSeg * tSeg * c4y +
-      tSeg * tSeg * tSeg * ey;
+    t = (clampU - 0.5) / 0.5;
+    pA = P1; cA = C3; cB = C4; pB = P2;
   }
 
-  // Star flare rotation angle (degrees)
-  const flareAngle = p * 720;
+  const mt = 1 - t;
+  const x = mt * mt * mt * pA.x + 3 * mt * mt * t * cA.x + 3 * mt * t * t * cB.x + t * t * t * pB.x;
+  const y = mt * mt * mt * pA.y + 3 * mt * mt * t * cA.y + 3 * mt * t * t * cB.y + t * t * t * pB.y;
+  const dx = 3 * mt * mt * (cA.x - pA.x) + 6 * mt * t * (cB.x - cA.x) + 3 * t * t * (pB.x - cB.x);
+  const dy = 3 * mt * mt * (cA.y - pA.y) + 6 * mt * t * (cB.y - cA.y) + 3 * t * t * (pB.y - cB.y);
 
-  if (p < 0.005) return null;
+  return { x, y, dx, dy };
+}
 
-  return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      preserveAspectRatio="none"
-      style={{
-        position: 'absolute',
-        inset: 0,
-        width: '100%',
-        height: '100%',
-        pointerEvents: 'none',
-        zIndex: 10,
-        overflow: 'visible',
-      }}
-      aria-hidden="true"
-    >
-      <defs>
-        {/* Fine yellow golden glow filter */}
-        <filter id="goldGlowFine" x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur stdDeviation="3.5" result="blur1" />
-          <feMerge>
-            <feMergeNode in="blur1" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-
-        {/* Outer soft yellow atmosphere glow */}
-        <filter id="goldGlowAura" x="-80%" y="-80%" width="260%" height="260%">
-          <feGaussianBlur stdDeviation="9" result="blur2" />
-        </filter>
-      </defs>
-
-      {/* 1. Outer Soft Yellow Aura (Fine golden radiance) */}
-      <path
-        d={pathD}
-        fill="none"
-        stroke="#FFD700"
-        strokeWidth="12"
-        strokeOpacity="0.22"
-        strokeLinecap="round"
-        strokeDasharray={`${currentLength} ${totalLength}`}
-        filter="url(#goldGlowAura)"
-      />
-
-      {/* 2. Fine Golden Border (#FFE066 / #FFD700) */}
-      <path
-        d={pathD}
-        fill="none"
-        stroke="#FFCC00"
-        strokeWidth="3.2"
-        strokeOpacity="0.8"
-        strokeLinecap="round"
-        strokeDasharray={`${currentLength} ${totalLength}`}
-        filter="url(#goldGlowFine)"
-      />
-
-      {/* 3. Pure White Solid Body (#FFFFFF) */}
-      <path
-        d={pathD}
-        fill="none"
-        stroke="#FFFFFF"
-        strokeWidth="4.2"
-        strokeOpacity="1"
-        strokeLinecap="round"
-        strokeDasharray={`${currentLength} ${totalLength}`}
-      />
-
-      {/* 4. Traveling Star Nucleus at Leading Tip */}
-      <g transform={`translate(${nx}, ${ny})`}>
-        {/* Soft golden halo */}
-        <circle r="18" fill="#FFE066" opacity="0.3" filter="url(#goldGlowAura)" />
-        <circle r="9" fill="#FFD700" opacity="0.6" filter="url(#goldGlowFine)" />
-
-        {/* Pure white core nucleus */}
-        <circle r="5" fill="#FFFFFF" />
-
-        {/* 4-pointed golden sparkle flare (+) */}
-        <g transform={`rotate(${flareAngle})`}>
-          <line x1="-16" y1="0" x2="16" y2="0" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" />
-          <line x1="0" y1="-16" x2="0" y2="16" stroke="#FFFFFF" strokeWidth="1.8" strokeLinecap="round" />
-          <line x1="-10" y1="0" x2="10" y2="0" stroke="#FFD700" strokeWidth="3" opacity="0.7" strokeLinecap="round" />
-          <line x1="0" y1="-10" x2="0" y2="10" stroke="#FFD700" strokeWidth="3" opacity="0.7" strokeLinecap="round" />
-        </g>
-      </g>
-    </svg>
-  );
+interface Spark {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  life: number;
+  maxLife: number;
 }
 
 // ─── Main Editorial Slide 2 Component ────────────────────────────────────────
 export default function EditorialSlide2() {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoWrapperRef = useRef<HTMLDivElement>(null);
+  const videoElementRef = useRef<HTMLVideoElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const starCanvasRef = useRef<HTMLCanvasElement>(null);
+  const zoomHudRef = useRef<HTMLSpanElement>(null);
+
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [videoError, setVideoError] = useState(false);
+  const [revealed, setRevealed] = useState(false);
 
-  // Track scroll progress within this 250vh section with RAF throttling
-  useEffect(() => {
-    let ticking = false;
-    const onScroll = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          const el = sectionRef.current;
-          if (el) {
-            const rect = el.getBoundingClientRect();
-            const totalScrollable = el.offsetHeight - window.innerHeight;
-            const raw = -rect.top / (totalScrollable || 1);
-            setScrollProgress(Math.max(0, Math.min(1, raw)));
-          }
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
+  // Smooth scroll LERP refs (60 FPS Inertia Engine)
+  const targetScrollRef = useRef(0);
+  const smoothScrollRef = useRef(0);
+  const scrollVelocityRef = useRef(0);
+  const sparksRef = useRef<Spark[]>([]);
 
-    window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  // Morphing interpolation curves
-  // Ease-out cubic for natural weight and inertia
-  const easeOut = (x: number) => 1 - Math.pow(1 - x, 3);
-  const morphProgress = easeOut(Math.min(1, scrollProgress * 1.55));
-
-  // Width: starts compact (42vw) -> expands to command the screen (92vw)
-  const vidWidth = 42 + (92 - 42) * morphProgress;
-
-  // Height: starts compact (28vh) -> expands to cinematic IMAX window (72vh)
-  const vidHeight = 28 + (72 - 28) * morphProgress;
-
-  // Corner radius: 26px -> sharpens softly to 12px
-  const vidRadius = 26 + (12 - 26) * morphProgress;
-
-  // 3D perspective transform: tilts with depth, smoothly aligns flat
-  const rotateX = 8 * (1 - morphProgress);
-  const rotateY = -7 * (1 - morphProgress);
-  const translateY = 20 * (1 - morphProgress);
-
-  const transformStyle =
-    morphProgress < 0.98
-      ? `perspective(1200px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(${translateY}px)`
-      : 'none';
-
-  // Shooting star progresses across the first 75% of the scroll
-  const starProgress = Math.min(1, scrollProgress / 0.75);
-
-  // Verified NASA HiRISE Mars 3D Flyover + ISS Earth Observation videos
+  // Public domain NASA WebM flyover videos (starting at second 16 to skip ESA/Berlin title card)
   const VIDEO_SOURCES = [
-    'https://upload.wikimedia.org/wikipedia/commons/3/33/Flying_over_Becquerel_crater_%281080p%29.webm',
+    'https://upload.wikimedia.org/wikipedia/commons/3/33/Flying_over_Becquerel_crater_%281080p%29.webm#t=16',
     'https://upload.wikimedia.org/wikipedia/commons/8/82/Earth_Views_from_the_International_Space_Station.webm',
   ];
+
+  // 60 FPS Master Animation & Inertia LERP Loop
+  useEffect(() => {
+    let animId = 0;
+    targetScrollRef.current = window.scrollY;
+    smoothScrollRef.current = window.scrollY;
+
+    const onScroll = () => {
+      targetScrollRef.current = window.scrollY;
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    // Handle canvas resolution on resize
+    const handleResize = () => {
+      const canvas = starCanvasRef.current;
+      if (!canvas) return;
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.offsetWidth;
+      const h = canvas.offsetHeight;
+      if (w > 0 && h > 0) {
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        const ctx = canvas.getContext('2d');
+        if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    let isVisible = true;
+
+    const loop = () => {
+      if (!isVisible) {
+        animId = 0;
+        return;
+      }
+      const target = targetScrollRef.current;
+      const smooth = smoothScrollRef.current;
+      const diff = target - smooth;
+      smoothScrollRef.current += diff * 0.085;
+      scrollVelocityRef.current = diff;
+
+      const section = sectionRef.current;
+      if (section) {
+        const rect = section.getBoundingClientRect();
+        const sectionTopDoc = window.scrollY + rect.top;
+        const totalScrollable = section.offsetHeight - window.innerHeight;
+        const rawP = (smoothScrollRef.current - sectionTopDoc) / (totalScrollable || 1);
+        const p = Math.min(Math.max(rawP, 0), 1);
+        const velocity = scrollVelocityRef.current;
+
+        // Trigger masked title reveal once Slide 2 comes into view
+        if (rect.top <= window.innerHeight * 0.85) {
+          setRevealed(true);
+        }
+
+        // 1. VIDEO MORPHING & VELOCITY TILT (Intact 28px rounded corners, NO polygon clip-path)
+        const t = Math.min(Math.max((p - 0.25) / 0.53, 0), 1);
+        const easeInOutCubic = (x: number) =>
+          x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+        const easedT = easeInOutCubic(t);
+        const bell = Math.sin(t * Math.PI);
+        const vFactor = Math.min(Math.max(velocity / 120, -1), 1);
+
+        const currentWidth = 42 + (92 - 42) * easedT;
+        const currentHeight = 44 + (82 - 44) * easedT;
+        const currentLeft = 5 + (4 - 5) * easedT;
+        const currentTop = 46 + (9 - 46) * easedT;
+
+        const rotY = bell * -16 + vFactor * -6;
+        const rotX = bell * 7 + vFactor * 4;
+        const rotZ = bell * -2.5 + vFactor * -1.5;
+        const skewY = bell * -4 + vFactor * -2.5;
+
+        if (videoWrapperRef.current) {
+          const vwStyle = videoWrapperRef.current.style;
+          vwStyle.width = `${currentWidth}vw`;
+          vwStyle.height = `${currentHeight}vh`;
+          vwStyle.left = `${currentLeft}vw`;
+          vwStyle.top = `${currentTop}vh`;
+          vwStyle.transform = `perspective(1000px) rotateY(${rotY}deg) rotateX(${rotX}deg) rotateZ(${rotZ}deg) skewY(${skewY}deg)`;
+          vwStyle.boxShadow = `0 ${16 + easedT * 40}px ${40 + easedT * 70}px rgba(0, 0, 0, ${0.45 + easedT * 0.4})`;
+        }
+
+        // Inner Video Parallax (Optical Contra-Zoom: 1.24x to 1.0x)
+        if (videoElementRef.current) {
+          videoElementRef.current.style.transform = `scale(${1.24 - t * 0.24})`;
+        }
+
+        // Telemetry HUD Zoom percentage
+        if (zoomHudRef.current) {
+          zoomHudRef.current.textContent = `Zoom orbital: ${(easedT * 100).toFixed(0)}%`;
+        }
+
+        // 2. HEADER SLIDE UP (p = 0.35 to 0.82)
+        const headerT = Math.min(Math.max((p - 0.35) / (0.82 - 0.35), 0), 1);
+        if (headerRef.current) {
+          headerRef.current.style.transform = `translateY(${-headerT * 120}%)`;
+          headerRef.current.style.opacity = `${1 - headerT}`;
+          headerRef.current.style.pointerEvents = headerT >= 1 ? 'none' : 'auto';
+        }
+
+        // 3. SHOOTING STAR CANVAS 2D TAPERED CONIC SEGMENTS (p = 0.0 to 0.65)
+        const canvas = starCanvasRef.current;
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          const width = canvas.offsetWidth;
+          const height = canvas.offsetHeight;
+          if (ctx && width > 0 && height > 0) {
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.restore();
+
+            const drawProgress = Math.min(Math.max(p / 0.65, 0), 1);
+            if (drawProgress > 0.005) {
+              const TAIL_LEN = 0.48;
+              const tailStart = Math.max(0, drawProgress - TAIL_LEN);
+              const NUM_SEGS = 90;
+              const segPoints: { x: number; y: number; radius: number; alpha: number }[] = [];
+
+              for (let i = 0; i <= NUM_SEGS; i++) {
+                const segRatio = i / NUM_SEGS;
+                const u = tailStart + segRatio * (drawProgress - tailStart);
+                const pt = getSplinePointWithTangent(u, width, height);
+                const tSeg = Math.pow(segRatio, 1.7);
+                const radius = 0.5 + tSeg * 14;
+                const alpha = tSeg;
+                segPoints.push({ x: pt.x, y: pt.y, radius, alpha });
+              }
+
+              // Pass 1: Yellow Edge & Fine Golden Glow (#FFE066, lineWidth = radius * 1.32, shadowBlur = 16)
+              ctx.lineCap = 'round';
+              ctx.shadowColor = '#FFD43B';
+              ctx.shadowBlur = 16;
+              for (let i = 0; i < NUM_SEGS; i++) {
+                const pA = segPoints[i];
+                const pB = segPoints[i + 1];
+                if (pB.alpha < 0.02) continue;
+                ctx.beginPath();
+                ctx.moveTo(pA.x, pA.y);
+                ctx.lineTo(pB.x, pB.y);
+                ctx.strokeStyle = `rgba(255, 224, 102, ${pB.alpha * 0.95})`;
+                ctx.lineWidth = pB.radius * 1.32;
+                ctx.stroke();
+              }
+
+              // Pass 2: Pure White Core Body (#FFFFFF, lineWidth = radius, shadowBlur = 0)
+              ctx.shadowBlur = 0;
+              for (let i = 0; i < NUM_SEGS; i++) {
+                const pA = segPoints[i];
+                const pB = segPoints[i + 1];
+                if (pB.alpha < 0.02) continue;
+                ctx.beginPath();
+                ctx.moveTo(pA.x, pA.y);
+                ctx.lineTo(pB.x, pB.y);
+                ctx.strokeStyle = `rgba(255, 255, 255, ${pB.alpha})`;
+                ctx.lineWidth = pB.radius;
+                ctx.stroke();
+              }
+
+              // Radiant Star Head with 4-pointed optical flare
+              const head = getSplinePointWithTangent(drawProgress, width, height);
+              const headAngle = Math.atan2(head.dy, head.dx);
+
+              ctx.save();
+              ctx.translate(head.x, head.y);
+
+              // Soft yellow aura
+              ctx.beginPath();
+              ctx.arc(0, 0, 18, 0, Math.PI * 2);
+              ctx.fillStyle = 'rgba(255, 224, 102, 0.45)';
+              ctx.shadowColor = '#FFD43B';
+              ctx.shadowBlur = 20;
+              ctx.fill();
+
+              // Warm yellow border
+              ctx.beginPath();
+              ctx.arc(0, 0, 11, 0, Math.PI * 2);
+              ctx.fillStyle = '#FFF3B0';
+              ctx.shadowBlur = 10;
+              ctx.fill();
+
+              // Pure white core nucleus
+              ctx.beginPath();
+              ctx.arc(0, 0, 6.5, 0, Math.PI * 2);
+              ctx.fillStyle = '#FFFFFF';
+              ctx.shadowBlur = 0;
+              ctx.fill();
+
+              // 4-pointed optical star flare rotating with tangent angle
+              ctx.rotate(headAngle);
+              ctx.lineWidth = 1.6;
+              ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+              ctx.beginPath();
+              ctx.moveTo(-28, 0); ctx.lineTo(28, 0);
+              ctx.moveTo(0, -28); ctx.lineTo(0, 28);
+              ctx.stroke();
+
+              // Fine golden cross
+              ctx.lineWidth = 2.6;
+              ctx.strokeStyle = 'rgba(255, 224, 102, 0.8)';
+              ctx.beginPath();
+              ctx.moveTo(-16, 0); ctx.lineTo(16, 0);
+              ctx.moveTo(0, -16); ctx.lineTo(0, 16);
+              ctx.stroke();
+
+              ctx.restore();
+
+              // Emit micro-particles when scrolling with velocity (keep away from rightmost edge)
+              if (Math.abs(velocity) > 0.5 && drawProgress < 0.95 && head.x < width - 25) {
+                const count = 1 + Math.floor(Math.random() * 2);
+                for (let k = 0; k < count; k++) {
+                  const sparkAngle = headAngle + Math.PI + (Math.random() - 0.5) * 1.4;
+                  const speed = 0.6 + Math.random() * 2.2;
+                  sparksRef.current.push({
+                    x: head.x + (Math.random() - 0.5) * 4,
+                    y: head.y + (Math.random() - 0.5) * 4,
+                    vx: Math.cos(sparkAngle) * speed,
+                    vy: Math.sin(sparkAngle) * speed,
+                    life: 40,
+                    maxLife: 40,
+                  });
+                }
+              }
+
+              // Update & draw shedding micro-sparks (cull if outside width)
+              for (let j = sparksRef.current.length - 1; j >= 0; j--) {
+                const s = sparksRef.current[j];
+                s.x += s.vx;
+                s.y += s.vy;
+                s.vx *= 0.96;
+                s.vy *= 0.96;
+                s.life -= 1;
+                if (s.life <= 0 || s.x >= width || s.x <= 0) {
+                  sparksRef.current.splice(j, 1);
+                  continue;
+                }
+                const sparkAlpha = s.life / s.maxLife;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, 1.5, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 246, 204, ${sparkAlpha * 0.9})`;
+                ctx.shadowColor = '#FFD43B';
+                ctx.shadowBlur = 6;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+              }
+            }
+          }
+        }
+      }
+
+      animId = requestAnimationFrame(loop);
+    };
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const wasVisible = isVisible;
+        isVisible = entry.isIntersecting;
+        if (isVisible && !wasVisible && !animId) {
+          targetScrollRef.current = window.scrollY;
+          smoothScrollRef.current = window.scrollY;
+          animId = requestAnimationFrame(loop);
+        } else if (!isVisible && animId) {
+          cancelAnimationFrame(animId);
+          animId = 0;
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    if (sectionRef.current) observer.observe(sectionRef.current);
+
+    animId = requestAnimationFrame(loop);
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', handleResize);
+      observer.disconnect();
+      if (animId) cancelAnimationFrame(animId);
+    };
+  }, []);
 
   return (
     <section
@@ -356,168 +554,195 @@ export default function EditorialSlide2() {
       ref={sectionRef}
       style={{
         position: 'relative',
-        minHeight: '250vh',
-        background: '#F4F4F6',
-        overflow: 'hidden',
+        height: '280vh',
+        background: '#050508',
       }}
     >
-      {/* Precision architectural dot grid */}
+      {/* ── LAYER 1: ARCHITECTURAL CROSS GRID (+ at 48px intervals) (z-index: 1) ── */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
+          zIndex: 1,
           pointerEvents: 'none',
-          backgroundImage: 'radial-gradient(circle, rgba(0, 0, 0, 0.065) 1px, transparent 1px)',
-          backgroundSize: '44px 44px',
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='48' height='48' viewBox='0 0 48 48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M24 21v6M21 24h6' stroke='rgba(255,255,255,0.06)' stroke-width='1' stroke-linecap='round'/%3E%3C/svg%3E")`,
+          backgroundSize: '48px 48px',
         }}
       />
 
-      {/* ── STICKY VIEWPORT CONTAINER ─────────────────────────────────── */}
+      {/* ── STICKY CAMERA VIEWPORT (100vh) ──────────────────────────────── */}
       <div
+        id="editorial-slide-2-inner"
         style={{
           position: 'sticky',
           top: 0,
           height: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
+          width: '100%',
           overflow: 'hidden',
-          padding: '24px 0',
+          willChange: 'transform, filter',
+          transformOrigin: 'center center',
         }}
       >
-        {/* Shooting Star with pure white body and fine golden yellow borders */}
-        <ShootingStar progress={starProgress} />
-
-        {/* ── 2-COLUMN EDITORIAL HEADER ────────────────────────────────── */}
-        <div
+        {/* ── LAYER 2: GRAND SHOOTING STAR CANVAS 2D (z-index: 2) ────────── */}
+        <canvas
+          ref={starCanvasRef}
           style={{
+            position: 'absolute',
+            inset: 0,
             width: '100%',
+            height: '100%',
+            zIndex: 2,
+            pointerEvents: 'none',
+            display: 'block',
+          }}
+        />
+
+        {/* ── LAYER 3: 2-COLUMN EDITORIAL HEADER (z-index: 3) ─────────────── */}
+        <div
+          ref={headerRef}
+          style={{
+            position: 'absolute',
+            top: '7vh',
+            left: '5vw',
+            right: '5vw',
             maxWidth: 1320,
-            padding: '0 56px',
+            margin: '0 auto',
             display: 'grid',
             gridTemplateColumns: '1.05fr 0.95fr',
-            gap: 64,
-            marginBottom: 36,
-            position: 'relative',
-            zIndex: 5,
-            transition: 'opacity 0.4s ease',
-            opacity: morphProgress > 0.85 ? Math.max(0, 1 - (morphProgress - 0.85) * 5) : 1,
+            gap: 56,
+            zIndex: 3,
+            willChange: 'transform, opacity',
           }}
         >
-          {/* Left Column: Section tag + Colossal Title */}
+          {/* Left Column: Big Impactful Title with Masked Line Reveal */}
           <div>
-            <span
-              style={{
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: 11,
-                textTransform: 'uppercase',
-                letterSpacing: '0.14em',
-                color: '#8E929F',
-                display: 'block',
-                marginBottom: 16,
-              }}
-            >
-              DIAPOSITIVA 02 // CAMPO DE PRUEBAS PLANETARIO
-            </span>
             <h2
               style={{
                 fontFamily: "'Inter', sans-serif",
-                fontWeight: 800,
-                fontSize: 'clamp(28px, 3.8vw, 52px)',
+                fontWeight: 600,
+                fontSize: 'clamp(28px, 3.8vw, 54px)',
                 lineHeight: 1.05,
-                color: '#0A0A0E',
+                color: '#FFFFFF',
                 margin: 0,
-                letterSpacing: '-0.025em',
+                letterSpacing: '-0.03em',
               }}
             >
-              Nuestro planeta como campo de pruebas para nuevos mundos
+              <div style={{ overflow: 'hidden' }}>
+                <span
+                  style={{
+                    display: 'block',
+                    transform: revealed ? 'translateY(0%)' : 'translateY(105%)',
+                    transition: 'transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.0s',
+                    willChange: 'transform',
+                  }}
+                >
+                  Donde la Tierra se Convierte
+                </span>
+              </div>
+              <div style={{ overflow: 'hidden' }}>
+                <span
+                  style={{
+                    display: 'block',
+                    transform: revealed ? 'translateY(0%)' : 'translateY(105%)',
+                    transition: 'transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.08s',
+                    willChange: 'transform',
+                  }}
+                >
+                  en la Luna y Marte
+                </span>
+              </div>
             </h2>
           </div>
 
-          {/* Right Column: Brief overview of upcoming slides + Stats */}
-          <div style={{ marginTop: 44 }}>
-            <p
-              style={{
-                fontFamily: "'Inter', sans-serif",
-                fontWeight: 400,
-                fontSize: 'clamp(14px, 1.35vw, 17px)',
-                lineHeight: 1.75,
-                color: '#686B75',
-                margin: 0,
-              }}
-            >
-              En las siguientes diapositivas explorarás{' '}
-              <strong style={{ color: '#0A0A0E', fontWeight: 600 }}>8 sitios análogos terrestres</strong>{' '}
-              caracterizados con datos abiertos SRTM, ASTER y MODIS. Compararás su topografía con el Polo Sur lunar y los cañones de Marte,
-              calibrarás el modelo paramétrico de pesos PFI y activarás el escáner satelital interactivo.
-            </p>
-
-            {/* Quick Metrics Bar */}
-            <div style={{ display: 'flex', gap: 40, marginTop: 28 }}>
-              {[
-                ['8', 'Sitios Análogos'],
-                ['3', 'Cuerpos Celestes'],
-                ['≥97%', 'Fidelidad PFI'],
-              ].map(([val, label]) => (
-                <div key={label}>
-                  <div
-                    style={{
-                      fontFamily: "'JetBrains Mono', monospace",
-                      fontVariantNumeric: 'tabular-nums',
-                      fontSize: 'clamp(20px, 2.2vw, 32px)',
-                      fontWeight: 700,
-                      color: '#2544FF',
-                      lineHeight: 1,
-                      marginBottom: 6,
-                    }}
-                  >
-                    {val}
-                  </div>
-                  <div
-                    style={{
-                      fontFamily: "'JetBrains Mono', monospace",
-                      fontSize: 10,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.1em',
-                      color: '#8E929F',
-                    }}
-                  >
-                    {label}
-                  </div>
-                </div>
-              ))}
+          {/* Right Column: Clean Editorial Overview with Masked Line Reveal */}
+          <div style={{ marginTop: 14 }}>
+            <div style={{ overflow: 'hidden' }}>
+              <p
+                style={{
+                  fontFamily: "'Inter', sans-serif",
+                  fontWeight: 400,
+                  fontSize: 'clamp(14px, 1.25vw, 17px)',
+                  lineHeight: 1.65,
+                  color: '#A1A1AA',
+                  maxWidth: '65ch',
+                  margin: 0,
+                  transform: revealed ? 'translateY(0%)' : 'translateY(105%)',
+                  transition: 'transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.16s',
+                  willChange: 'transform',
+                }}
+              >
+                En las siguientes secciones seleccionarás misiones reales de la NASA hacia el Polo Sur Lunar,
+                Mare Tranquillitatis, el Cráter Jezero y Arcadia Planitia; compararás cara a cara fotografías de nuestros
+                desiertos, cráteres y tubos de lava con capturas de rovers planetarios; explorarás telemetría orbital
+                en vivo y pondrás a prueba la física gravitatoria de otros mundos.
+              </p>
             </div>
           </div>
         </div>
 
-        {/* ── SMOOTH FLEXIBLE MORPHING VIDEO CONTAINER ────────────────── */}
+        {/* ── LAYER 5: ELASTIC 3D MORPHING VIDEO CONTAINER (z-index: 5) ───── */}
         <div
+          ref={videoWrapperRef}
           style={{
-            width: `${vidWidth}vw`,
-            height: `${vidHeight}vh`,
-            borderRadius: `${vidRadius}px`,
-            transform: transformStyle,
+            position: 'absolute',
+            left: '5vw',
+            top: '46vh',
+            width: '42vw',
+            height: '44vh',
+            borderRadius: '28px',
             overflow: 'hidden',
-            boxShadow: `0 ${12 + morphProgress * 50}px ${32 + morphProgress * 90}px rgba(0, 0, 0, ${0.08 + morphProgress * 0.22})`,
+            transformStyle: 'preserve-3d',
             background: '#04050A',
-            position: 'relative',
-            zIndex: 6,
-            willChange: 'transform, width, height, border-radius',
-            flexShrink: 0,
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            transition: 'border-radius 0.12s ease-out',
+            zIndex: 5,
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            willChange: 'transform, width, height, left, top',
           }}
         >
-          {/* Primary HTML5 Video: NASA Mars Becquerel HiRISE Flyover */}
+          {/* Primary HTML5 Video: NASA Mars Becquerel Flyover (Seamless 16s-44.5s loop skipping ESA title card) */}
           {!videoError && (
             <video
-              ref={videoRef}
+              ref={videoElementRef}
               autoPlay
               muted
-              loop
               playsInline
-              onCanPlay={() => setVideoLoaded(true)}
+              onLoadedMetadata={() => {
+                if (videoElementRef.current) {
+                  videoElementRef.current.currentTime = 16;
+                }
+              }}
+              onSeeked={() => {
+                if (videoElementRef.current && videoElementRef.current.currentTime >= 16) {
+                  setVideoLoaded(true);
+                }
+              }}
+              onPlay={() => {
+                if (videoElementRef.current && videoElementRef.current.currentTime < 16) {
+                  videoElementRef.current.currentTime = 16;
+                }
+              }}
+              onTimeUpdate={() => {
+                if (videoElementRef.current) {
+                  if (videoElementRef.current.currentTime >= 44.5) {
+                    videoElementRef.current.currentTime = 16;
+                  } else if (videoElementRef.current.currentTime < 16) {
+                    videoElementRef.current.currentTime = 16;
+                  }
+                  if (videoElementRef.current.currentTime >= 16 && !videoLoaded) {
+                    setVideoLoaded(true);
+                  }
+                }
+              }}
+              onEnded={() => {
+                if (videoElementRef.current) {
+                  videoElementRef.current.currentTime = 16;
+                  videoElementRef.current.play().catch(() => {});
+                }
+              }}
+              onCanPlay={() => {
+                if (videoElementRef.current && videoElementRef.current.currentTime < 16) {
+                  videoElementRef.current.currentTime = 16;
+                }
+              }}
               onError={() => {
                 setVideoError(true);
                 setVideoLoaded(false);
@@ -529,6 +754,8 @@ export default function EditorialSlide2() {
                 display: 'block',
                 opacity: videoLoaded ? 1 : 0,
                 transition: 'opacity 0.7s ease',
+                transformOrigin: 'center center',
+                willChange: 'transform',
               }}
             >
               {VIDEO_SOURCES.map((src, i) => (
@@ -537,7 +764,7 @@ export default function EditorialSlide2() {
             </video>
           )}
 
-          {/* Procedural Canvas Fallback (only mounted when video is not playing) */}
+          {/* Fallback 3D Canvas Flyover with LOLA Laser Scanner */}
           {(!videoLoaded || videoError) && (
             <div
               style={{
@@ -546,7 +773,7 @@ export default function EditorialSlide2() {
                 zIndex: 1,
               }}
             >
-              <PlanetaryCanvas />
+              <PlanetaryCanvas3D />
             </div>
           )}
 
@@ -555,13 +782,13 @@ export default function EditorialSlide2() {
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'linear-gradient(to top, rgba(4, 5, 10, 0.65) 0%, transparent 45%)',
+              background: 'linear-gradient(to top, rgba(4, 5, 10, 0.75) 0%, transparent 45%)',
               pointerEvents: 'none',
               zIndex: 2,
             }}
           />
 
-          {/* HUD Status Bar */}
+          {/* Telemetry HUD Status Bar */}
           <div
             style={{
               position: 'absolute',
@@ -569,48 +796,22 @@ export default function EditorialSlide2() {
               left: 24,
               right: 24,
               display: 'flex',
-              justifyContent: 'space-between',
+              justifyContent: 'flex-end',
               alignItems: 'flex-end',
               zIndex: 3,
               pointerEvents: 'none',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  background: '#2544FF',
-                  display: 'inline-block',
-                  boxShadow: '0 0 10px #2544FF',
-                }}
-              />
-              <span
-                style={{
-                  fontFamily: "'JetBrains Mono', monospace",
-                  fontSize: 10,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.12em',
-                  color: 'rgba(255, 255, 255, 0.75)',
-                }}
-              >
-                {videoLoaded && !videoError
-                  ? 'NASA HiRISE // MARS DIGITAL ELEVATION MODEL FLYOVER'
-                  : 'PLANETARY SURFACE RENDERING // TERRA-ANALOG ENGINE'}
-              </span>
-            </div>
-
             <span
+              ref={zoomHudRef}
               style={{
                 fontFamily: "'JetBrains Mono', monospace",
-                fontSize: 10,
-                color: 'rgba(255, 255, 255, 0.5)',
+                fontSize: 11,
+                color: 'rgba(255, 255, 255, 0.55)',
                 fontVariantNumeric: 'tabular-nums',
-                letterSpacing: '0.08em',
               }}
             >
-              ZOOM: {(morphProgress * 100).toFixed(0)}%
+              Zoom orbital: 0%
             </span>
           </div>
         </div>

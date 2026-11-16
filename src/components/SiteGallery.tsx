@@ -1,6 +1,7 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { SITES, fidelityColor, fidelityLabel } from '../data';
-import type { RankedSite, EarthSite } from '../data';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { fidelityColor, fidelityLabel } from '../data';
+import type { RankedSite, EarthSite, BiomeType } from '../data';
+import { useWikipediaImage, WIKIPEDIA_TARGET_REGISTRY } from '../services/wikipediaImages';
 
 interface SiteGalleryProps {
   rankedSites: RankedSite[];
@@ -8,126 +9,775 @@ interface SiteGalleryProps {
   scrollVelocity?: number;
 }
 
+// ─── Procedural Geologic Palettes for Guaranteed Canvas Fallback ─────────────
+const SITE_GEOLOGY_PALETTES: Record<
+  string,
+  { bg: string; grad: string[]; accent: string; contour: string }
+> = {
+  'ATC-01': {
+    bg: '#451F10',
+    grad: ['#7A3816', '#A65B32', '#C87D55', '#E09F67'],
+    accent: '#FFE6D5',
+    contour: 'rgba(255, 230, 213, 0.3)',
+  },
+  'HGT-02': {
+    bg: '#182232',
+    grad: ['#334155', '#475569', '#64748B', '#94A3B8'],
+    accent: '#F1F5F9',
+    contour: 'rgba(241, 245, 249, 0.32)',
+  },
+  'LNZ-03': {
+    bg: '#0C0D11',
+    grad: ['#18181B', '#27272A', '#3F3F46', '#52525B'],
+    accent: '#E4E4E7',
+    contour: 'rgba(228, 228, 231, 0.25)',
+  },
+  'PIN-04': {
+    bg: '#3B0C11',
+    grad: ['#701A25', '#881337', '#4C0519', '#1C1917'],
+    accent: '#FECDD3',
+    contour: 'rgba(254, 205, 211, 0.32)',
+  },
+  'MCM-05': {
+    bg: '#081B33',
+    grad: ['#0369A1', '#0284C7', '#38BDF8', '#BAE6FD'],
+    accent: '#F0F9FF',
+    contour: 'rgba(240, 249, 255, 0.35)',
+  },
+  'PUN-06': {
+    bg: '#334155',
+    grad: ['#64748B', '#94A3B8', '#CBD5E1', '#F8FAFC'],
+    accent: '#FFFFFF',
+    contour: 'rgba(255, 255, 255, 0.45)',
+  },
+  'ASK-07': {
+    bg: '#080C16',
+    grad: ['#0F172A', '#1E293B', '#0E7490', '#06B6D4'],
+    accent: '#67E8F9',
+    contour: 'rgba(103, 232, 249, 0.35)',
+  },
+  'DNK-08': {
+    bg: '#292524',
+    grad: ['#44403C', '#57534E', '#78716C', '#44403C'],
+    accent: '#E7E5E4',
+    contour: 'rgba(231, 229, 228, 0.35)',
+  },
+  'PAY-09': {
+    bg: '#09090B',
+    grad: ['#18181B', '#27272A', '#3F3F46', '#18181B'],
+    accent: '#D4D4D8',
+    contour: 'rgba(212, 212, 216, 0.28)',
+  },
+  'SLD-10': {
+    bg: '#18181B',
+    grad: ['#27272A', '#3F3F46', '#71717A', '#FFFFFF'],
+    accent: '#FFFFFF',
+    contour: 'rgba(255, 255, 255, 0.45)',
+  },
+  'UYU-11': {
+    bg: '#27272A',
+    grad: ['#3F3F46', '#52525B', '#71717A', '#FFFFFF'],
+    accent: '#FFFFFF',
+    contour: 'rgba(255, 255, 255, 0.55)',
+  },
+  'OJS-12': {
+    bg: '#18181B',
+    grad: ['#27272A', '#3F3F46', '#52525B', '#71717A'],
+    accent: '#E4E4E7',
+    contour: 'rgba(228, 228, 231, 0.35)',
+  },
+  'BAR-13': {
+    bg: '#3D1501',
+    grad: ['#78350F', '#92400E', '#B45309', '#D97706'],
+    accent: '#FDE68A',
+    contour: 'rgba(253, 230, 138, 0.35)',
+  },
+  'RIO-14': {
+    bg: '#3B0808',
+    grad: ['#7F1D1D', '#991B1B', '#B91C1C', '#D97706'],
+    accent: '#FCA5A5',
+    contour: 'rgba(252, 165, 165, 0.35)',
+  },
+};
+
+// ─── Intelligent Geological Site Image Component ─────────────────────────────
+// Dynamic Wikipedia REST API image with verified static Wikimedia backup
+// and procedural SRTM satellite topography canvas fallback on network failure.
+export function GeologicalSiteImage({ site }: { site: EarthSite }) {
+  const wikiUrl = useWikipediaImage(site.id);
+  const [imgSrc, setImgSrc] = useState<string>(
+    () => wikiUrl || WIKIPEDIA_TARGET_REGISTRY[site.id]?.staticBackup || site.photoEarth
+  );
+  const [useFallback, setUseFallback] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    if (wikiUrl) {
+      setImgSrc(wikiUrl);
+      setUseFallback(false);
+    }
+  }, [wikiUrl]);
+
+  // Draw procedural high-res SRTM satellite topography on canvas fallback
+  useEffect(() => {
+    if (!useFallback) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const W = 800;
+    const H = 500;
+    canvas.width = W;
+    canvas.height = H;
+
+    const pal = SITE_GEOLOGY_PALETTES[site.id] || {
+      bg: '#18191E',
+      grad: ['#27272A', '#18181B', '#0A0A0C'],
+      accent: '#FFFFFF',
+      contour: 'rgba(255,255,255,0.25)',
+    };
+
+    // 1. Satellite Base Gradient
+    const baseGrad = ctx.createLinearGradient(0, 0, W, H);
+    baseGrad.addColorStop(0, pal.bg);
+    baseGrad.addColorStop(0.35, pal.grad[0] || pal.bg);
+    baseGrad.addColorStop(0.7, pal.grad[1] || pal.bg);
+    baseGrad.addColorStop(1, pal.grad[2] || pal.bg);
+    ctx.fillStyle = baseGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // 2. Realistic Topographic Elevation Curves (SRTM Iso-Elevation Lines)
+    const centerX = W * 0.52;
+    const centerY = H * 0.5;
+
+    for (let r = 30; r < 460; r += 26) {
+      ctx.beginPath();
+      ctx.strokeStyle = pal.contour;
+      ctx.lineWidth = r % 78 === 0 ? 1.6 : 0.8;
+
+      for (let a = 0; a <= Math.PI * 2 + 0.1; a += 0.08) {
+        const noise =
+          Math.sin(a * 4 + r * 0.04) * 16 +
+          Math.sin(a * 9) * 8 +
+          Math.cos(a * 2 + r * 0.08) * 10;
+        const rad = r + noise;
+        const px = centerX + Math.cos(a) * rad * 1.25;
+        const py = centerY + Math.sin(a) * rad * 0.85;
+
+        if (a === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    }
+
+    // 3. Central Mineral Peak / Geological Target Reticle
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 6, 0, Math.PI * 2);
+    ctx.fillStyle = pal.accent;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 22, 0, Math.PI * 2);
+    ctx.strokeStyle = pal.accent;
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash([4, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Crosshairs
+    ctx.strokeStyle = pal.contour;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(centerX - 40, centerY);
+    ctx.lineTo(centerX + 40, centerY);
+    ctx.moveTo(centerX, centerY - 40);
+    ctx.lineTo(centerX, centerY + 40);
+    ctx.stroke();
+
+    // 4. NASA Orbital Telemetry HUD Overlay
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.fillRect(0, H - 42, W, 42);
+
+    ctx.font = "600 11px 'JetBrains Mono', monospace";
+    ctx.fillStyle = pal.accent;
+    ctx.fillText(`NASA Earth Observatory   SRTM 30m DEM   ${site.id}`, 20, H - 24);
+
+    ctx.font = "400 10px 'JetBrains Mono', monospace";
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.textAlign = 'right';
+    ctx.fillText(`${site.dms}   ELEV: ${site.elevM}m   PEND: ${site.slopeDeg}°`, W - 20, H - 24);
+    ctx.textAlign = 'left';
+  }, [useFallback, site]);
+
+  return (
+    <div className="relative w-full h-full overflow-hidden bg-[#0A0D14]">
+      {/* Primary Real Photo (Dynamic Wikipedia / Static Backup) */}
+      <img
+        src={imgSrc}
+        alt={site.name}
+        className={`w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 ${
+          useFallback ? 'hidden' : 'block'
+        }`}
+        onLoad={() => {
+          setUseFallback(false);
+        }}
+        onError={() => {
+          const backup = WIKIPEDIA_TARGET_REGISTRY[site.id]?.staticBackup;
+          if (backup && imgSrc !== backup) {
+            setImgSrc(backup);
+          } else {
+            setUseFallback(true);
+          }
+        }}
+        loading="lazy"
+      />
+
+      {/* Procedural Canvas Fallback */}
+      {useFallback && (
+        <canvas
+          ref={canvasRef}
+          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+        />
+      )}
+
+      {/* Subtle Gradient Scrim */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/25 pointer-events-none" />
+    </div>
+  );
+}
+
+// ─── Fast Letter-by-Letter Reveal Component (Lusion Editorial Typography) ───
+export function FastLetterReveal({
+  text,
+  speed = 10,
+  delay = 50,
+  className = '',
+  as: Component = 'span',
+}: {
+  text: string;
+  speed?: number;
+  delay?: number;
+  className?: string;
+  as?: any;
+}) {
+  const [visibleCount, setVisibleCount] = useState(0);
+  const containerRef = useRef<HTMLElement>(null);
+  const hasTriggered = useRef(false);
+
+  useEffect(() => {
+    hasTriggered.current = false;
+    setVisibleCount(0);
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setVisibleCount(text.length);
+      return;
+    }
+
+    let rafId: number | null = null;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasTriggered.current) {
+          hasTriggered.current = true;
+          const startTime = performance.now() + delay;
+          const total = text.length;
+
+          const tick = (now: number) => {
+            if (now >= startTime) {
+              const elapsed = now - startTime;
+              const count = Math.min(total, Math.floor(elapsed / speed) + 1);
+              setVisibleCount(count);
+              if (count >= total) return;
+            }
+            rafId = requestAnimationFrame(tick);
+          };
+
+          rafId = requestAnimationFrame(tick);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }, [text, speed, delay]);
+
+  const chars = text.split('');
+
+  return (
+    <Component ref={containerRef} className={className}>
+      {chars.map((char, i) => {
+        const isVisible = i < visibleCount;
+        return (
+          <span
+            key={i}
+            style={{
+              opacity: isVisible ? 1 : 0,
+              transform: isVisible ? 'translateY(0)' : 'translateY(3px)',
+              transition: 'opacity 0.12s ease-out, transform 0.12s ease-out',
+              display: char === ' ' ? 'inline' : 'inline-block',
+              whiteSpace: 'pre',
+            }}
+          >
+            {char}
+          </span>
+        );
+      })}
+    </Component>
+  );
+}
+
+// ─── Casino Slot Machine / Rolling Tumbler Title Reveal Component ────────────
+function getSlotReelChars(targetChar: string): string[] {
+  // Safe buffer character right above target (strictly no descenders below baseline)
+  let safePreChar = 'o';
+
+  // Narrow characters (i, l, j, t, f, r, 1, punctuation)
+  if (/[iljtfr()[\],.·•\-1!:]/.test(targetChar)) {
+    const pool = 'iltrf1';
+    safePreChar = 'l';
+    return [
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      safePreChar,
+      targetChar,
+    ];
+  }
+  // Wide lowercase letters (m, w)
+  if (/[mw]/.test(targetChar)) {
+    const pool = 'mwhkd';
+    safePreChar = 'm';
+    return [
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      safePreChar,
+      targetChar,
+    ];
+  }
+  // Standard lowercase letters
+  if (/[a-záéíóúñ]/.test(targetChar)) {
+    const pool = 'acekosvxz';
+    safePreChar = 'e';
+    return [
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      safePreChar,
+      targetChar,
+    ];
+  }
+  // Uppercase letters
+  if (/[A-ZÁÉÍÓÚÑ]/.test(targetChar)) {
+    const pool = 'ABCDEFHKLNOSTXZ';
+    safePreChar = 'T';
+    return [
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      safePreChar,
+      targetChar,
+    ];
+  }
+  // Digits
+  if (/[0-9]/.test(targetChar)) {
+    const pool = '0123578';
+    safePreChar = '0';
+    return [
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      safePreChar,
+      targetChar,
+    ];
+  }
+  return [targetChar];
+}
+
+function getCharWidth(char: string): number | null {
+  if (typeof document === 'undefined') return null;
+  try {
+    const canvas = (getCharWidth as any).canvas || ((getCharWidth as any).canvas = document.createElement('canvas'));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.font = '700 28px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    return Math.ceil(ctx.measureText(char).width * 10) / 10;
+  } catch {
+    return null;
+  }
+}
+
+const SLOT_ROW_HEIGHT_EM = 1.55;
+
+export function CasinoSlotTitle({
+  text,
+  isHovered = false,
+  className = '',
+}: {
+  text: string;
+  isHovered?: boolean;
+  className?: string;
+}) {
+  const containerRef = useRef<HTMLHeadingElement>(null);
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [hasSettled, setHasSettled] = useState(false);
+  const isVisibleRef = useRef(false);
+
+  // Group characters by word so letters within words have tight natural kerning
+  const words = useMemo(() => {
+    return text.split(' ').map((word) => {
+      return word.split('').map((char) => {
+        const rollChars = getSlotReelChars(char);
+        const width = getCharWidth(char);
+        return { char, rollChars, width };
+      });
+    });
+  }, [text]);
+
+  const triggerSpin = useCallback(() => {
+    setHasSettled(false);
+    setIsSpinning(false);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setIsSpinning(true);
+      });
+    });
+  }, []);
+
+  // Viewport trigger: plays in synchrony on initial view and replays whenever scrolling back into view (subes/bajas)
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setIsSpinning(true);
+      setHasSettled(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          if (!isVisibleRef.current) {
+            isVisibleRef.current = true;
+            triggerSpin();
+          }
+        } else {
+          // When card scrolls out of view (whether scrolling up or down), reset so next entry triggers spin
+          isVisibleRef.current = false;
+          setIsSpinning(false);
+          setHasSettled(false);
+        }
+      },
+      { threshold: 0.15 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [text, triggerSpin]);
+
+  // Re-spin reels on card hover (Slot machine lever pull)
+  const prevHoverRef = useRef(false);
+  useEffect(() => {
+    if (isHovered && !prevHoverRef.current) {
+      triggerSpin();
+    }
+    prevHoverRef.current = isHovered;
+  }, [isHovered, triggerSpin]);
+
+  // Clean transition end handler: smoothly lock to pure native text once reel stops
+  const handleTransitionEnd = (e: React.TransitionEvent) => {
+    if (e.propertyName === 'transform') {
+      setHasSettled(true);
+    }
+  };
+
+  return (
+    <h3
+      ref={containerRef}
+      aria-label={text}
+      className={`casino-slot-title flex flex-wrap items-baseline ${className}`}
+      style={{
+        margin: 0,
+        padding: 0,
+        fontVariantNumeric: 'tabular-nums',
+      }}
+    >
+      {words.map((word, wIdx) => (
+        <span
+          key={wIdx}
+          className="inline-flex items-baseline whitespace-nowrap"
+          style={{
+            marginRight: wIdx < words.length - 1 ? '0.28em' : 0,
+          }}
+        >
+          {word.map((item, cIdx) => (
+            <span
+              key={cIdx}
+              className="inline-block relative overflow-hidden align-baseline select-none"
+              style={{
+                width: item.width ? `${item.width}px` : 'auto',
+                height: '1.22em',
+                lineHeight: '1.22em',
+                verticalAlign: 'baseline',
+                margin: 0,
+                padding: 0,
+              }}
+            >
+              {/* Native target character: visible when settled, invisible space reservation while spinning */}
+              <span
+                className="select-none pointer-events-none"
+                aria-hidden={!hasSettled}
+                style={{
+                  display: 'inline',
+                  margin: 0,
+                  padding: 0,
+                  opacity: hasSettled ? 1 : 0,
+                  visibility: hasSettled ? 'visible' : 'hidden',
+                }}
+              >
+                {item.char}
+              </span>
+
+              {/* 100% Synchronous Rolling Tumbler Reel: visible ONLY while rolling, unmounts on settle to prevent bleed */}
+              {!hasSettled && (
+                <span
+                  onTransitionEnd={handleTransitionEnd}
+                  className="absolute inset-0 flex flex-col items-center justify-start pointer-events-none select-none"
+                  style={{
+                    transform: isSpinning
+                      ? `translateY(-${(item.rollChars.length - 1) * SLOT_ROW_HEIGHT_EM}em)`
+                      : 'translateY(0)',
+                    transition: isSpinning
+                      ? 'transform 0.52s cubic-bezier(0.12, 0.9, 0.28, 1) 0s'
+                      : 'none',
+                    willChange: 'transform',
+                  }}
+                >
+                  {item.rollChars.map((c, rIdx) => (
+                    <span
+                      key={rIdx}
+                      style={{
+                        height: `${SLOT_ROW_HEIGHT_EM}em`,
+                        lineHeight: `${SLOT_ROW_HEIGHT_EM}em`,
+                        display: 'block',
+                        textAlign: 'center',
+                        width: '100%',
+                      }}
+                    >
+                      {c}
+                    </span>
+                  ))}
+                </span>
+              )}
+            </span>
+          ))}
+        </span>
+      ))}
+    </h3>
+  );
+}
+
+// ─── Single Site Gallery Card (Lusion Aesthetics & Kinetic Arrow) ───────────
 const SiteCard = React.memo(function SiteCard({
-  site,
-  pfiScore,
+  rankedSite,
   onSelect,
 }: {
-  site: EarthSite;
-  pfiScore: number | undefined;
+  rankedSite: RankedSite;
   onSelect: () => void;
-  scrollVelocity?: number;
 }) {
-  const [imgFailed, setImgFailed] = useState(false);
+  const { site, pfi } = rankedSite;
   const cardRef = useRef<HTMLDivElement>(null);
+  const imgFrameRef = useRef<HTMLDivElement>(null);
+  const [isHovered, setIsHovered] = useState(false);
+
+  // Parallax window frame effect (Locomotive / GSAP ScrollTrigger)
+  useEffect(() => {
+    const gsap = (window as any).gsap;
+    const ScrollTrigger = (window as any).ScrollTrigger;
+    const frame = imgFrameRef.current;
+    const card = cardRef.current;
+    if (!gsap || !ScrollTrigger || !frame || !card) return;
+
+    const tween = gsap.fromTo(
+      frame,
+      { yPercent: -6, scale: 1.06 },
+      {
+        yPercent: 6,
+        scale: 1.06,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: card,
+          start: 'top bottom',
+          end: 'bottom top',
+          scrub: true,
+        },
+      }
+    );
+
+    return () => {
+      if (tween.scrollTrigger) {
+        tween.scrollTrigger.kill();
+      }
+      tween.kill();
+    };
+  }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current) return;
     const rect = cardRef.current.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
-    const rotateY = (x - 0.5) * 6;
-    const rotateX = (0.5 - y) * 6;
-    cardRef.current.style.transform = `perspective(1200px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-6px)`;
+    const rotateY = (x - 0.5) * 8;
+    const rotateX = (0.5 - y) * 8;
+    cardRef.current.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-4px)`;
   }, []);
 
   const handleMouseLeave = useCallback(() => {
     if (!cardRef.current) return;
-    cardRef.current.style.transform = 'translate3d(0,0,0)';
+    cardRef.current.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px)';
   }, []);
 
-  const pfiDisplay = pfiScore !== undefined ? Math.round(pfiScore) : 75;
-  const pfiCol = fidelityColor(pfiDisplay);
+  const pfiDisplay = Math.round(pfi);
 
   return (
     <div
       ref={cardRef}
-      className="gallery-card group border border-[rgba(0,0,0,0.06)] shadow-sm hover:shadow-2xl transition-all duration-300"
-      style={{
-        transform: 'translate3d(0,0,0)',
-        willChange: 'transform, box-shadow',
-      }}
+      className="lusion-card group cursor-pointer flex flex-col justify-between"
+      onMouseEnter={() => setIsHovered(true)}
       onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        handleMouseLeave();
+      }}
       onClick={onSelect}
     >
-      {/* Real High-Resolution Image Container */}
-      <div className="relative overflow-hidden bg-[#181B20] rounded-t-3xl" style={{ height: 340 }}>
-        <img
-          src={site.photoEarth}
-          alt={site.name}
-          className="gallery-card-img w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-          onError={() => setImgFailed(true)}
-          crossOrigin="anonymous"
-          loading="lazy"
-        />
-
-        {/* Gradient dark scrim for readable badges */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
-
-        {/* Top Badges */}
-        <div className="absolute top-4 left-4 right-4 flex items-center justify-between gap-2 z-10">
-          <div className="flex items-center gap-1.5">
-            <span className="font-mono text-[10px] px-2.5 py-1 rounded-full font-bold bg-[#0F1015]/85 text-white backdrop-blur-md border border-[rgba(255,255,255,0.15)]">
-              {site.id}
-            </span>
-
-            {site.isCandidate && (
-              <span className="font-mono text-[9px] px-2 py-0.8 rounded-full font-bold bg-[#FF4D24] text-white shadow-sm">
-                NUEVO CANDIDATO
-              </span>
-            )}
-          </div>
-
-          {/* PFI Score Pill */}
-          <span
-            className="font-mono text-xs px-3 py-1 rounded-full font-bold shadow-md"
-            style={{
-              backgroundColor: '#FFFFFF',
-              color: pfiCol,
-            }}
-          >
-            {pfiDisplay}% PFI
-          </span>
+      {/* ── 1. Hero Media Frame (Full-bleed 28px rounded with glass badges) ── */}
+      <div className="lusion-card-media relative w-full h-[340px] sm:h-[390px] md:h-[420px] mb-5">
+        <div ref={imgFrameRef} className="w-full h-full parallax-frame-img">
+          <GeologicalSiteImage site={site} />
         </div>
 
-        {/* Bottom Image Overlay Badges */}
-        <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-2 z-10">
-          <span className="font-mono text-[10px] uppercase font-semibold px-2.5 py-0.5 rounded-full bg-black/60 text-white/90 backdrop-blur-md border border-white/10">
-            {site.biome}
+        {/* Top Floating Glass Badges */}
+        <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
+          {/* Top Left: Site ID & Biome */}
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[11px] font-bold text-white bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/15 shadow-sm">
+              {site.id}
+            </span>
+            <span className="font-sans text-[11px] uppercase tracking-wider text-white/90 bg-black/50 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 hidden sm:inline-block">
+              {site.biome}
+            </span>
+          </div>
+
+          {/* Top Right: Candidate & PFI Score */}
+          <div className="flex items-center gap-2">
+            {site.isCandidate && (
+              <span className="font-sans text-[10px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-full bg-white text-[#0A0A0C] shadow-sm">
+                {site.id.startsWith('DISC-') ? 'Satélite' : 'Candidato'}
+              </span>
+            )}
+            <span className="font-mono text-xs font-bold px-3 py-1.5 rounded-full bg-black/75 backdrop-blur-md text-white border border-white/15 tabular-nums shadow-sm">
+              {pfiDisplay}% PFI
+            </span>
+          </div>
+        </div>
+
+        {/* Bottom Coordinates & Fidelity HUD */}
+        <div className="absolute bottom-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
+          <span className="font-mono text-[10px] text-white/90 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/15 tabular-nums">
+            {site.dms}, {site.elevM.toLocaleString()} m s.n.m.
           </span>
-          <span className="font-mono text-[10px] uppercase font-semibold px-2.5 py-0.5 rounded-full bg-black/60 text-white/90 backdrop-blur-md border border-white/10">
-            {site.elevM} m s.n.m.
+          <span className="font-sans text-[10px] text-white/85 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/15 font-medium">
+            {fidelityLabel(pfiDisplay)}
           </span>
         </div>
       </div>
 
-      {/* Card Body */}
-      <div className="p-7 bg-white rounded-b-3xl">
-        {/* Lusion Arrow Animation Title */}
-        <div className="gallery-card-arrow mb-2">
-          <span className="arrow-icon text-[#2544FF] text-xl font-bold leading-none">
-            →
-          </span>
-          <h3 className="card-title text-2xl font-bold text-[#0A0A0E] tracking-tight group-hover:text-[#2544FF] transition-colors leading-tight">
-            {site.name}
-          </h3>
+      {/* ── 2. Editorial Typography & Kinetic Arrow (Lusion Design) ── */}
+      <div className="flex-1 flex flex-col justify-between px-1">
+        <div>
+          {/* Uppercase Mono Micro-label with Fast Letter-by-Letter Reveal */}
+          <div className="flex items-center gap-2 font-mono text-[11px] text-[#8E9299] uppercase tracking-[0.14em] mb-1.5 overflow-hidden whitespace-nowrap">
+            <FastLetterReveal
+              text={`${site.biome.toUpperCase()}, ${site.nasaDatasets || 'NASA SRTM 30M'}, ANALOGÍA NASA`}
+              speed={10}
+              delay={30}
+              className="truncate"
+            />
+          </div>
+
+          {/* Title Row with Lusion Expanding Kinetic Arrow & Casino Slot Machine Roll */}
+          <div className="lusion-arrow-wrap mb-1.5">
+            <span
+              className="lusion-arrow group-hover:w-[26px] group-hover:opacity-100 group-hover:translate-x-0 group-hover:mr-2"
+              aria-hidden="true"
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="4" y1="12" x2="20" y2="12"></line>
+                <polyline points="13 5 20 12 13 19"></polyline>
+              </svg>
+            </span>
+            <CasinoSlotTitle
+              text={site.name}
+              isHovered={isHovered}
+              className="lusion-card-title text-2xl md:text-[28px] font-bold text-[#0A0A0E] tracking-tight leading-tight font-sans group-hover:translate-x-1 transition-transform"
+            />
+          </div>
+
+          {/* Geographic Subtitle with Fast Letter-by-Letter Reveal */}
+          <FastLetterReveal
+            as="p"
+            text={`${site.country}, ${site.region}`}
+            speed={9}
+            delay={90}
+            className="font-sans text-xs text-[#71717A] mb-4"
+          />
+
+          {/* Clean Editorial Micro-Details (Micro-escala & Proceso activo) */}
+          <div className="pt-3 border-t border-[#E5E7EB] mb-4 text-xs font-sans space-y-2">
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 sm:gap-4">
+              <span className="text-[#71717A] font-medium shrink-0">Proceso activo:</span>
+              <FastLetterReveal
+                text={site.activeProcess}
+                speed={8}
+                delay={140}
+                className="text-[#18181B] truncate text-left sm:text-right font-normal"
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 sm:gap-4">
+              <span className="text-[#71717A] font-medium shrink-0">Micro-escala:</span>
+              <FastLetterReveal
+                text={site.microScale}
+                speed={8}
+                delay={170}
+                className="text-[#18181B] truncate text-left sm:text-right font-normal"
+              />
+            </div>
+          </div>
+
+          {/* Summary */}
+          <FastLetterReveal
+            as="p"
+            text={site.summary}
+            speed={7}
+            delay={200}
+            className="text-[13px] text-[#4B5563] leading-[1.65] line-clamp-2 font-normal font-sans mb-4"
+          />
         </div>
 
-        {/* Location & Coordinates */}
-        <p className="font-mono text-xs text-[#686B75] mb-3">
-          {site.country} · {site.region} · <span className="text-[#0A0A0E]">{site.dms}</span>
-        </p>
-
-        {/* Summary Snippet */}
-        <p className="text-sm text-[#686B75] leading-relaxed line-clamp-2 font-light">
-          {site.summary}
-        </p>
-
-        {/* Bottom CTA Pill */}
-        <div className="mt-5 pt-4 border-t border-[rgba(0,0,0,0.06)] flex items-center justify-between font-mono text-xs text-[#2544FF] font-semibold">
-          <span>ABRIR ESTUDIO GEOLÓGICO COMPLETO</span>
-          <span className="text-lg leading-none">↗</span>
+        {/* Bottom CTA Link: Explorar caso de estudio geológico → */}
+        <div className="pt-3.5 border-t border-[#E5E7EB]/80 flex items-center justify-between text-xs font-semibold text-[#0A0A0E] font-sans">
+          <span className="relative inline-block after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-[#0A0A0E] group-hover:after:w-full after:transition-all after:duration-300">
+            Explorar caso de estudio geológico
+          </span>
+          <span className="text-sm transform group-hover:translate-x-1.5 transition-transform duration-300 font-normal">
+            →
+          </span>
         </div>
       </div>
     </div>
@@ -139,51 +789,252 @@ export default function SiteGallery({
   onSelectSite,
   scrollVelocity = 0,
 }: SiteGalleryProps) {
-  const pfiMap = new Map(rankedSites.map((rs) => [rs.site.id, rs.pfi]));
+  const [activeFilter, setActiveFilter] = useState('Todos');
+  const [isPrinting, setIsPrinting] = useState(false);
+  const filterTrackRef = useRef<HTMLDivElement>(null);
+  const filterBtnRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const [pillStyle, setPillStyle] = useState<{ left: number; width: number; opacity: number }>({
+    left: 0,
+    width: 0,
+    opacity: 0,
+  });
+
+  // Print mode detection: renders all 14 sites during browser print
+  useEffect(() => {
+    const handleBefore = () => setIsPrinting(true);
+    const handleAfter = () => setIsPrinting(false);
+    window.addEventListener('beforeprint', handleBefore);
+    window.addEventListener('afterprint', handleAfter);
+    return () => {
+      window.removeEventListener('beforeprint', handleBefore);
+      window.removeEventListener('afterprint', handleAfter);
+    };
+  }, []);
+
+  // ── High-Performance Scroll Velocity & Flexion Physics Engine ─────────────
+  const gridContainerRef = useRef<HTMLDivElement>(null);
+  const targetVelocityRef = useRef(0);
+  const currentVelocityRef = useRef(0);
+  const lastScrollYRef = useRef(typeof window !== 'undefined' ? window.scrollY : 0);
+  const lastTimeRef = useRef(performance.now());
+  const rafVelocityRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const tick = () => {
+      targetVelocityRef.current *= 0.82;
+      currentVelocityRef.current += (targetVelocityRef.current - currentVelocityRef.current) * 0.18;
+
+      const v = currentVelocityRef.current;
+      const effectiveVelocity = Math.abs(v) > Math.abs(scrollVelocity) ? v : scrollVelocity;
+
+      if (gridContainerRef.current) {
+        if (Math.abs(effectiveVelocity) > 0.08) {
+          const pitchX = Math.min(Math.max(-effectiveVelocity * 0.12, -4.5), 4.5);
+          const scaleDepth = 1 - Math.min(Math.abs(effectiveVelocity) * 0.001, 0.025);
+          gridContainerRef.current.style.transform = `perspective(1200px) rotateX(${pitchX.toFixed(2)}deg) scale(${scaleDepth.toFixed(3)})`;
+          gridContainerRef.current.style.transition = 'none';
+        } else {
+          gridContainerRef.current.style.transform = 'perspective(1200px) rotateX(0deg) scale(1)';
+          gridContainerRef.current.style.transition = 'transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)';
+        }
+      }
+
+      // If velocity has settled to zero, stop the RAF loop until next scroll
+      if (Math.abs(v) < 0.04 && Math.abs(targetVelocityRef.current) < 0.04) {
+        currentVelocityRef.current = 0;
+        rafVelocityRef.current = null;
+        return;
+      }
+
+      rafVelocityRef.current = requestAnimationFrame(tick);
+    };
+
+    const startTick = () => {
+      if (!rafVelocityRef.current) {
+        rafVelocityRef.current = requestAnimationFrame(tick);
+      }
+    };
+
+    const handleScroll = () => {
+      const now = performance.now();
+      const dt = Math.max(1, now - lastTimeRef.current);
+      const sy = window.scrollY;
+      const dy = sy - lastScrollYRef.current;
+
+      const v = (dy / dt) * 16;
+      targetVelocityRef.current = Math.min(Math.max(v, -60), 60);
+
+      lastScrollYRef.current = sy;
+      lastTimeRef.current = now;
+      startTick();
+    };
+
+    const lenis = (window as any).__lenis;
+    if (lenis) {
+      lenis.on('scroll', (e: any) => {
+        if (typeof e.velocity === 'number') {
+          targetVelocityRef.current = Math.min(Math.max(e.velocity * 1.2, -60), 60);
+          startTick();
+        } else {
+          handleScroll();
+        }
+      });
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (rafVelocityRef.current) cancelAnimationFrame(rafVelocityRef.current);
+    };
+  }, [scrollVelocity]);
+
+  // Calculate sliding magnetic bubble position
+  const updatePillPosition = useCallback(() => {
+    const activeBtn = filterBtnRefs.current.get(activeFilter);
+    const track = filterTrackRef.current;
+    if (activeBtn && track) {
+      const trackRect = track.getBoundingClientRect();
+      const btnRect = activeBtn.getBoundingClientRect();
+      setPillStyle({
+        left: btnRect.left - trackRect.left,
+        width: btnRect.width,
+        opacity: 1,
+      });
+    }
+  }, [activeFilter]);
+
+  useEffect(() => {
+    updatePillPosition();
+    window.addEventListener('resize', updatePillPosition);
+    return () => window.removeEventListener('resize', updatePillPosition);
+  }, [updatePillPosition]);
+
+  const candidateCount = useMemo(
+    () => rankedSites.filter((rs) => rs.site.isCandidate === true).length,
+    [rankedSites]
+  );
+
+  const galleryFilters: { key: string; label: string }[] = useMemo(
+    () => [
+      { key: 'Todos', label: `Todos (${rankedSites.length})` },
+      { key: 'Candidatos', label: `Nuevos candidatos (${candidateCount})` },
+      { key: 'Hiperárido', label: 'Hiperárido' },
+      { key: 'Polar/Criogénico', label: 'Polar / Criogénico' },
+      { key: 'Volcánico', label: 'Volcánico' },
+      { key: 'Impacto/Cráter', label: 'Impacto / Cráter' },
+      { key: 'Subterráneo/Cueva', label: 'Subterráneo / Cueva' },
+    ],
+    [rankedSites.length, candidateCount]
+  );
+
+  // Filter ranked sites based on user-selected filter chip (in print mode, render ALL 14 sites)
+  const filteredRankedSites = useMemo(() => {
+    if (isPrinting) return rankedSites;
+    return rankedSites.filter((rs) => {
+      if (activeFilter === 'Todos') return true;
+      if (activeFilter === 'Candidatos') return rs.site.isCandidate === true;
+      if (activeFilter === 'Volcánico') {
+        return rs.site.biome === 'Volcánico/Basáltico';
+      }
+      return rs.site.biome === activeFilter;
+    });
+  }, [isPrinting, rankedSites, activeFilter]);
 
   return (
-    <section className="section-light cross-grid py-28 px-6 select-none">
+    <section
+      id="gallery-section"
+      className="section-light py-28 px-6 select-none"
+      style={{
+        background: '#F5F5F3',
+        backgroundImage: 'radial-gradient(circle, rgba(0, 0, 0, 0.04) 1px, transparent 1px)',
+        backgroundSize: '36px 36px',
+        scrollMarginTop: '96px',
+      }}
+    >
       <div className="max-w-[1400px] mx-auto">
         {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div>
-            <span
-              className="font-mono uppercase tracking-widest block mb-3 text-[#686B75]"
-              style={{ fontSize: '11px', letterSpacing: '0.12em' }}
-            >
-              02 — LABORATORIO DE CAMPO TERRESTRE
-            </span>
             <h2
+              className="editorial-reveal-title"
               style={{
                 fontFamily: "'Inter', sans-serif",
-                fontWeight: 700,
-                fontSize: 'clamp(32px, 4vw, 48px)',
+                fontWeight: 600,
+                fontSize: 'clamp(30px, 3.5vw, 44px)',
                 color: '#0A0A0E',
                 lineHeight: 1.15,
                 margin: 0,
+                letterSpacing: '-0.03em',
               }}
             >
               Sitios análogos caracterizados
             </h2>
-            <p className="text-[#686B75] text-base mt-2 max-w-xl font-light">
-              Explora en alta resolución los 8 terrenos extremos de prueba para rovers, hábitats subterráneos y extracción de hielo.
+            <p className="text-[#4B5563] text-[15px] mt-3 max-w-[65ch] font-normal leading-[1.65]">
+              Catálogo de los 14 sitios de prueba terrestres caracterizados para misiones Artemis en la Luna y bases en Marte. Reordenados dinámicamente por afinidad con el destino y las 8 dimensiones oficiales de la NASA.
             </p>
           </div>
 
-          <div className="font-mono text-xs text-[#686B75] bg-white px-4 py-2 rounded-full border border-[rgba(0,0,0,0.08)] shadow-sm shrink-0">
-            TOTAL ANÁLOGOS: <strong className="text-[#2544FF]">{SITES.length} ACTIVOS</strong>
+          <div className="font-sans text-xs text-[#686B75] bg-white px-4 py-2.5 rounded-full border border-[#E2E4EC] shadow-sm shrink-0 self-start md:self-end">
+            Catálogo: <strong className="text-[#0A0A0E] font-semibold">{rankedSites.length} sitios activos</strong>
           </div>
         </div>
 
-        {/* 2-Column Spacious Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-          {SITES.map((site) => (
+        {/* ── Magnetic Sliding Pill Filter Bar (Lusion Interactive Bubble) ── */}
+        <div className="mb-14 overflow-x-auto pb-2 scrollbar-none">
+          <div
+            ref={filterTrackRef}
+            className="relative inline-flex items-center gap-1 p-1.5 bg-white/90 backdrop-blur-md rounded-full border border-[#E2E4EC] shadow-sm"
+          >
+            {/* Sliding Elastic Active Pill */}
+            <div
+              className="absolute rounded-full bg-[#0A0A0E] pointer-events-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] shadow-sm"
+              style={{
+                left: `${pillStyle.left}px`,
+                width: `${pillStyle.width}px`,
+                top: '6px',
+                bottom: '6px',
+                opacity: pillStyle.opacity,
+              }}
+            />
+
+            {galleryFilters.map((f) => {
+              const isSelected = activeFilter === f.key;
+              return (
+                <button
+                  key={f.key}
+                  ref={(el) => {
+                    if (el) filterBtnRefs.current.set(f.key, el);
+                    else filterBtnRefs.current.delete(f.key);
+                  }}
+                  onClick={() => setActiveFilter(f.key)}
+                  className={`relative z-10 font-sans text-xs px-4 py-2 rounded-full transition-colors duration-200 whitespace-nowrap ${
+                    isSelected
+                      ? 'text-white font-semibold'
+                      : 'text-[#686B75] hover:text-[#0A0A0E] font-medium'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── 2-Column Spacious Editorial Grid with Lusion 3D Perspective Roll ── */}
+        <div
+          ref={gridContainerRef}
+          className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-16 items-start"
+          style={{
+            willChange: 'transform',
+            transform: 'perspective(1200px) rotateX(0deg) scale(1)',
+            transformOrigin: 'center center',
+          }}
+        >
+          {filteredRankedSites.map((rs) => (
             <SiteCard
-              key={site.id}
-              site={site}
-              pfiScore={pfiMap.get(site.id)}
-              onSelect={() => onSelectSite(site.id)}
-              scrollVelocity={scrollVelocity}
+              key={rs.site.id}
+              rankedSite={rs}
+              onSelect={() => onSelectSite(rs.site.id)}
             />
           ))}
         </div>
