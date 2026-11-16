@@ -295,7 +295,13 @@ export default function EditorialSlide2() {
     handleResize();
     window.addEventListener('resize', handleResize);
 
+    let isVisible = true;
+
     const loop = () => {
+      if (!isVisible) {
+        animId = 0;
+        return;
+      }
       const target = targetScrollRef.current;
       const smooth = smoothScrollRef.current;
       const diff = target - smooth;
@@ -515,12 +521,30 @@ export default function EditorialSlide2() {
       animId = requestAnimationFrame(loop);
     };
 
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const wasVisible = isVisible;
+        isVisible = entry.isIntersecting;
+        if (isVisible && !wasVisible && !animId) {
+          targetScrollRef.current = window.scrollY;
+          smoothScrollRef.current = window.scrollY;
+          animId = requestAnimationFrame(loop);
+        } else if (!isVisible && animId) {
+          cancelAnimationFrame(animId);
+          animId = 0;
+        }
+      },
+      { rootMargin: '200px' }
+    );
+    if (sectionRef.current) observer.observe(sectionRef.current);
+
     animId = requestAnimationFrame(loop);
 
     return () => {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', handleResize);
-      cancelAnimationFrame(animId);
+      observer.disconnect();
+      if (animId) cancelAnimationFrame(animId);
     };
   }, []);
 

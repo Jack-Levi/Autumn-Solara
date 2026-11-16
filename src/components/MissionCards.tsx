@@ -201,7 +201,7 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
 
   // Locomotive kinetic velocity skew & tilt connected to Lenis
   useEffect(() => {
-    let rafId: number;
+    let rafId: number | null = null;
     let currentSkew = 0;
     let targetSkew = 0;
     let isRunning = true;
@@ -225,14 +225,30 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
         }
       }
 
+      if (Math.abs(currentSkew) <= 0.005 && Math.abs(targetSkew) <= 0.005) {
+        rafId = null;
+        return;
+      }
+
       rafId = requestAnimationFrame(updateSkew);
     };
 
-    rafId = requestAnimationFrame(updateSkew);
+    const startSkew = () => {
+      if (!rafId && isRunning) {
+        rafId = requestAnimationFrame(updateSkew);
+      }
+    };
+
+    const lenis = (window as any).__lenis;
+    if (lenis) {
+      lenis.on('scroll', startSkew);
+    }
+    window.addEventListener('scroll', startSkew, { passive: true });
 
     return () => {
       isRunning = false;
-      cancelAnimationFrame(rafId);
+      if (rafId) cancelAnimationFrame(rafId);
+      window.removeEventListener('scroll', startSkew);
     };
   }, []);
 

@@ -12,8 +12,8 @@ export default function SpaceTunnel({
 }: SpaceTunnelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const legendRef = useRef<HTMLDivElement>(null);
+  const flashRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -373,7 +373,21 @@ export default function SpaceTunnel({
         pct = Math.max(0, Math.min(1, -rect.top / totalDist));
       }
       currentScrollPct += (pct - currentScrollPct) * 0.12;
-      setScrollProgress(currentScrollPct);
+
+      // Direct DOM update without triggering 60 React re-renders per second
+      if (legendRef.current) {
+        const pNorm = Math.min(1, currentScrollPct / 0.22);
+        const textScale = 1.0 + Math.pow(pNorm, 2.2) * 9.5;
+        const textOpacity = pNorm < 0.5 ? 1.0 : Math.max(0, 1.0 - (pNorm - 0.5) / 0.5);
+        legendRef.current.style.transform = `scale(${textScale})`;
+        legendRef.current.style.opacity = `${textOpacity}`;
+      }
+
+      if (flashRef.current) {
+        const singularityFlashAlpha =
+          currentScrollPct < 0.88 ? 0 : Math.min(1, Math.sin(((currentScrollPct - 0.88) / 0.08) * Math.PI) * 1.5);
+        flashRef.current.style.opacity = `${singularityFlashAlpha}`;
+      }
 
       const curY = window.scrollY;
       const scrollDelta = curY - lastScrollY;
@@ -530,15 +544,6 @@ export default function SpaceTunnel({
     };
   }, [onEnterEditorial]);
 
-  // Escala y desvanecimiento de la tipografía de 3 líneas
-  const pNorm = Math.min(1, scrollProgress / 0.22);
-  const textScale = 1.0 + Math.pow(pNorm, 2.2) * 9.5;
-  const textOpacity = pNorm < 0.5 ? 1.0 : Math.max(0, 1.0 - (pNorm - 0.5) / 0.5);
-
-  // Destello de singularidad suave al finalizar el túnel
-  const singularityFlashAlpha =
-    scrollProgress < 0.88 ? 0 : Math.min(1, Math.sin(((scrollProgress - 0.88) / 0.08) * Math.PI) * 1.5);
-
   return (
     <div
       ref={containerRef}
@@ -568,10 +573,11 @@ export default function SpaceTunnel({
 
         {/* Leyenda Central Limpia y Monumental */}
         <div
+          ref={legendRef}
           className="relative z-10 text-center px-6 pointer-events-none flex flex-col items-center"
           style={{
-            transform: `scale(${textScale})`,
-            opacity: textOpacity,
+            transform: 'scale(1)',
+            opacity: 1,
             willChange: 'transform, opacity',
             transition: 'opacity 0.08s ease-out',
           }}
@@ -598,10 +604,11 @@ export default function SpaceTunnel({
 
         {/* Destello Óptico de Singularidad hacia MissionCards */}
         <div
+          ref={flashRef}
           className="absolute inset-0 pointer-events-none"
           style={{
             backgroundColor: '#FFFFFF',
-            opacity: singularityFlashAlpha,
+            opacity: 0,
             zIndex: 40,
             transition: 'opacity 0.05s ease-out',
           }}
