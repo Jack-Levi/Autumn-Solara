@@ -361,7 +361,7 @@ export function App() {
       </div>
 
       {/* 7. Earth Analog Site Gallery (2-Column Spacious Cards) */}
-      <div id="gallery-section">
+      <div className="relative">
         <SiteGallery
           rankedSites={rankedSites}
           onSelectSite={handleSelectSite}

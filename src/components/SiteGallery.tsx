@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { fidelityColor, fidelityLabel } from '../data';
 import type { RankedSite, EarthSite, BiomeType } from '../data';
 import { useWikipediaImage, WIKIPEDIA_TARGET_REGISTRY } from '../services/wikipediaImages';
@@ -251,7 +251,7 @@ export function GeologicalSiteImage({ site }: { site: EarthSite }) {
 // ─── Fast Letter-by-Letter Reveal Component (Lusion Editorial Typography) ───
 export function FastLetterReveal({
   text,
-  speed = 12,
+  speed = 10,
   delay = 50,
   className = '',
   as: Component = 'span',
@@ -267,37 +267,44 @@ export function FastLetterReveal({
   const hasTriggered = useRef(false);
 
   useEffect(() => {
+    hasTriggered.current = false;
+    setVisibleCount(0);
     const el = containerRef.current;
     if (!el || typeof IntersectionObserver === 'undefined') {
       setVisibleCount(text.length);
       return;
     }
 
+    let rafId: number | null = null;
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !hasTriggered.current) {
           hasTriggered.current = true;
-          let count = 0;
+          const startTime = performance.now() + delay;
           const total = text.length;
 
-          const timer = setTimeout(() => {
-            const interval = setInterval(() => {
-              count += 1;
+          const tick = (now: number) => {
+            if (now >= startTime) {
+              const elapsed = now - startTime;
+              const count = Math.min(total, Math.floor(elapsed / speed) + 1);
               setVisibleCount(count);
-              if (count >= total) {
-                clearInterval(interval);
-              }
-            }, speed);
-          }, delay);
+              if (count >= total) return;
+            }
+            rafId = requestAnimationFrame(tick);
+          };
 
-          return () => clearTimeout(timer);
+          rafId = requestAnimationFrame(tick);
         }
       },
       { threshold: 0.1 }
     );
 
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, [text, speed, delay]);
 
   const chars = text.split('');
@@ -312,7 +319,7 @@ export function FastLetterReveal({
             style={{
               opacity: isVisible ? 1 : 0,
               transform: isVisible ? 'translateY(0)' : 'translateY(3px)',
-              transition: 'opacity 0.14s ease-out, transform 0.14s ease-out',
+              transition: 'opacity 0.12s ease-out, transform 0.12s ease-out',
               display: char === ' ' ? 'inline' : 'inline-block',
               whiteSpace: 'pre',
             }}
@@ -322,6 +329,177 @@ export function FastLetterReveal({
         );
       })}
     </Component>
+  );
+}
+
+// ─── Casino Slot Machine / Rolling Tumbler Title Reveal Component ────────────
+function getSlotReelChars(targetChar: string): string[] {
+  if (/[iljtfr()[\],.·•\-]/.test(targetChar)) {
+    const pool = 'iljtrf';
+    return [
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      targetChar,
+    ];
+  }
+  if (/[a-záéíóúñ]/.test(targetChar)) {
+    const pool = 'abcdefghkmnopqsuvwxyz';
+    return [
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      targetChar,
+    ];
+  }
+  if (/[A-ZÁÉÍÓÚÑ]/.test(targetChar)) {
+    const pool = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    return [
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      targetChar,
+    ];
+  }
+  if (/[0-9]/.test(targetChar)) {
+    const pool = '0123456789';
+    return [
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      targetChar,
+    ];
+  }
+  return [targetChar];
+}
+
+export function CasinoSlotTitle({
+  text,
+  isHovered = false,
+  className = '',
+}: {
+  text: string;
+  isHovered?: boolean;
+  className?: string;
+}) {
+  const containerRef = useRef<HTMLHeadingElement>(null);
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [hasSettled, setHasSettled] = useState(false);
+  const [spinIteration, setSpinIteration] = useState(0);
+
+  // Group characters by word so letters within words have tight natural kerning
+  const words = useMemo(() => {
+    return text.split(' ').map((word) => {
+      return word.split('').map((char) => {
+        const rollChars = getSlotReelChars(char);
+        return { char, rollChars };
+      });
+    });
+  }, [text]);
+
+  // Viewport trigger
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      setIsSpinning(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !hasSettled) {
+          setIsSpinning(true);
+          setHasSettled(true);
+        }
+      },
+      { threshold: 0.15 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasSettled]);
+
+  // Re-spin reels on card hover (Slot machine lever pull)
+  const prevHoverRef = useRef(false);
+  useEffect(() => {
+    if (isHovered && !prevHoverRef.current && hasSettled) {
+      setSpinIteration((k) => k + 1);
+    }
+    prevHoverRef.current = isHovered;
+  }, [isHovered, hasSettled]);
+
+  let globalCharIdx = 0;
+
+  return (
+    <h3 ref={containerRef} className={`casino-slot-title flex flex-wrap items-baseline gap-x-[0.28em] ${className}`}>
+      {words.map((wordLetters, wIdx) => (
+        <span key={wIdx} className="inline-flex items-baseline whitespace-nowrap">
+          {wordLetters.map((item, lIdx) => {
+            const idx = globalCharIdx++;
+            const spinDuration = 0.45 + Math.min(idx * 0.024, 0.6);
+            const spinDelay = Math.min(idx * 0.02, 0.4);
+
+            return (
+              <span
+                key={`${idx}-${spinIteration}`}
+                className="inline-block relative overflow-hidden align-baseline"
+                style={{
+                  height: '1.18em',
+                  lineHeight: '1.18em',
+                  verticalAlign: 'baseline',
+                }}
+              >
+                {/* Invisible target character locks the exact native font width and kerning */}
+                <span
+                  className="invisible select-none pointer-events-none opacity-0"
+                  aria-hidden="true"
+                  style={{ display: 'inline-block' }}
+                >
+                  {item.char}
+                </span>
+
+                {/* Vertical tumbling reel positioned absolute over the exact character width */}
+                <span
+                  className="absolute inset-0 flex flex-col items-center justify-start pointer-events-none"
+                  style={{
+                    transform: isSpinning
+                      ? `translateY(-${(item.rollChars.length - 1) * 1.18}em)`
+                      : 'translateY(0)',
+                    transition: isSpinning
+                      ? `transform ${spinDuration}s cubic-bezier(0.12, 0.9, 0.28, 1) ${spinDelay}s`
+                      : 'none',
+                    willChange: 'transform',
+                  }}
+                >
+                  {item.rollChars.map((c, cIdx) => (
+                    <span
+                      key={cIdx}
+                      style={{
+                        height: '1.18em',
+                        lineHeight: '1.18em',
+                        display: 'block',
+                        textAlign: 'center',
+                        width: '100%',
+                      }}
+                    >
+                      {c}
+                    </span>
+                  ))}
+                </span>
+              </span>
+            );
+          })}
+        </span>
+      ))}
+    </h3>
   );
 }
 
@@ -336,6 +514,7 @@ const SiteCard = React.memo(function SiteCard({
   const { site, pfi } = rankedSite;
   const cardRef = useRef<HTMLDivElement>(null);
   const imgFrameRef = useRef<HTMLDivElement>(null);
+  const [isHovered, setIsHovered] = useState(false);
 
   // Parallax window frame effect (Locomotive / GSAP ScrollTrigger)
   useEffect(() => {
@@ -390,8 +569,12 @@ const SiteCard = React.memo(function SiteCard({
     <div
       ref={cardRef}
       className="lusion-card group cursor-pointer flex flex-col justify-between"
+      onMouseEnter={() => setIsHovered(true)}
       onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        handleMouseLeave();
+      }}
       onClick={onSelect}
     >
       {/* ── 1. Hero Media Frame (Full-bleed 28px rounded with glass badges) ── */}
@@ -449,7 +632,7 @@ const SiteCard = React.memo(function SiteCard({
             />
           </div>
 
-          {/* Title Row with Lusion Expanding Kinetic Arrow & Fast Letter Reveal */}
+          {/* Title Row with Lusion Expanding Kinetic Arrow & Casino Slot Machine Roll */}
           <div className="lusion-arrow-wrap mb-1.5">
             <span
               className="lusion-arrow group-hover:w-[26px] group-hover:opacity-100 group-hover:translate-x-0 group-hover:mr-2"
@@ -460,11 +643,9 @@ const SiteCard = React.memo(function SiteCard({
                 <polyline points="13 5 20 12 13 19"></polyline>
               </svg>
             </span>
-            <FastLetterReveal
-              as="h3"
+            <CasinoSlotTitle
               text={site.name}
-              speed={11}
-              delay={50}
+              isHovered={isHovered}
               className="lusion-card-title text-2xl md:text-[28px] font-bold text-[#0A0A0E] tracking-tight leading-tight font-sans group-hover:translate-x-1 transition-transform"
             />
           </div>
@@ -474,7 +655,7 @@ const SiteCard = React.memo(function SiteCard({
             as="p"
             text={`${site.country} · ${site.region}`}
             speed={9}
-            delay={100}
+            delay={90}
             className="font-sans text-xs text-[#71717A] mb-4"
           />
 
@@ -485,7 +666,7 @@ const SiteCard = React.memo(function SiteCard({
               <FastLetterReveal
                 text={site.activeProcess}
                 speed={8}
-                delay={150}
+                delay={140}
                 className="text-[#18181B] truncate text-left sm:text-right font-normal"
               />
             </div>
@@ -494,7 +675,7 @@ const SiteCard = React.memo(function SiteCard({
               <FastLetterReveal
                 text={site.microScale}
                 speed={8}
-                delay={180}
+                delay={170}
                 className="text-[#18181B] truncate text-left sm:text-right font-normal"
               />
             </div>
@@ -505,7 +686,7 @@ const SiteCard = React.memo(function SiteCard({
             as="p"
             text={site.summary}
             speed={7}
-            delay={220}
+            delay={200}
             className="text-[13px] text-[#4B5563] leading-[1.65] line-clamp-2 font-normal font-sans mb-4"
           />
         </div>
@@ -654,6 +835,7 @@ export default function SiteGallery({
         background: '#F5F5F3',
         backgroundImage: 'radial-gradient(circle, rgba(0, 0, 0, 0.04) 1px, transparent 1px)',
         backgroundSize: '36px 36px',
+        scrollMarginTop: '96px',
       }}
     >
       <div className="max-w-[1400px] mx-auto">
