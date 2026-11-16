@@ -315,23 +315,23 @@ export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
         style={{
           alignItems: 'flex-start',
           justifyContent: 'flex-end',
-          padding: '0 7vw 12vh 7vw',
+          padding: '0 6vw 24vh 6vw',
           textAlign: 'left',
-          maxWidth: '900px',
+          maxWidth: '1440px',
           willChange: 'transform, opacity',
         }}
       >
         <h1
           style={{
             fontFamily: "'Inter', sans-serif",
-            fontSize: 'clamp(2.4rem, 4.4vw, 4.2rem)',
-            fontWeight: 500,
-            lineHeight: 1.08,
-            letterSpacing: '-0.03em',
+            fontSize: 'clamp(3.4rem, 6.2vw, 6.5rem)',
+            fontWeight: 550,
+            lineHeight: 1.02,
+            letterSpacing: '-0.035em',
             color: '#FFFFFF',
             textAlign: 'left',
             margin: 0,
-            textShadow: '0 2px 24px rgba(0,0,0,0.5)',
+            textShadow: '0 2px 28px rgba(0,0,0,0.6)',
           }}
         >
           <div style={{ overflow: 'hidden' }}>
@@ -360,13 +360,13 @@ export default function HeroSection({ scrollProgress = 0 }: HeroSectionProps) {
           </div>
         </h1>
 
-        <div style={{ overflow: 'hidden', marginTop: '1.25rem' }}>
+        <div style={{ overflow: 'hidden', marginTop: '1.75rem' }}>
           <p
             className="font-normal leading-[1.65]"
             style={{
               fontFamily: "'Inter', sans-serif",
-              maxWidth: '520px',
-              fontSize: '15px',
+              maxWidth: '820px',
+              fontSize: 'clamp(16px, 1.25vw, 20px)',
               color: '#A1A1AA',
               textAlign: 'left',
               margin: 0,
