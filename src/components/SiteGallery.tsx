@@ -334,10 +334,10 @@ export function FastLetterReveal({
 
 // ─── Casino Slot Machine / Rolling Tumbler Title Reveal Component ────────────
 function getSlotReelChars(targetChar: string): string[] {
-  if (/[iljtfr()[\],.·•\-]/.test(targetChar)) {
-    const pool = 'iljtrf';
+  // Narrow characters (i, l, j, t, f, r, 1, punctuation)
+  if (/[iljtfr()[\],.·•\-1!:]/.test(targetChar)) {
+    const pool = 'iltjrf1!';
     return [
-      pool[Math.floor(Math.random() * pool.length)],
       pool[Math.floor(Math.random() * pool.length)],
       pool[Math.floor(Math.random() * pool.length)],
       pool[Math.floor(Math.random() * pool.length)],
@@ -345,10 +345,21 @@ function getSlotReelChars(targetChar: string): string[] {
       targetChar,
     ];
   }
+  // Wide lowercase letters (m, w)
+  if (/[mw]/.test(targetChar)) {
+    const pool = 'mwqhbkd';
+    return [
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      pool[Math.floor(Math.random() * pool.length)],
+      targetChar,
+    ];
+  }
+  // Standard lowercase letters
   if (/[a-záéíóúñ]/.test(targetChar)) {
-    const pool = 'abcdefghkmnopqsuvwxyz';
+    const pool = 'acegkopsuvxz';
     return [
-      pool[Math.floor(Math.random() * pool.length)],
       pool[Math.floor(Math.random() * pool.length)],
       pool[Math.floor(Math.random() * pool.length)],
       pool[Math.floor(Math.random() * pool.length)],
@@ -356,10 +367,10 @@ function getSlotReelChars(targetChar: string): string[] {
       targetChar,
     ];
   }
+  // Uppercase letters
   if (/[A-ZÁÉÍÓÚÑ]/.test(targetChar)) {
-    const pool = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const pool = 'ABCDEFGHJKLNPQRSTUVXYZ';
     return [
-      pool[Math.floor(Math.random() * pool.length)],
       pool[Math.floor(Math.random() * pool.length)],
       pool[Math.floor(Math.random() * pool.length)],
       pool[Math.floor(Math.random() * pool.length)],
@@ -367,10 +378,10 @@ function getSlotReelChars(targetChar: string): string[] {
       targetChar,
     ];
   }
+  // Digits
   if (/[0-9]/.test(targetChar)) {
     const pool = '0123456789';
     return [
-      pool[Math.floor(Math.random() * pool.length)],
       pool[Math.floor(Math.random() * pool.length)],
       pool[Math.floor(Math.random() * pool.length)],
       pool[Math.floor(Math.random() * pool.length)],
@@ -379,6 +390,19 @@ function getSlotReelChars(targetChar: string): string[] {
     ];
   }
   return [targetChar];
+}
+
+function getCharWidth(char: string): number | null {
+  if (typeof document === 'undefined') return null;
+  try {
+    const canvas = (getCharWidth as any).canvas || ((getCharWidth as any).canvas = document.createElement('canvas'));
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.font = '700 28px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    return Math.ceil(ctx.measureText(char).width * 10) / 10;
+  } catch {
+    return null;
+  }
 }
 
 export function CasinoSlotTitle({
@@ -392,20 +416,20 @@ export function CasinoSlotTitle({
 }) {
   const containerRef = useRef<HTMLHeadingElement>(null);
   const [isSpinning, setIsSpinning] = useState(false);
-  const [hasSettled, setHasSettled] = useState(false);
-  const [spinIteration, setSpinIteration] = useState(0);
+  const isVisibleRef = useRef(false);
 
   // Group characters by word so letters within words have tight natural kerning
   const words = useMemo(() => {
     return text.split(' ').map((word) => {
       return word.split('').map((char) => {
         const rollChars = getSlotReelChars(char);
-        return { char, rollChars };
+        const width = getCharWidth(char);
+        return { char, rollChars, width };
       });
     });
   }, [text]);
 
-  // Viewport trigger
+  // Viewport trigger: plays in synchrony on initial view and replays whenever scrolling back into view (subes/bajas)
   useEffect(() => {
     const el = containerRef.current;
     if (!el || typeof IntersectionObserver === 'undefined') {
@@ -415,9 +439,21 @@ export function CasinoSlotTitle({
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !hasSettled) {
-          setIsSpinning(true);
-          setHasSettled(true);
+        if (entry.isIntersecting) {
+          if (!isVisibleRef.current) {
+            isVisibleRef.current = true;
+            // Prime at top of reel instantly, then trigger synchronized roll
+            setIsSpinning(false);
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                setIsSpinning(true);
+              });
+            });
+          }
+        } else {
+          // When card scrolls out of view (whether scrolling up or down), reset so next entry triggers spin
+          isVisibleRef.current = false;
+          setIsSpinning(false);
         }
       },
       { threshold: 0.15 }
@@ -425,78 +461,93 @@ export function CasinoSlotTitle({
 
     observer.observe(el);
     return () => observer.disconnect();
-  }, [hasSettled]);
+  }, [text]);
 
   // Re-spin reels on card hover (Slot machine lever pull)
   const prevHoverRef = useRef(false);
   useEffect(() => {
-    if (isHovered && !prevHoverRef.current && hasSettled) {
-      setSpinIteration((k) => k + 1);
+    if (isHovered && !prevHoverRef.current) {
+      setIsSpinning(false);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsSpinning(true);
+        });
+      });
     }
     prevHoverRef.current = isHovered;
-  }, [isHovered, hasSettled]);
-
-  let globalCharIdx = 0;
+  }, [isHovered]);
 
   return (
-    <h3 ref={containerRef} className={`casino-slot-title flex flex-wrap items-baseline gap-x-[0.28em] ${className}`}>
-      {words.map((wordLetters, wIdx) => (
-        <span key={wIdx} className="inline-flex items-baseline whitespace-nowrap">
-          {wordLetters.map((item, lIdx) => {
-            const idx = globalCharIdx++;
-            const spinDuration = 0.45 + Math.min(idx * 0.024, 0.6);
-            const spinDelay = Math.min(idx * 0.02, 0.4);
-
-            return (
+    <h3
+      ref={containerRef}
+      aria-label={text}
+      className={`casino-slot-title flex flex-wrap items-baseline ${className}`}
+      style={{
+        margin: 0,
+        padding: 0,
+        fontVariantNumeric: 'tabular-nums',
+      }}
+    >
+      {words.map((word, wIdx) => (
+        <span
+          key={wIdx}
+          className="inline-flex items-baseline whitespace-nowrap"
+          style={{
+            marginRight: wIdx < words.length - 1 ? '0.28em' : 0,
+          }}
+        >
+          {word.map((item, cIdx) => (
+            <span
+              key={cIdx}
+              className="inline-block relative overflow-hidden align-baseline select-none"
+              style={{
+                width: item.width ? `${item.width}px` : 'auto',
+                height: '1.18em',
+                lineHeight: '1.18em',
+                verticalAlign: 'baseline',
+                margin: 0,
+                padding: 0,
+              }}
+            >
+              {/* Invisible native character locks exact font metrics & fallback */}
               <span
-                key={`${idx}-${spinIteration}`}
-                className="inline-block relative overflow-hidden align-baseline"
+                className="invisible opacity-0 select-none pointer-events-none"
+                aria-hidden="true"
+                style={{ display: 'inline', margin: 0, padding: 0 }}
+              >
+                {item.char}
+              </span>
+
+              {/* 100% Synchronous Rolling Tumbler Reel (zero stagger delay, all letters spin together) */}
+              <span
+                className="absolute inset-0 flex flex-col items-center justify-start pointer-events-none select-none"
                 style={{
-                  height: '1.18em',
-                  lineHeight: '1.18em',
-                  verticalAlign: 'baseline',
+                  transform: isSpinning
+                    ? `translateY(-${(item.rollChars.length - 1) * 1.18}em)`
+                    : 'translateY(0)',
+                  transition: isSpinning
+                    ? 'transform 0.52s cubic-bezier(0.12, 0.9, 0.28, 1) 0s'
+                    : 'none',
+                  willChange: 'transform',
                 }}
               >
-                {/* Invisible target character locks the exact native font width and kerning */}
-                <span
-                  className="invisible select-none pointer-events-none opacity-0"
-                  aria-hidden="true"
-                  style={{ display: 'inline-block' }}
-                >
-                  {item.char}
-                </span>
-
-                {/* Vertical tumbling reel positioned absolute over the exact character width */}
-                <span
-                  className="absolute inset-0 flex flex-col items-center justify-start pointer-events-none"
-                  style={{
-                    transform: isSpinning
-                      ? `translateY(-${(item.rollChars.length - 1) * 1.18}em)`
-                      : 'translateY(0)',
-                    transition: isSpinning
-                      ? `transform ${spinDuration}s cubic-bezier(0.12, 0.9, 0.28, 1) ${spinDelay}s`
-                      : 'none',
-                    willChange: 'transform',
-                  }}
-                >
-                  {item.rollChars.map((c, cIdx) => (
-                    <span
-                      key={cIdx}
-                      style={{
-                        height: '1.18em',
-                        lineHeight: '1.18em',
-                        display: 'block',
-                        textAlign: 'center',
-                        width: '100%',
-                      }}
-                    >
-                      {c}
-                    </span>
-                  ))}
-                </span>
+                {item.rollChars.map((c, rIdx) => (
+                  <span
+                    key={rIdx}
+                    style={{
+                      height: '1.18em',
+                      lineHeight: '1.18em',
+                      display: 'block',
+                      textAlign: 'center',
+                      width: '100%',
+                    }}
+                  >
+                    {c}
+                  </span>
+                ))}
               </span>
-            );
-          })}
+            </span>
+          ))}
         </span>
       ))}
     </h3>
