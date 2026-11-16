@@ -3778,7 +3778,7 @@ export function getTargetDatasetSummary(targetId: string): TargetDatasetSummary 
         demDownloadUrl: '/datasets/LUNA/topografia/Shackleton_Crater_Polo_Sur_Artemis_LOLA_DEM.csv',
         tempCsvName: 'Shackleton_Crater_temperatura_diviner.csv',
         tempDownloadUrl: '/datasets/LUNA/temperatura/Shackleton_Crater_temperatura_diviner.csv',
-        resolutionInfo: 'LOLA 256 ppd (~118 m/px) · Diviner Canales 7 y 8',
+        resolutionInfo: 'LOLA 256 ppd (~118 m/px) / Diviner Canales 7 y 8',
         metrics: [
           { label: 'PROFUNDIDAD', value: '4.2 km' },
           { label: 'DIAMETRO', value: '21.0 km' },
@@ -3795,7 +3795,7 @@ export function getTargetDatasetSummary(targetId: string): TargetDatasetSummary 
         demDownloadUrl: '/datasets/LUNA/topografia/Copernicus_Crater_LOLA_DEM.csv',
         tempCsvName: 'Copernicus_Crater_temperatura_diviner.csv',
         tempDownloadUrl: '/datasets/LUNA/temperatura/Copernicus_Crater_temperatura_diviner.csv',
-        resolutionInfo: 'LOLA 256 ppd (89.7 km transect) · Diviner Canales 7 y 8',
+        resolutionInfo: 'LOLA 256 ppd (89.7 km transect) / Diviner Canales 7 y 8',
         metrics: [
           { label: 'DESNIVEL BORDE-PISO', value: '3.8 km' },
           { label: 'DIAMETRO TOTAL', value: '89.7 km' },
@@ -3812,7 +3812,7 @@ export function getTargetDatasetSummary(targetId: string): TargetDatasetSummary 
         demDownloadUrl: '/datasets/MARTE/topografia/Jezero_Crater_Perseverance_MOLA_DEM.csv',
         tempCsvName: 'Jezero_Crater_temperatura_inercia_TES_THEMIS.csv',
         tempDownloadUrl: '/datasets/MARTE/temperatura/Jezero_Crater_temperatura_inercia_TES_THEMIS.csv',
-        resolutionInfo: 'MOLA 128 ppd (28.6 km transect) · TES & THEMIS IR',
+        resolutionInfo: 'MOLA 128 ppd (28.6 km transect) / TES & THEMIS IR',
         metrics: [
           { label: 'INERCIA TERMICA', value: '320 J m⁻² K⁻¹ s⁻⁰·⁵' },
           { label: 'ESCARPE DELTA', value: '70 m de desnivel' },
@@ -3829,7 +3829,7 @@ export function getTargetDatasetSummary(targetId: string): TargetDatasetSummary 
         demDownloadUrl: '/datasets/MARTE/topografia/Alba_Mons_Tharsis_volcan_MOLA_DEM.csv',
         tempCsvName: 'Alba_Mons_temperatura_inercia_TES_THEMIS.csv',
         tempDownloadUrl: '/datasets/MARTE/temperatura/Alba_Mons_temperatura_inercia_TES_THEMIS.csv',
-        resolutionInfo: 'MOLA 128 ppd (245.8 km transect) · TES & THEMIS IR',
+        resolutionInfo: 'MOLA 128 ppd (245.8 km transect) / TES & THEMIS IR',
         metrics: [
           { label: 'INERCIA TERMICA', value: '145 J m⁻² K⁻¹ s⁻⁰·⁵' },
           { label: 'DIAMETRO CALDERA', value: '>1,500 km' },

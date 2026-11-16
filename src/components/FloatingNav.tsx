@@ -3,16 +3,39 @@ import React, { useState, useEffect, useRef } from 'react';
 interface FloatingNavProps {
   onOpenTutorial: () => void;
   onOpenCalibration: () => void;
+  onUploadCsv?: (file: File) => void;
+  onScrollToGravity?: () => void;
+  hidden?: boolean;
 }
 
 export default function FloatingNav({
   onOpenTutorial,
   onOpenCalibration,
+  onUploadCsv,
+  onScrollToGravity,
+  hidden = false,
 }: FloatingNavProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLightSection, setIsLightSection] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollYRef = useRef(0);
+  const navFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleNavCsvClick = () => {
+    if (onScrollToGravity) {
+      onScrollToGravity();
+    }
+    navFileInputRef.current?.click();
+  };
+
+  const handleNavFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onUploadCsv) {
+      onUploadCsv(file);
+    }
+    // Reset so multiple files can be uploaded repeatedly
+    e.target.value = '';
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -49,10 +72,12 @@ export default function FloatingNav({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const shouldShow = !hidden && isVisible;
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 pointer-events-none select-none transition-all duration-300 ease-out ${
-        isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
+        shouldShow ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
       }`}
     >
       <div
@@ -81,8 +106,31 @@ export default function FloatingNav({
           </a>
         </div>
 
-        {/* Top Right: 2 Luxury Minimalist Pills with Dynamic Theme */}
+        {/* Top Right: Luxury Minimalist Pills with Dynamic Theme */}
         <div className="flex items-center gap-2.5 pointer-events-auto">
+          {/* Hidden File Input for Calibrar CSV */}
+          <input
+            ref={navFileInputRef}
+            type="file"
+            accept=".csv,.txt"
+            className="hidden"
+            onChange={handleNavFileChange}
+          />
+
+          {/* Global Calibrar CSV Pill */}
+          <button
+            onClick={handleNavCsvClick}
+            className={`px-4 py-2 rounded-full text-xs font-medium transition-all shadow-sm font-sans flex items-center gap-1.5 ${
+              isLightSection
+                ? 'text-[#0A0A0E] bg-white/90 hover:bg-white border border-[#E2E4EC]'
+                : 'text-white/90 bg-[#16171B]/90 hover:bg-[#202227] border border-white/15'
+            }`}
+            title="Subir datos altimétricos CSV (LOLA o MOLA)"
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${isLightSection ? 'bg-[#0A0A0E]/70' : 'bg-white/70'}`} />
+            <span>Calibrar CSV</span>
+          </button>
+
           {/* Calibration PFI Pill */}
           <button
             onClick={onOpenCalibration}

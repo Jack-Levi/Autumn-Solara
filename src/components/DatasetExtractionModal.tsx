@@ -40,9 +40,8 @@ export default function DatasetExtractionModal({
         <div className="px-7 py-5 border-b border-white/[0.08] flex flex-wrap items-center justify-between gap-4 bg-[#0E0F12] shrink-0">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="w-2 h-2 rounded-full bg-white/40" />
               <span className="font-sans text-[11px] font-medium text-[#8E9299] tracking-wider uppercase">
-                Repositorio científico oficial · NASA Space Apps Challenge
+                Repositorio científico oficial — NASA Space Apps Challenge
               </span>
             </div>
             <h2 className="text-xl md:text-2xl font-semibold tracking-tight text-white">
@@ -173,7 +172,7 @@ export default function DatasetExtractionModal({
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-mono text-[10px] font-medium px-2 py-0.5 rounded-md bg-white/10 text-white/90 border border-white/15">
-                      {ds.body} · {ds.id}
+                      {ds.body} — {ds.id}
                     </span>
                     <span className="font-mono text-[10px] text-[#8E9299]">.CSV</span>
                   </div>

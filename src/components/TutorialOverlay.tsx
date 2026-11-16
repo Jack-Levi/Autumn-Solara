@@ -33,8 +33,8 @@ const TOUR_STEPS = [
   },
   {
     step: 5,
-    title: 'Simulador de Gravedad y Reporte Escrito',
-    desc: 'Interactúa con las 280 esferas de regolito sobre el simulador físico para comparar la física de la Tierra (9.81 m/s²), Marte (3.72 m/s²) y la Luna (1.62 m/s²), simula la eyección de un cráter y genera el expediente técnico oficial.',
+    title: 'Telemetría de Rover y Transectos Altimétricos',
+    desc: 'Conduce el rover con inercia física (lerp) sobre los perfiles topográficos reales de LOLA y MOLA para evaluar pendientes, riesgo de vuelco (>15°), esfuerzo de tracción y dónde se rompen los análogos terrestres.',
     targetSection: 'gravity-section',
   },
 ];
@@ -102,7 +102,7 @@ export default function TutorialOverlay({
           </div>
 
           <span className="font-sans text-[11px] uppercase tracking-wider text-[#8E9299] block mb-2 font-medium">
-            Onboarding científico · NASA Space Apps
+            Onboarding científico — NASA Space Apps
           </span>
 
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 tracking-tight">

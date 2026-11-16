@@ -63,11 +63,10 @@ export default function PlanetaryThermalSimulator({
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-white/10">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="w-2 h-2 rounded-full bg-white/40" />
             <span className="font-sans text-[11px] font-medium tracking-wider uppercase text-[#8E9299]">
               {isMoon
-                ? 'LRO Diviner Lunar Radiometer (DLRE) · Ciclo diurno 24 horas'
-                : 'MGS TES y Mars Odyssey THEMIS · Inercia térmica y emisión IR'}
+                ? 'LRO Diviner Lunar Radiometer (DLRE) — Ciclo diurno 24 horas'
+                : 'MGS TES y Mars Odyssey THEMIS — Inercia térmica y emisión IR'}
             </span>
           </div>
           <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight">
@@ -199,7 +198,7 @@ export default function PlanetaryThermalSimulator({
                 <div className="flex justify-between text-[#8E929F]">
                   <span>INERCIA TÉRMICA DERIVADA:</span>
                   <span className="text-white font-bold">
-                    {marsHourData.thermalInertia} J·m⁻²·K⁻¹·s⁻⁰·⁵
+                    {marsHourData.thermalInertia} J m⁻² K⁻¹ s^-0.5
                   </span>
                 </div>
                 <div className="flex justify-between text-[#8E929F]">
@@ -269,16 +268,16 @@ export default function PlanetaryThermalSimulator({
       {!isMoon && (
         <div className="p-5 rounded-2xl bg-[#121316] border border-white/10 space-y-2 text-xs font-mono">
           <div className="flex items-center gap-2 text-white font-bold tracking-wide uppercase">
-            <span>Evaluación de mecánica de suelos · TES Thermal Inertia</span>
+            <span>Evaluación de mecánica de suelos — TES Thermal Inertia</span>
           </div>
           <p className="text-[#CBD5E1] text-xs leading-relaxed font-sans">
             {isAlbaMons ? (
               <>
-                <strong className="text-white font-mono">Alba Mons (145 J·m⁻²·K⁻¹·s⁻⁰·⁵):</strong> Inercia térmica ultrabaja representativa de un manto continuo de polvo basáltico ultrafino (&lt;10 µm) altamente aislante. Cohesión casi nula y baja capacidad portante. <span className="text-white font-medium">Riesgo crítico de hundimiento (sinkage) de ruedas en rovers; se recomiendan ensayos de neumáticos de resorte helicoidal (NASA Spring Tire).</span>
+                <strong className="text-white font-mono">Alba Mons (145 J m⁻² K⁻¹ s^-0.5):</strong> Inercia térmica ultrabaja representativa de un manto continuo de polvo basáltico ultrafino (&lt;10 µm) altamente aislante. Cohesión casi nula y baja capacidad portante. <span className="text-white font-medium">Riesgo crítico de hundimiento (sinkage) de ruedas en rovers; se recomiendan ensayos de neumáticos de resorte helicoidal (NASA Spring Tire).</span>
               </>
             ) : (
               <>
-                <strong className="text-white font-mono">Cráter Jezero (320 J·m⁻²·K⁻¹·s⁻⁰·⁵):</strong> Inercia térmica moderada-alta representativa de lechos fluviales deltaicos con gravas, arenas gruesas y duricrust cementado. <span className="text-white font-medium">Excelente capacidad de soporte portante para rovers de seis ruedas clase 1,025 kg (Perseverance / Curiosity) con bajo riesgo de atrapamiento.</span>
+                <strong className="text-white font-mono">Cráter Jezero (320 J m⁻² K⁻¹ s^-0.5):</strong> Inercia térmica moderada-alta representativa de lechos fluviales deltaicos con gravas, arenas gruesas y duricrust cementado. <span className="text-white font-medium">Excelente capacidad de soporte portante para rovers de seis ruedas clase 1,025 kg (Perseverance / Curiosity) con bajo riesgo de atrapamiento.</span>
               </>
             )}
           </p>
@@ -289,7 +288,7 @@ export default function PlanetaryThermalSimulator({
       {isMoon && (
         <div className="p-5 rounded-2xl bg-[#121316] border border-white/10 space-y-2 text-xs font-mono">
           <div className="flex items-center gap-2 text-white font-bold tracking-wide uppercase">
-            <span>Física del vacío lunar · LRO Diviner DLRE</span>
+            <span>Física del vacío lunar — LRO Diviner DLRE</span>
           </div>
           <p className="text-[#CBD5E1] text-xs leading-relaxed font-sans">
             Al no existir atmósfera, la temperatura lunar está gobernada exclusivamente por balance radiativo puro de Stefan-Boltzmann: <strong className="text-white">oscilación de delta 290 K (+112 °C al cenit solar vs -178 °C en la noche lunar)</strong>. Esta fatiga térmica extrema es el principal factor de fractura en juntas mecánicas y degradación de sellos elastoméricos en trajes de astronautas y rovers de Artemis.

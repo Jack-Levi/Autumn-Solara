@@ -1,4 +1,5 @@
 import React, { useRef, useCallback, useState, useEffect } from 'react';
+import * as THREE from 'three';
 import { TARGETS } from '../data';
 import type { ExtraTerrestrialTarget } from '../data';
 import { getTargetDatasetSummary } from '../data/nasaExtractedDatasets';
@@ -11,6 +12,185 @@ interface MissionCardsProps {
 
 // 4 Primary NASA Flagship Reference Targets corresponding to extracted CSV datasets
 const FLAGSHIP_TARGET_IDS = ['MOON-SHK', 'MOON-COP', 'MARS-JEZ', 'MARS-ALB'];
+
+/**
+ * High-speed Warp Starfield Background
+ * Extends the SpaceTunnel starfield at reduced opacity (0.28)
+ * for seamless visual continuity into Section 01.
+ */
+function MissionStarfieldBackground() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    // Mini star texture with 4 diffraction spikes (identical to SpaceTunnel)
+    const createMiniStarTexture = () => {
+      const c = document.createElement('canvas');
+      c.width = 64;
+      c.height = 64;
+      const ctx = c.getContext('2d');
+      if (!ctx) return new THREE.Texture();
+      const cx = 32;
+      const cy = 32;
+
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 30);
+      grad.addColorStop(0, 'rgba(255,255,255,1.0)');
+      grad.addColorStop(0.18, 'rgba(210,240,255,0.75)');
+      grad.addColorStop(0.5, 'rgba(0,180,255,0.22)');
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 64, 64);
+
+      // Diffraction cross
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fillRect(cx - 1, 4, 2, 56);
+      ctx.fillRect(4, cy - 1, 56, 2);
+
+      const texture = new THREE.CanvasTexture(c);
+      texture.needsUpdate = true;
+      return texture;
+    };
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x08090c, 0.0016);
+
+    const camera = new THREE.PerspectiveCamera(65, 1, 0.1, 1000);
+    camera.position.z = 0;
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas,
+      alpha: true,
+      antialias: false,
+      powerPreference: 'high-performance',
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+
+    const STAR_COUNT = 4800;
+    const starPositions = new Float32Array(STAR_COUNT * 3);
+    const starSpeeds = new Float32Array(STAR_COUNT);
+    const starColors = new Float32Array(STAR_COUNT * 3);
+
+    for (let s = 0; s < STAR_COUNT; s++) {
+      const angle = Math.random() * Math.PI * 2;
+      const rad = 2.0 + Math.pow(Math.random(), 0.72) * 80.0;
+
+      starPositions[s * 3] = Math.cos(angle) * rad;
+      starPositions[s * 3 + 1] = Math.sin(angle) * rad;
+      starPositions[s * 3 + 2] = -Math.random() * 650;
+
+      starSpeeds[s] = 2.4 + Math.random() * 4.6;
+
+      const cRand = Math.random();
+      if (cRand < 0.72) {
+        starColors[s * 3] = 1.0;
+        starColors[s * 3 + 1] = 1.0;
+        starColors[s * 3 + 2] = 1.0;
+      } else if (cRand < 0.90) {
+        starColors[s * 3] = 0.0;
+        starColors[s * 3 + 1] = 0.9;
+        starColors[s * 3 + 2] = 1.0;
+      } else {
+        starColors[s * 3] = 0.2;
+        starColors[s * 3 + 1] = 0.5;
+        starColors[s * 3 + 1] = 1.0;
+      }
+    }
+
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    starGeo.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+
+    const starTexture = createMiniStarTexture();
+    const starMat = new THREE.PointsMaterial({
+      size: 0.62,
+      map: starTexture,
+      vertexColors: true,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+
+    const starSystem = new THREE.Points(starGeo, starMat);
+    scene.add(starSystem);
+
+    const handleResize = () => {
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      const width = parent.clientWidth;
+      const height = parent.clientHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height, false);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    let isVisible = true;
+    let animationFrameId: number;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const wasVisible = isVisible;
+        isVisible = entry.isIntersecting;
+        if (isVisible && !wasVisible) {
+          animationFrameId = requestAnimationFrame(animate);
+        }
+      },
+      { rootMargin: '120px' }
+    );
+    observer.observe(canvas);
+
+    const animate = () => {
+      if (!isVisible) return;
+
+      const posArr = starGeo.attributes.position.array as Float32Array;
+      for (let s = 0; s < STAR_COUNT; s++) {
+        posArr[s * 3 + 2] += starSpeeds[s];
+        if (posArr[s * 3 + 2] > camera.position.z + 5) {
+          posArr[s * 3 + 2] = camera.position.z - 650;
+          const angle = Math.random() * Math.PI * 2;
+          const rad = 2.0 + Math.pow(Math.random(), 0.72) * 80.0;
+          posArr[s * 3] = Math.cos(angle) * rad;
+          posArr[s * 3 + 1] = Math.sin(angle) * rad;
+        }
+      }
+      starGeo.attributes.position.needsUpdate = true;
+
+      renderer.render(scene, camera);
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    animationFrameId = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      observer.disconnect();
+      window.removeEventListener('resize', handleResize);
+      renderer.dispose();
+      starGeo.dispose();
+      starMat.dispose();
+      starTexture.dispose();
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        zIndex: 0,
+        opacity: 0.28,
+      }}
+    />
+  );
+}
 
 export default function MissionCards({ selectedTargetId, onSelectTarget }: MissionCardsProps) {
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -94,7 +274,7 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
     const rotateY = (x - 0.5) * 14;
     const rotateX = (0.5 - y) * 14;
 
-    card.style.transform = `perspective(1000px) rotateY(${rotateY}deg) rotateX(${rotateX}deg) translateY(-8px)`;
+    card.style.transform = `perspective(1000px) rotateY(${rotateY}deg) rotateX(${rotateX}deg) translateY(-6px)`;
   }, []);
 
   const handleMouseLeave = useCallback((index: number) => {
@@ -106,30 +286,29 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
   return (
     <section
       ref={sectionRef}
-      className="section-light py-28 px-6 relative select-none"
+      className="pt-8 pb-24 md:pt-10 md:pb-28 px-6 relative select-none overflow-hidden text-[#ECEAE4]"
       style={{
-        background: '#F4F4F6',
-        backgroundImage: 'radial-gradient(circle, rgba(0, 0, 0, 0.05) 1px, transparent 1px)',
-        backgroundSize: '36px 36px',
+        backgroundColor: '#08090C',
       }}
     >
-      <div className="max-w-[1400px] mx-auto">
+      {/* 1. Continuous High-Speed Warp Starfield Background */}
+      <MissionStarfieldBackground />
+
+      <div className="max-w-[1400px] mx-auto relative z-10">
         {/* Section Header */}
-        <div className="mb-14 flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div className="mb-8 md:mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <span
-              className="font-sans uppercase tracking-wider block mb-3 text-[#686B75]"
-              style={{ fontSize: '11px', letterSpacing: '0.12em' }}
+              className="font-mono uppercase tracking-widest block mb-2 text-[#9A9891]"
+              style={{ fontSize: '11px', letterSpacing: '0.14em' }}
             >
-              01 — Selección de misión destino · 4 objetivos de referencia
+              01 — SELECCIÓN DE MISIÓN DESTINO — 4 OBJETIVOS DE REFERENCIA
             </span>
             <h2
-              className="editorial-reveal-title"
+              className="editorial-reveal-title font-sans font-semibold tracking-tight"
               style={{
-                fontFamily: "'Inter', sans-serif",
-                fontWeight: 600,
                 fontSize: 'clamp(30px, 3.5vw, 44px)',
-                color: '#0A0A0E',
+                color: '#ECEAE4',
                 lineHeight: 1.15,
                 margin: 0,
                 letterSpacing: '-0.03em',
@@ -137,22 +316,22 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
             >
               Elige tu destino extraterrestre
             </h2>
-            <p className="text-[#4B5563] text-[15px] mt-3 max-w-[65ch] font-normal leading-[1.65]">
+            <p className="text-[#9A9891] text-[15px] mt-3 max-w-[65ch] font-normal leading-[1.65]">
               Selecciona uno de los 4 destinos espaciales de referencia para recalcular en tiempo real el Índice de Fidelidad Planetaria (PFI) sobre las 8 dimensiones oficiales de la NASA.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          {/* Technical Plain Monospace Indicators (Zero Pills, Zero AI Dashboard Badges) */}
+          <div className="flex items-center gap-3 font-mono text-xs text-[#9A9891]">
             <button
               onClick={() => setIsDatasetModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[#0A0A0E] text-white hover:bg-[#27272A] transition-all shadow-sm font-sans text-xs font-semibold"
+              className="hover:text-[#ECEAE4] transition-colors underline-offset-4 hover:underline cursor-pointer"
+              title="Abrir panel de datasets extraídos de NASA Trek"
             >
-              <span>Datasets reales (8 archivos CSV)</span>
+              DATASETS REALES (6 ARCHIVOS CSV)
             </button>
-
-            <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-lg bg-white border border-[#E2E4EC] shadow-sm font-sans text-xs text-[#686B75]">
-              <span>4 destinos de referencia</span>
-            </div>
+            <span className="text-white/20">|</span>
+            <span className="tracking-wider">4 DESTINOS DE REFERENCIA</span>
           </div>
         </div>
 
@@ -183,143 +362,101 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
                 ref={(el) => {
                   cardRefs.current[index] = el;
                 }}
-                className={`mission-card group cursor-pointer transition-all duration-300 w-full min-h-[520px] flex flex-col justify-between p-7 rounded-3xl relative overflow-hidden border ${
-                  isSelected
-                    ? '!bg-[#0A0A0C] !text-white border-[#0A0A0C] shadow-2xl'
-                    : '!bg-white !text-[#0A0A0E] border-[#D8DCE6] hover:border-[#0A0A0C] hover:shadow-xl'
-                }`}
+                className="mission-card group cursor-pointer transition-all duration-300 w-full min-h-[520px] flex flex-col justify-between p-7 relative overflow-hidden"
                 style={{
+                  borderRadius: '0px',
+                  boxShadow: 'none',
+                  background: isSelected ? 'rgba(255, 255, 255, 0.06)' : 'rgba(14, 15, 19, 0.72)',
+                  backdropFilter: 'blur(6px)',
+                  WebkitBackdropFilter: 'blur(6px)',
+                  border: isSelected ? '1px solid rgba(255, 255, 255, 0.18)' : '1px solid rgba(255, 255, 255, 0.12)',
+                  borderTop: isSelected ? '2px solid #ECEAE4' : '1px solid rgba(255, 255, 255, 0.12)',
                   transform: baseTransform,
-                  transition: 'transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease, border-color 0.3s ease',
+                  transition: 'transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), background 0.3s ease, border-color 0.3s ease',
                   willChange: 'transform',
                 }}
                 onMouseMove={(e) => handleMouseMove(e, index)}
                 onMouseLeave={() => handleMouseLeave(index)}
                 onClick={() => onSelectTarget(target.id)}
               >
-                {/* Aerospace Technical Blueprint Vector Overlay */}
+                {/* Technical Blueprint Vector Overlay */}
                 <svg
                   className="absolute inset-0 w-full h-full pointer-events-none"
                   viewBox="0 0 320 500"
                   fill="none"
-                  stroke={isSelected ? '#FFFFFF' : '#0A0A0E'}
+                  stroke="#FFFFFF"
                   strokeWidth="0.8"
-                  style={{ opacity: isSelected ? 0.12 : 0.06 }}
+                  style={{ opacity: isSelected ? 0.09 : 0.04 }}
                 >
                   <circle cx="160" cy="220" r="130" strokeDasharray="3,3" />
                   <circle cx="160" cy="220" r="90" />
                   <circle cx="160" cy="220" r="40" strokeDasharray="4,2" />
                   <line x1="20" y1="220" x2="300" y2="220" strokeDasharray="4,4" />
                   <line x1="160" y1="60" x2="160" y2="380" strokeDasharray="4,4" />
-                  <rect x="25" y="25" width="270" height="450" rx="18" strokeDasharray="6,6" />
-                  <circle cx="28" cy="28" r="4" fill="currentColor" />
-                  <circle cx="292" cy="28" r="4" fill="currentColor" />
-                  <circle cx="28" cy="472" r="4" fill="currentColor" />
-                  <circle cx="292" cy="472" r="4" fill="currentColor" />
+                  <rect x="25" y="25" width="270" height="450" strokeDasharray="6,6" />
                 </svg>
 
-                {/* Top Row: Number 01-04 & Celestial Body Pill */}
+                {/* Top Row: Number 01-04 & Flat Celestial Body Label */}
                 <div className="relative z-10 flex items-start justify-between">
                   <span
                     className="font-extralight text-5xl leading-none select-none font-sans"
                     style={{
-                      color: isSelected ? 'rgba(255,255,255,0.35)' : 'rgba(10,10,14,0.18)',
+                      color: isSelected ? 'rgba(236, 234, 228, 0.45)' : 'rgba(255, 255, 255, 0.18)',
                     }}
                   >
                     {(index + 1).toString().padStart(2, '0')}
                   </span>
-                  <div
-                    className={`font-sans text-[11px] px-3 py-1 rounded-full font-medium tracking-wide border ${
-                      isSelected
-                        ? 'bg-white/10 text-white border-white/20 backdrop-blur-md'
-                        : 'bg-[#F4F4F6] text-[#686B75] border-[#E2E4EC]'
-                    }`}
-                  >
-                    {target.body}
-                  </div>
+                  <span className="font-mono text-xs uppercase tracking-widest text-[#9A9891]">
+                    {target.body.toUpperCase()}
+                  </span>
                 </div>
 
-                {/* Center Content: Title, ID & Real Instrument Badges */}
+                {/* Center Content: Title, Mission Code, Single-Line Sensors & Real Metrics */}
                 <div className="relative z-10 my-3">
                   <div className="flex items-center gap-2 mb-2">
                     <span
                       className="font-mono text-[11px] font-bold tracking-wider"
-                      style={{ color: isSelected ? '#FFFFFF' : '#0A0A0E' }}
+                      style={{ color: isSelected ? '#ECEAE4' : '#C2C0B8' }}
                     >
                       {target.id}
                     </span>
-                    <span
-                      className="w-1 h-1 rounded-full"
-                      style={{ backgroundColor: isSelected ? 'rgba(255,255,255,0.4)' : 'rgba(10,10,14,0.3)' }}
-                    />
-                    <span
-                      className="font-sans text-[10px] tracking-wide font-medium"
-                      style={{ color: isSelected ? '#A1A1AA' : '#8E929F' }}
-                    >
-                      Destino de referencia
+                    <span className="font-mono text-[10px] tracking-wider text-[#9A9891] uppercase">
+                      DESTINO DE REFERENCIA
                     </span>
                   </div>
 
                   <h3
-                    className="text-lg font-bold tracking-tight leading-snug"
+                    className="text-lg font-semibold tracking-tight leading-snug"
                     style={{
                       fontFamily: "'Inter', sans-serif",
-                      color: isSelected ? '#FFFFFF' : '#0A0A0E',
+                      color: '#ECEAE4',
                     }}
                   >
                     {target.name}
                   </h3>
 
-                  <p
-                    className="text-xs mt-2 leading-relaxed font-light line-clamp-2"
-                    style={{
-                      color: isSelected ? 'rgba(255,255,255,0.75)' : '#5A5E6B',
-                    }}
-                  >
+                  <p className="text-xs mt-2 leading-relaxed font-light line-clamp-2 text-[#9A9891]">
                     {target.subtitle}
                   </p>
 
-                  {/* Clean Technical Instrument Badges */}
-                  <div className="flex flex-wrap items-center gap-1.5 mt-3 mb-2">
-                    <span
-                      className="font-mono text-[9px] font-medium px-2 py-0.5 rounded"
-                      style={{
-                        backgroundColor: isSelected ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-                        color: isSelected ? '#FFFFFF' : '#0A0A0E',
-                        border: isSelected ? '1px solid rgba(255,255,255,0.18)' : '1px solid rgba(0,0,0,0.08)',
-                      }}
-                    >
-                      {target.body === 'Luna' ? 'NASA LRO-LOLA DEM' : 'MGS-MOLA DEM'}
-                    </span>
-                    <span
-                      className="font-mono text-[9px] font-medium px-2 py-0.5 rounded"
-                      style={{
-                        backgroundColor: isSelected ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-                        color: isSelected ? '#FFFFFF' : '#0A0A0E',
-                        border: isSelected ? '1px solid rgba(255,255,255,0.18)' : '1px solid rgba(0,0,0,0.08)',
-                      }}
-                    >
-                      {target.body === 'Luna' ? 'DIVINER DLRE' : 'TES / THEMIS INERTIA'}
-                    </span>
+                  {/* Clean Single-Line Sensors List Separated by Diagonals */}
+                  <div className="font-mono text-[10px] text-[#8E9299] uppercase tracking-wider mt-3 mb-2">
+                    {target.body === 'Luna'
+                      ? 'SENSORES: LRO-LOLA / LRO-DIVINER / M3'
+                      : 'SENSORES: MGS-MOLA / TES / CRISM'}
                   </div>
 
                   {/* 4 Real Extracted Metrics Grid */}
                   <div
                     className="grid grid-cols-2 gap-2 my-2.5 pt-2.5 pb-2 border-y"
-                    style={{ borderColor: isSelected ? 'rgba(255,255,255,0.15)' : '#EAEAED' }}
+                    style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}
                   >
                     {summary.metrics.map((m, idx) => (
                       <div key={idx} className="font-mono leading-tight">
-                        <span
-                          className="block text-[8.5px] uppercase font-medium tracking-wider mb-0.5"
-                          style={{ color: isSelected ? '#A1A1AA' : '#8E929F' }}
-                        >
+                        <span className="block text-[8.5px] uppercase font-medium tracking-wider mb-0.5 text-[#8E9299]">
                           {m.label}
                         </span>
-                        <strong
-                          className="text-[11px]"
-                          style={{ color: isSelected ? '#FFFFFF' : '#0A0A0E' }}
-                        >
+                        <strong className="text-[11px] text-[#ECEAE4]">
                           {m.value}
                         </strong>
                       </div>
@@ -327,51 +464,34 @@ export default function MissionCards({ selectedTargetId, onSelectTarget }: Missi
                   </div>
                 </div>
 
-                {/* Bottom Row: Physical Specs & Activate Pill Button */}
-                <div
-                  className="relative z-10 pt-3 border-t"
-                  style={{
-                    borderColor: isSelected ? 'rgba(255,255,255,0.15)' : '#EAEAED',
-                  }}
-                >
-                  <div className="flex justify-between items-center font-mono text-[11px] mb-1">
-                    <span style={{ color: isSelected ? '#A1A1AA' : '#8E929F' }}>
-                      GRAVEDAD:
-                    </span>
-                    <strong style={{ color: isSelected ? '#FFFFFF' : '#0A0A0E' }}>
+                {/* Bottom Row: Physical Specs & Integrated Flat Bottom Strip */}
+                <div className="relative z-10 pt-3 border-t border-white/10">
+                  <div className="flex justify-between items-center font-mono text-[11px] mb-1 text-[#8E9299]">
+                    <span>GRAVEDAD:</span>
+                    <strong className="text-[#ECEAE4]">
                       {target.gravity} m/s²
                     </strong>
                   </div>
 
-                  <div className="flex justify-between items-center font-mono text-[11px] mb-3">
-                    <span style={{ color: isSelected ? '#A1A1AA' : '#8E929F' }}>
-                      COORDENADAS:
-                    </span>
-                    <strong
-                      className="text-[10px]"
-                      style={{ color: isSelected ? '#FFFFFF' : '#0A0A0E' }}
-                    >
+                  <div className="flex justify-between items-center font-mono text-[11px] mb-4 text-[#8E9299]">
+                    <span>COORDENADAS:</span>
+                    <strong className="text-[10px] text-[#ECEAE4]">
                       {target.coords}
                     </strong>
                   </div>
 
-                  {/* Active / Select CTA Button */}
-                  <button
-                    className={`w-full py-2.5 px-4 rounded-full font-sans text-xs font-semibold tracking-normal transition-all duration-300 flex items-center justify-center gap-2 ${
-                      isSelected
-                        ? 'bg-white text-[#0A0A0E] shadow-sm hover:bg-[#F4F4F6]'
-                        : 'bg-[#0A0A0E] text-white hover:bg-[#27272A] shadow-sm'
-                    }`}
+                  {/* Integrated Full-Width Flat Strip Button (Zero Rounded Corners, Zero Bright AI Glow) */}
+                  <div
+                    className="-mx-7 -mb-7 py-3 px-4 font-mono text-xs uppercase tracking-wider text-center transition-colors select-none"
+                    style={{
+                      borderTop: '1px solid rgba(255, 255, 255, 0.14)',
+                      borderRadius: 0,
+                      backgroundColor: isSelected ? 'rgba(255, 255, 255, 0.08)' : 'transparent',
+                      color: isSelected ? '#ECEAE4' : '#9A9891',
+                    }}
                   >
-                    {isSelected ? (
-                      <>
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#0A0A0E]" />
-                        <span>Destino activo</span>
-                      </>
-                    ) : (
-                      <span>Activar misión →</span>
-                    )}
-                  </button>
+                    {isSelected ? '[ DESTINO ACTIVO ]' : 'ACTIVAR MISIÓN →'}
+                  </div>
                 </div>
               </div>
             );

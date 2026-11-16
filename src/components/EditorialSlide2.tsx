@@ -157,6 +157,10 @@ function PlanetaryCanvas3D() {
         }
       }
 
+      if (!isVisible) {
+        rafRef.current = 0;
+        return;
+      }
       rafRef.current = requestAnimationFrame(draw);
     };
 
@@ -169,9 +173,27 @@ function PlanetaryCanvas3D() {
     resize();
     window.addEventListener('resize', resize);
 
+    // Performance Optimization: Pause crater flyover canvas when off-screen
+    let isVisible = true;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const wasVisible = isVisible;
+        isVisible = entry.isIntersecting;
+        if (isVisible && !wasVisible && !rafRef.current) {
+          rafRef.current = requestAnimationFrame(draw);
+        } else if (!isVisible && rafRef.current) {
+          cancelAnimationFrame(rafRef.current);
+          rafRef.current = 0;
+        }
+      },
+      { rootMargin: '150px' }
+    );
+    observer.observe(canvas);
+
     rafRef.current = requestAnimationFrame(draw);
     return () => {
-      cancelAnimationFrame(rafRef.current);
+      observer.disconnect();
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
       window.removeEventListener('resize', resize);
     };
   }, []);
@@ -347,7 +369,10 @@ export default function EditorialSlide2() {
           const width = canvas.offsetWidth;
           const height = canvas.offsetHeight;
           if (ctx && width > 0 && height > 0) {
-            ctx.clearRect(0, 0, width, height);
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.restore();
 
             const drawProgress = Math.min(Math.max(p / 0.65, 0), 1);
             if (drawProgress > 0.005) {
@@ -444,8 +469,8 @@ export default function EditorialSlide2() {
 
               ctx.restore();
 
-              // Emit micro-particles when scrolling with velocity
-              if (Math.abs(velocity) > 0.5 && drawProgress < 0.98) {
+              // Emit micro-particles when scrolling with velocity (keep away from rightmost edge)
+              if (Math.abs(velocity) > 0.5 && drawProgress < 0.95 && head.x < width - 25) {
                 const count = 1 + Math.floor(Math.random() * 2);
                 for (let k = 0; k < count; k++) {
                   const sparkAngle = headAngle + Math.PI + (Math.random() - 0.5) * 1.4;
@@ -461,7 +486,7 @@ export default function EditorialSlide2() {
                 }
               }
 
-              // Update & draw shedding micro-sparks
+              // Update & draw shedding micro-sparks (cull if outside width)
               for (let j = sparksRef.current.length - 1; j >= 0; j--) {
                 const s = sparksRef.current[j];
                 s.x += s.vx;
@@ -469,7 +494,7 @@ export default function EditorialSlide2() {
                 s.vx *= 0.96;
                 s.vy *= 0.96;
                 s.life -= 1;
-                if (s.life <= 0) {
+                if (s.life <= 0 || s.x >= width || s.x <= 0) {
                   sparksRef.current.splice(j, 1);
                   continue;
                 }

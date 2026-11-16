@@ -202,12 +202,12 @@ export function GeologicalSiteImage({ site }: { site: EarthSite }) {
 
     ctx.font = "600 11px 'JetBrains Mono', monospace";
     ctx.fillStyle = pal.accent;
-    ctx.fillText(`NASA Earth Observatory · SRTM 30m DEM · ${site.id}`, 20, H - 24);
+    ctx.fillText(`NASA Earth Observatory   SRTM 30m DEM   ${site.id}`, 20, H - 24);
 
     ctx.font = "400 10px 'JetBrains Mono', monospace";
     ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
     ctx.textAlign = 'right';
-    ctx.fillText(`${site.dms} · ELEV: ${site.elevM}m · PEND: ${site.slopeDeg}°`, W - 20, H - 24);
+    ctx.fillText(`${site.dms}   ELEV: ${site.elevM}m   PEND: ${site.slopeDeg}°`, W - 20, H - 24);
     ctx.textAlign = 'left';
   }, [useFallback, site]);
 
@@ -784,23 +784,13 @@ const SiteCard = React.memo(function SiteCard({
   );
 });
 
-// ─── Filter Bar Options ──────────────────────────────────────────────────────
-const GALLERY_FILTERS: { key: string; label: string }[] = [
-  { key: 'Todos', label: 'Todos (14)' },
-  { key: 'Candidatos', label: 'Nuevos candidatos (7)' },
-  { key: 'Hiperárido', label: 'Hiperárido' },
-  { key: 'Polar/Criogénico', label: 'Polar / Criogénico' },
-  { key: 'Volcánico', label: 'Volcánico' },
-  { key: 'Impacto/Cráter', label: 'Impacto / Cráter' },
-  { key: 'Subterráneo/Cueva', label: 'Subterráneo / Cueva' },
-];
-
 export default function SiteGallery({
   rankedSites,
   onSelectSite,
   scrollVelocity = 0,
 }: SiteGalleryProps) {
   const [activeFilter, setActiveFilter] = useState('Todos');
+  const [isPrinting, setIsPrinting] = useState(false);
   const filterTrackRef = useRef<HTMLDivElement>(null);
   const filterBtnRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const [pillStyle, setPillStyle] = useState<{ left: number; width: number; opacity: number }>({
@@ -808,6 +798,18 @@ export default function SiteGallery({
     width: 0,
     opacity: 0,
   });
+
+  // Print mode detection: renders all 14 sites during browser print
+  useEffect(() => {
+    const handleBefore = () => setIsPrinting(true);
+    const handleAfter = () => setIsPrinting(false);
+    window.addEventListener('beforeprint', handleBefore);
+    window.addEventListener('afterprint', handleAfter);
+    return () => {
+      window.removeEventListener('beforeprint', handleBefore);
+      window.removeEventListener('afterprint', handleAfter);
+    };
+  }, []);
 
   // ── High-Performance Scroll Velocity & Flexion Physics Engine ─────────────
   const [internalVelocity, setInternalVelocity] = useState(0);
@@ -889,15 +891,36 @@ export default function SiteGallery({
     return () => window.removeEventListener('resize', updatePillPosition);
   }, [updatePillPosition]);
 
-  // Filter ranked sites based on user-selected filter chip
-  const filteredRankedSites = rankedSites.filter((rs) => {
-    if (activeFilter === 'Todos') return true;
-    if (activeFilter === 'Candidatos') return rs.site.isCandidate === true;
-    if (activeFilter === 'Volcánico') {
-      return rs.site.biome === 'Volcánico/Basáltico';
-    }
-    return rs.site.biome === activeFilter;
-  });
+  const candidateCount = useMemo(
+    () => rankedSites.filter((rs) => rs.site.isCandidate === true).length,
+    [rankedSites]
+  );
+
+  const galleryFilters: { key: string; label: string }[] = useMemo(
+    () => [
+      { key: 'Todos', label: `Todos (${rankedSites.length})` },
+      { key: 'Candidatos', label: `Nuevos candidatos (${candidateCount})` },
+      { key: 'Hiperárido', label: 'Hiperárido' },
+      { key: 'Polar/Criogénico', label: 'Polar / Criogénico' },
+      { key: 'Volcánico', label: 'Volcánico' },
+      { key: 'Impacto/Cráter', label: 'Impacto / Cráter' },
+      { key: 'Subterráneo/Cueva', label: 'Subterráneo / Cueva' },
+    ],
+    [rankedSites.length, candidateCount]
+  );
+
+  // Filter ranked sites based on user-selected filter chip (in print mode, render ALL 14 sites)
+  const filteredRankedSites = useMemo(() => {
+    if (isPrinting) return rankedSites;
+    return rankedSites.filter((rs) => {
+      if (activeFilter === 'Todos') return true;
+      if (activeFilter === 'Candidatos') return rs.site.isCandidate === true;
+      if (activeFilter === 'Volcánico') {
+        return rs.site.biome === 'Volcánico/Basáltico';
+      }
+      return rs.site.biome === activeFilter;
+    });
+  }, [isPrinting, rankedSites, activeFilter]);
 
   // Effective velocity combines internal physics engine and external prop
   const effectiveVelocity = Math.abs(internalVelocity) > Math.abs(scrollVelocity) ? internalVelocity : scrollVelocity;
@@ -925,7 +948,7 @@ export default function SiteGallery({
               className="font-sans uppercase tracking-wider block mb-3 text-[#686B75]"
               style={{ fontSize: '11px', letterSpacing: '0.12em' }}
             >
-              02 — Laboratorio de campo terrestre · 14 sitios análogos
+              02 — Laboratorio de campo terrestre — 14 sitios análogos
             </span>
             <h2
               className="editorial-reveal-title"
@@ -969,7 +992,7 @@ export default function SiteGallery({
               }}
             />
 
-            {GALLERY_FILTERS.map((f) => {
+            {galleryFilters.map((f) => {
               const isSelected = activeFilter === f.key;
               return (
                 <button
